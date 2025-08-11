@@ -11,6 +11,7 @@
   - `DIRECTUS_URL` или `NEXT_PUBLIC_DIRECTUS_URL` — URL инстанса Directus.
   - `N8N_CALC_URL`, `N8N_QA_URL` — вебхуки n8n.
   - `DIRECTUS_STATIC_TOKEN` — статический токен (опционально).
+  - `OPENAI_API_KEY` — ключ OpenAI для чата по профилю (опционально).
 
 ### `app/` — App Router и страницы
 - `layout.tsx` — общий макет сайта (глобальная навигация/стили).
