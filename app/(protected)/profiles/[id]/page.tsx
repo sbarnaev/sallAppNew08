@@ -33,6 +33,7 @@ export default function ProfileDetail() {
   const [notesDraft, setNotesDraft] = useState<string>("");
   const [savingNotes, setSavingNotes] = useState(false);
   const notesTouchedRef = useRef(false);
+  const notesTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const notesOpenRef = useRef(false);
   useEffect(() => { notesOpenRef.current = notesOpen; }, [notesOpen]);
   const [chat, setChat] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
@@ -273,6 +274,46 @@ export default function ProfileDetail() {
     }
   }
 
+  function wrapSelection(prefix: string, suffix = prefix) {
+    const ta = notesTextareaRef.current;
+    if (!ta) return;
+    const { selectionStart, selectionEnd } = ta;
+    const before = notesDraft.slice(0, selectionStart);
+    const selected = notesDraft.slice(selectionStart, selectionEnd);
+    const after = notesDraft.slice(selectionEnd);
+    const next = before + prefix + selected + suffix + after;
+    setNotesDraft(next);
+    notesTouchedRef.current = true;
+    const cursorStart = selectionStart + prefix.length;
+    const cursorEnd = cursorStart + selected.length;
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(cursorStart, cursorEnd);
+    });
+  }
+
+  function prefixLines(prefix: string) {
+    const ta = notesTextareaRef.current;
+    if (!ta) return;
+    let { selectionStart, selectionEnd } = ta;
+    if (selectionStart === selectionEnd) {
+      selectionStart = notesDraft.lastIndexOf("\n", selectionStart - 1) + 1;
+      const lineEnd = notesDraft.indexOf("\n", selectionEnd);
+      selectionEnd = lineEnd === -1 ? notesDraft.length : lineEnd;
+    }
+    const before = notesDraft.slice(0, selectionStart);
+    const selected = notesDraft.slice(selectionStart, selectionEnd);
+    const after = notesDraft.slice(selectionEnd);
+    const newSelected = selected.split("\n").map(line => prefix + line).join("\n");
+    const next = before + newSelected + after;
+    setNotesDraft(next);
+    notesTouchedRef.current = true;
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(selectionStart, selectionStart + newSelected.length);
+    });
+  }
+
   // Сохранение состояния чекбоксов в Directus (profiles.ui_state JSON)
   const saveChecked = useCallback(async (nextMap: Record<string, boolean>) => {
     // Очередь сохранений, чтобы клик не терялся при поллинге
@@ -299,7 +340,6 @@ export default function ProfileDetail() {
       (saveChecked as any)._running = false;
     }
   }, [id]);
-
   // Persist chat history in Directus
   const saveChatHistory = useCallback(async (history: Array<{ role: "user" | "assistant"; content: string }>) => {
     try {
@@ -677,6 +717,20 @@ export default function ProfileDetail() {
               <button className="text-gray-500 hover:text-gray-800" onClick={() => setNotesOpen(false)}>✕</button>
             </div>
             <RichEditor value={notesDraft} onChange={(v)=>{ setNotesDraft(v); notesTouchedRef.current = true; }} />
+            {/* Мини-редактор markdown */}
+            <div className="flex flex-wrap gap-2">
+              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); wrapSelection('**');}}>B</button>
+              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); wrapSelection('*');}}>I</button>
+              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); prefixLines('## ');}}>H2</button>
+              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); prefixLines('- ');}}>• Список</button>
+            </div>
+            <textarea
+              ref={notesTextareaRef}
+              className="w-full h-64 rounded-xl border p-3"
+              value={notesDraft}
+              onChange={(e)=>{ setNotesDraft(e.target.value); notesTouchedRef.current = true; }}
+              placeholder="Markdown поддерживается"
+            />
             <div className="flex gap-2 justify-end">
               <button className="rounded-xl border px-4 py-2" onClick={()=>setNotesOpen(false)}>Отмена</button>
               <button

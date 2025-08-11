@@ -12,10 +12,11 @@
   - `N8N_CALC_URL`, `N8N_QA_URL` — вебхуки n8n.
 - `DIRECTUS_STATIC_TOKEN` — статический токен (опционально).
 - `OPENAI_API_KEY` — ключ OpenAI для чата по профилю (опционально).
-
 Дополнительно в Directus нужно создать поля:
 - в коллекции `profiles`: `ui_state` (JSON), `notes` (Text), `chat_history` (JSON);
 - в коллекции `users`: `contact` (string) для подписи в PDF.
+  - `DIRECTUS_STATIC_TOKEN` — статический токен (опционально).
+  - `OPENAI_API_KEY` — ключ OpenAI для чата по профилю (опционально).
 
 ### `app/` — App Router и страницы
 - `layout.tsx` — общий макет сайта (глобальная навигация/стили).

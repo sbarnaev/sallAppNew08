@@ -10,6 +10,8 @@ export async function GET() {
   const r = await fetch(`${baseUrl}/users/me?fields=first_name,last_name,email,contact`, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     cache: "no-store",
+  const r = await fetch(`${baseUrl}/users/me`, {
+    headers: { Authorization: `Bearer ${token}` }
   });
   const data = await r.json();
   return NextResponse.json(data);
