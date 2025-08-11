@@ -1,9 +1,10 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { getDirectusUrl } from "@/lib/env";
 
 export async function GET(req: NextRequest) {
   const token = cookies().get("directus_access_token")?.value;
-  const baseUrl = process.env.DIRECTUS_URL;
+  const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) {
     return NextResponse.json({ data: [], message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
   }

@@ -1,9 +1,10 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getDirectusUrl } from "@/lib/env";
 
 export async function GET(_req: Request, ctx: { params: { id: string }}) {
   const token = cookies().get("directus_access_token")?.value;
-  const baseUrl = process.env.DIRECTUS_URL;
+  const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ data: null }, { status: 401 });
   const { id } = ctx.params;
   const url = `${baseUrl}/items/profiles/${id}`;
@@ -57,7 +58,7 @@ export async function GET(_req: Request, ctx: { params: { id: string }}) {
 
 export async function PATCH(req: Request, ctx: { params: { id: string }}) {
   const token = cookies().get("directus_access_token")?.value;
-  const baseUrl = process.env.DIRECTUS_URL;
+  const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
 
   const { id } = ctx.params;
