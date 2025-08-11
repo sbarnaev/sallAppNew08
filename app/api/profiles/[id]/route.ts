@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 
-export async function GET(_req: Request, ctx: { params: { id: string }}) {
+export async function GET(req: Request, ctx: { params: { id: string }}) {
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ data: null }, { status: 401 });
@@ -34,7 +34,8 @@ export async function GET(_req: Request, ctx: { params: { id: string }}) {
 
   if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
     // попробуем освежить токен
-    const refreshRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/refresh`, {
+    const origin = new URL(req.url).origin;
+    const refreshRes = await fetch(`${origin}/api/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });

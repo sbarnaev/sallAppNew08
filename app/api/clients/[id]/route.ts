@@ -67,7 +67,8 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
     let r = await doFetch(initialToken);
     if (r.status === 401) {
       try {
-        const refresh = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/refresh`, { method: 'POST', headers: { 'Content-Type': 'application/json' }});
+        const origin = new URL(req.url).origin;
+        const refresh = await fetch(`${origin}/api/refresh`, { method: 'POST', headers: { 'Content-Type': 'application/json' }});
         if (refresh.ok) {
           const newToken = cookies().get("directus_access_token")?.value || token || "";
           r = await doFetch(newToken);

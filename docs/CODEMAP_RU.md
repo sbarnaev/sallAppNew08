@@ -10,8 +10,12 @@
   - `NEXT_PUBLIC_BASE_URL` — базовый URL фронтенда.
   - `DIRECTUS_URL` или `NEXT_PUBLIC_DIRECTUS_URL` — URL инстанса Directus.
   - `N8N_CALC_URL`, `N8N_QA_URL` — вебхуки n8n.
-  - `DIRECTUS_STATIC_TOKEN` — статический токен (опционально).
-  - `OPENAI_API_KEY` — ключ OpenAI для чата по профилю (опционально).
+- `DIRECTUS_STATIC_TOKEN` — статический токен (опционально).
+- `OPENAI_API_KEY` — ключ OpenAI для чата по профилю (опционально).
+
+Дополнительно в Directus нужно создать поля:
+- в коллекции `profiles`: `ui_state` (JSON), `notes` (Text), `chat_history` (JSON);
+- в коллекции `users`: `contact` (string) для подписи в PDF.
 
 ### `app/` — App Router и страницы
 - `layout.tsx` — общий макет сайта (глобальная навигация/стили).

@@ -2,12 +2,21 @@
 
 import { useEffect, useRef } from "react";
 
-export default function RichEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+interface Props {
+  value: string;
+  onChange: (v: string) => void;
+}
+
+export default function RichEditor({ value, onChange }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  function exec(command: string, arg?: string) {
-    document.execCommand(command, false, arg);
-    onChange(ref.current?.innerHTML || "");
+
+  function exec(cmd: string, arg?: string) {
+    if (!ref.current) return;
+    ref.current.focus();
+    document.execCommand(cmd, false, arg);
+    onChange(ref.current.innerHTML);
   }
+
   useEffect(() => {
     if (ref.current && ref.current.innerHTML !== value) {
       ref.current.innerHTML = value;
@@ -30,7 +39,9 @@ export default function RichEditor({ value, onChange }: { value: string; onChang
         <button type="button" className="px-2 py-1 border rounded" onClick={() => exec("insertOrderedList")}>1.</button>
         <button type="button" className="px-2 py-1 border rounded" onClick={() => exec("insertUnorderedList")}>•</button>
         <button type="button" className="px-2 py-1 border rounded" onClick={() => exec("formatBlock", "blockquote")}>❝</button>
-        <button type="button" className="px-2 py-1 border rounded" onClick={() => exec("insertHTML", '<input type="checkbox" /> ')}>☑</button>
+        <button type="button" className="px-2 py-1 border rounded" onClick={() => exec("insertHTML", '<input type="checkbox" />')}>
+          ☑
+        </button>
       </div>
       <div
         ref={ref}
