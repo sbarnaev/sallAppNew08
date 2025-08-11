@@ -300,6 +300,7 @@ export default function ProfileDetail() {
     }
   }, [id]);
 
+  // Persist chat history in Directus
   const saveChatHistory = useCallback(async (history: Array<{ role: "user" | "assistant"; content: string }>) => {
     try {
       await fetch(`/api/profiles/${id}`, {
