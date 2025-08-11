@@ -26,6 +26,7 @@ export default function ProfileDetail() {
   const [polling, setPolling] = useState(true);
   const pollingRef = useRef(true);
   const [expandAll, setExpandAll] = useState(false);
+  const localUiStateRef = useRef<Record<string, boolean>>({});
   const [checkedMap, setCheckedMap] = useState<Record<string, boolean>>({});
   const savingCheckboxRef = useRef(false);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -153,7 +154,8 @@ export default function ProfileDetail() {
       });
       // Инициализация чекбоксов из ui_state + слияние с локальными изменениями
       const serverChecked: Record<string, boolean> = (p?.ui_state?.checked as any) || {};
-      if (!savingCheckboxRef.current) setCheckedMap(prev => ({ ...prev, ...serverChecked }));
+      const merged = { ...serverChecked, ...localUiStateRef.current };
+      setCheckedMap(merged);
       // Инициализация заметок: не перетираем, если пользователь редактирует сейчас
       if (!notesTouchedRef.current && !notesOpenRef.current) {
         setNotesDraft(p?.notes || "");
@@ -271,31 +273,38 @@ export default function ProfileDetail() {
     }
   }
 
-
   // Сохранение состояния чекбоксов в Directus (profiles.ui_state JSON)
   const saveChecked = useCallback(async (nextMap: Record<string, boolean>) => {
-    savingCheckboxRef.current = true;
+    // Очередь сохранений, чтобы клик не терялся при поллинге
+    (saveChecked as any)._queue = (saveChecked as any)._queue || [];
+    (saveChecked as any)._queue.push(nextMap);
+    if ((saveChecked as any)._running) return;
+    (saveChecked as any)._running = true;
     try {
-      const res = await fetch(`/api/profiles/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        cache: 'no-store',
-        body: JSON.stringify({ ui_state: { checked: nextMap } }),
-      });
-      if (res.ok) setProfile((p) => (p ? { ...p, ui_state: { checked: nextMap } } : p));
+      savingCheckboxRef.current = true;
+      while ((saveChecked as any)._queue.length) {
+        const payload = (saveChecked as any)._queue.pop();
+        localUiStateRef.current = payload;
+        const res = await fetch(`/api/profiles/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          cache: "no-store",
+          body: JSON.stringify({ ui_state: { checked: payload } }),
+        });
+        if (res.ok) setProfile((p) => (p ? { ...p, ui_state: { checked: payload } } : p));
+      }
     } finally {
-      setTimeout(() => {
-        savingCheckboxRef.current = false;
-      }, 1500);
+      savingCheckboxRef.current = false;
+      (saveChecked as any)._running = false;
     }
   }, [id]);
 
   const saveChatHistory = useCallback(async (history: Array<{ role: "user" | "assistant"; content: string }>) => {
     try {
       await fetch(`/api/profiles/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_history: history }),
       });
     } catch {}
@@ -347,6 +356,7 @@ export default function ProfileDetail() {
                 onChange={(e)=>{
                   const next = { ...checkedMap, [hashKey]: e.target.checked, [legacyKey]: e.target.checked };
                   setCheckedMap(next);
+                  localUiStateRef.current = next;
                   saveChecked(next);
                 }}
                 className="mt-0.5 h-[18px] w-[18px] rounded border-2 border-indigo-300 bg-indigo-100 text-indigo-600 focus:ring-0"
