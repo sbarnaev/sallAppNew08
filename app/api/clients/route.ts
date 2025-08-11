@@ -91,7 +91,8 @@ export async function GET(req: NextRequest) {
 
   // Автообновление токена при истёкшей сессии
   if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
-    const refreshRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/refresh`, {
+    const origin = req.nextUrl.origin;
+    const refreshRes = await fetch(`${origin}/api/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
@@ -196,13 +197,14 @@ export async function POST(req: NextRequest) {
     // Если токен истек, попробуем обновить его
     if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
       console.log("Creating client - Token expired, attempting refresh...");
-      
+
       // Попробуем обновить токен
-      const refreshRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/refresh`, {
+      const origin = req.nextUrl.origin;
+      const refreshRes = await fetch(`${origin}/api/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-      
+
       if (refreshRes.ok) {
         console.log("Creating client - Token refreshed, retrying...");
         

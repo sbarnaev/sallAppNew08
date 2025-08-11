@@ -66,7 +66,7 @@ export async function POST(req: Request) {
             Authorization: `Bearer ${openaiKey}`,
           },
           body: JSON.stringify({
-            model: "gpt-5-mini",
+            model: "gpt-4o-mini",
             messages,
             temperature: 0.4,
             max_tokens: 600,
@@ -127,7 +127,7 @@ export async function POST(req: Request) {
           Authorization: `Bearer ${openaiKey}`,
         },
         body: JSON.stringify({
-          model: "gpt-5-mini",
+          model: "gpt-4o-mini",
           messages,
           temperature: 0.4,
           max_tokens: 600,

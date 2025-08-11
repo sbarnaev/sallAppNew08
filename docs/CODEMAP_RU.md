@@ -10,6 +10,11 @@
   - `NEXT_PUBLIC_BASE_URL` — базовый URL фронтенда.
   - `DIRECTUS_URL` или `NEXT_PUBLIC_DIRECTUS_URL` — URL инстанса Directus.
   - `N8N_CALC_URL`, `N8N_QA_URL` — вебхуки n8n.
+- `DIRECTUS_STATIC_TOKEN` — статический токен (опционально).
+- `OPENAI_API_KEY` — ключ OpenAI для чата по профилю (опционально).
+Дополнительно в Directus нужно создать поля:
+- в коллекции `profiles`: `ui_state` (JSON), `notes` (Text), `chat_history` (JSON);
+- в коллекции `users`: `contact` (string) для подписи в PDF.
   - `DIRECTUS_STATIC_TOKEN` — статический токен (опционально).
   - `OPENAI_API_KEY` — ключ OpenAI для чата по профилю (опционально).
 
@@ -45,7 +50,7 @@
 - `login/route.ts` — логин в Directus (`/auth/login`), установка access/refresh токенов в httpOnly куки.
 - `logout/route.ts` — логаут, очистка кук.
 - `refresh/route.ts` — обновление токена по `directus_refresh_token` (POST на `DIRECTUS_URL/auth/refresh`), перезапись кук.
-- `me/route.ts` — получение текущего пользователя из Directus (`/users/me`).
+- `me/route.ts` — получение текущего пользователя из Directus (`/users/me`), возвращает имя и поле `contact` для подписи.
 
 - `clients/route.ts`
   - `GET` — получение списка клиентов из Directus `/items/clients`.
@@ -58,7 +63,7 @@
 - `clients/[id]/route.ts`
   - `GET` — детали клиента по ID. Поля: `id,name,birth_date,email,phone,source,communication_method,created_at,owner_user`.
 
-- `profiles/route.ts`, `profiles/[id]/route.ts` — работа с расчётами (получение списка/деталей). Создание может дергать n8n.
+- `profiles/route.ts`, `profiles/[id]/route.ts` — работа с расчётами (получение списка/деталей). PATCH позволяет сохранять `ui_state`, HTML `notes` и `chat_history`. Создание может дергать n8n.
 
 - `consultations/route.ts`, `consultations/[id]/route.ts`, `consultations/[id]/details/route.ts` — работа с консультациями (список/детали/доп.данные).
 

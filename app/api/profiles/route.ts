@@ -30,7 +30,8 @@ export async function GET(req: NextRequest) {
   let { r, data } = await fetchList(token);
 
   if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
-    const refreshRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/refresh`, {
+    const origin = req.nextUrl.origin;
+    const refreshRes = await fetch(`${origin}/api/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });

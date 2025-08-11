@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
+import RichEditor from "@/components/RichEditor";
 
 type Profile = {
   id: number;
@@ -11,6 +12,7 @@ type Profile = {
   client_id?: number | null;
   ui_state?: any;
   notes?: string | null;
+  chat_history?: Array<{ role: "user" | "assistant"; content: string }>;
 };
 
 export default function ProfileDetail() {
@@ -35,6 +37,8 @@ export default function ProfileDetail() {
   const notesOpenRef = useRef(false);
   useEffect(() => { notesOpenRef.current = notesOpen; }, [notesOpen]);
   const [chat, setChat] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
+  const chatRef = useRef<Array<{ role: "user" | "assistant"; content: string }>>([]);
+  useEffect(() => { chatRef.current = chat; }, [chat]);
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -50,12 +54,54 @@ export default function ProfileDetail() {
         await navigator.clipboard.writeText(window.location.href);
       } catch {}
     }
+    async function exportPdf() {
+      let strengths: string[] = [];
+      let weaknesses: string[] = [];
+      try {
+        let payload: any = profile?.raw_json;
+        if (typeof payload === 'string') payload = JSON.parse(payload);
+        const item = Array.isArray(payload) ? payload[0] : payload;
+        strengths = item?.strengths || (item?.strengths_text ? String(item.strengths_text).split(/\n+/) : []);
+        weaknesses = item?.weaknesses || (item?.weaknesses_text ? String(item.weaknesses_text).split(/\n+/) : []);
+      } catch {}
+      let contact = "";
+      let initials = "";
+      try {
+        const meRes = await fetch('/api/me', { cache: 'no-store' });
+        const me = await meRes.json().catch(()=>({}));
+        const user = me?.data || {};
+        initials = [user.first_name, user.last_name].filter(Boolean).map((n:string)=>n[0]+'.').join('');
+        contact = user.contact || '';
+      } catch {}
+      const html = `<div style="font-family: sans-serif; padding:20px; max-width:700px;">
+        <h1>Расчёт профиля ${clientName ? '— '+clientName : ''}</h1>
+        <h2>Сильные стороны</h2>
+        <ul>${strengths.map(s=>`<li>${s}</li>`).join('')}</ul>
+        <h2>Слабые стороны</h2>
+        <ul>${weaknesses.map(w=>`<li>${w}</li>`).join('')}</ul>
+        <div style="margin-top:40px;">${initials} ${contact}</div>
+      </div>`;
+      const frame = document.createElement('iframe');
+      frame.style.position = 'fixed';
+      frame.style.right = '0';
+      frame.style.bottom = '0';
+      frame.style.width = '0';
+      frame.style.height = '0';
+      frame.style.border = '0';
+      document.body.appendChild(frame);
+      frame.srcdoc = html;
+      frame.onload = () => {
+        frame.contentWindow?.print();
+        setTimeout(() => document.body.removeChild(frame), 1000);
+      };
+    }
     return (
       <div className="flex items-center gap-2 text-sm">
         <button onClick={() => setExpandAll(true)} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Развернуть всё</button>
         <button onClick={() => setExpandAll(false)} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Свернуть всё</button>
         <button onClick={() => window.print()} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Печать</button>
         <button onClick={copyLink} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Скопировать ссылку</button>
+        <button onClick={exportPdf} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Выгрузить PDF для клиента</button>
       </div>
     );
   }
@@ -115,6 +161,9 @@ export default function ProfileDetail() {
       if (!notesTouchedRef.current && !notesOpenRef.current) {
         setNotesDraft(p?.notes || "");
       }
+      if (Array.isArray(p?.chat_history) && chatRef.current.length === 0) {
+        setChat(p.chat_history);
+      }
       // Подтянем имя клиента
       if (p?.client_id) {
         try {
@@ -152,7 +201,8 @@ export default function ProfileDetail() {
     setLoading(true);
     setAnswer("");
     // добавим пользователя в историю
-    setChat((prev) => [...prev, { role: "user", content: q }]);
+    const history: Array<{ role: "user" | "assistant"; content: string }> = [...chatRef.current, { role: "user" as const, content: q }];
+    setChat(history);
     setQuestion("");
     try {
       const res = await fetch(`/api/qa?stream=1`, {
@@ -161,7 +211,7 @@ export default function ProfileDetail() {
         body: JSON.stringify({
           profileId: Number(id),
           question: q,
-          history: chat.slice(-8),
+          history: chatRef.current.slice(-8),
           stream: true,
         }),
       } as RequestInit);
@@ -175,8 +225,10 @@ export default function ProfileDetail() {
         } catch {
           a = `Ошибка: ${res.status}`;
         }
+        const newHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: a }];
         setAnswer(a);
-        setChat((prev)=>[...prev, { role: "assistant", content: a }]);
+        setChat(newHistory);
+        await saveChatHistory(newHistory);
         setLoading(false);
         return;
       }
@@ -195,10 +247,9 @@ export default function ProfileDetail() {
         // SSE: строки вида "data: ...\n\n"
         const lines = chunk.split("\n\n");
         for (const raw of lines) {
-          const line = raw.trim();
-          if (!line || !line.startsWith("data:")) continue;
-          const payload = line.replace(/^data:\s*/, "");
-          if (payload === "[DONE]") continue;
+          if (!raw.startsWith("data:")) continue;
+          const payload = raw.slice(5);
+          if (payload.trim() === "[DONE]") continue;
           acc += payload;
           setAnswer(acc);
           setChat((prev)=>{
@@ -211,9 +262,13 @@ export default function ProfileDetail() {
           });
         }
       }
+      const finalHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: acc }];
+      await saveChatHistory(finalHistory);
     } catch (err) {
+      const errorHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: "Ошибка чата" }];
       setAnswer("Ошибка чата");
-      setChat((prev)=>[...prev, { role: "assistant", content: "Ошибка чата" }]);
+      setChat(errorHistory);
+      await saveChatHistory(errorHistory);
     } finally {
       setLoading(false);
     }
@@ -284,6 +339,16 @@ export default function ProfileDetail() {
       savingCheckboxRef.current = false;
       (saveChecked as any)._running = false;
     }
+  }, [id]);
+  // Persist chat history in Directus
+  const saveChatHistory = useCallback(async (history: Array<{ role: "user" | "assistant"; content: string }>) => {
+    try {
+      await fetch(`/api/profiles/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_history: history }),
+      });
+    } catch {}
   }, [id]);
 
   // Ключи чекбоксов: новый (по хэшу текста) + легаси (по индексу и усечённому тексту)
@@ -610,17 +675,17 @@ export default function ProfileDetail() {
       <div className="card space-y-4">
         <div className="font-medium">Задать вопрос по профилю</div>
         <div className="space-y-3">
-          <div className="rounded-xl border p-3 bg-white max-h-80 overflow-auto">
+          <div className="rounded-xl border p-3 bg-white max-h-80 overflow-y-auto break-words">
             {chat.length === 0 && <div className="text-sm text-gray-500">Начните диалог — задайте вопрос ниже</div>}
             {chat.map((m, i) => (
               <div key={i} className={`mb-3 ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
-                <div className={`inline-block rounded-2xl px-3 py-2 whitespace-pre-wrap ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}>{m.content}</div>
+                <div className={`inline-block rounded-2xl px-3 py-2 whitespace-pre-wrap break-words ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}>{m.content}</div>
               </div>
             ))}
           </div>
           <form onSubmit={ask} className="flex items-start gap-3">
             <textarea
-              className="flex-1 rounded-xl border p-3 h-24"
+              className="flex-1 rounded-xl border p-3 h-24 resize-none overflow-y-auto"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Например: как лучше работать с конфликтом 2↔7?"
@@ -651,6 +716,7 @@ export default function ProfileDetail() {
             <div className="font-semibold">Заметки по расчёту</div>
               <button className="text-gray-500 hover:text-gray-800" onClick={() => setNotesOpen(false)}>✕</button>
             </div>
+            <RichEditor value={notesDraft} onChange={(v)=>{ setNotesDraft(v); notesTouchedRef.current = true; }} />
             {/* Мини-редактор markdown */}
             <div className="flex flex-wrap gap-2">
               <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); wrapSelection('**');}}>B</button>

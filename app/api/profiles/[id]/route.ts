@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 
-export async function GET(_req: Request, ctx: { params: { id: string }}) {
+export async function GET(req: Request, ctx: { params: { id: string }}) {
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ data: null }, { status: 401 });
@@ -16,6 +16,7 @@ export async function GET(_req: Request, ctx: { params: { id: string }}) {
     "raw_json",
     "ui_state",
     "notes",
+    "chat_history",
     "digits",
   ].join(",");
   const urlWithFields = `${url}?fields=${encodeURIComponent(fields)}`;
@@ -33,7 +34,8 @@ export async function GET(_req: Request, ctx: { params: { id: string }}) {
 
   if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
     // попробуем освежить токен
-    const refreshRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/refresh`, {
+    const origin = new URL(req.url).origin;
+    const refreshRes = await fetch(`${origin}/api/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
@@ -66,7 +68,8 @@ export async function PATCH(req: Request, ctx: { params: { id: string }}) {
 
   const allowed: Record<string, any> = {};
   if (body.ui_state !== undefined) allowed.ui_state = body.ui_state; // JSON в profiles
-  if (typeof body.notes === 'string') allowed.notes = body.notes;    // Markdown в profiles
+  if (typeof body.notes === 'string') allowed.notes = body.notes;    // HTML заметок
+  if (Array.isArray(body.chat_history)) allowed.chat_history = body.chat_history; // история чата
 
   const r = await fetch(`${baseUrl}/items/profiles/${id}`, {
     method: "PATCH",
