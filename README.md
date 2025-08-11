@@ -15,9 +15,10 @@ pnpm i # или npm i / yarn
 ```
 
 2) Заполни `.env` по образцу `.env.example`:
-- `DIRECTUS_URL` — URL твоего Directus
+- `DIRECTUS_URL` или `NEXT_PUBLIC_DIRECTUS_URL` — URL твоего Directus
 - `N8N_CALC_URL` — вебхук n8n для расчёта профиля
 - `N8N_QA_URL` — вебхук n8n для вопросов
+- `OPENAI_API_KEY` — ключ для OpenAI (если хочешь отвечать через GPT напрямую)
 
 3) Запусти dev-сервер
 ```bash

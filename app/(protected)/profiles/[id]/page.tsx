@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 
 type Profile = {
@@ -24,13 +24,14 @@ export default function ProfileDetail() {
   const [polling, setPolling] = useState(true);
   const pollingRef = useRef(true);
   const [expandAll, setExpandAll] = useState(false);
-  const localUiStateRef = useRef<Record<string, boolean>>({});
   const [checkedMap, setCheckedMap] = useState<Record<string, boolean>>({});
   const savingCheckboxRef = useRef(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [notesDraft, setNotesDraft] = useState<string>("");
   const [savingNotes, setSavingNotes] = useState(false);
   const notesTouchedRef = useRef(false);
+  const notesOpenRef = useRef(false);
+  useEffect(() => { notesOpenRef.current = notesOpen; }, [notesOpen]);
   const [chat, setChat] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
 
@@ -106,10 +107,9 @@ export default function ProfileDetail() {
       });
       // Инициализация чекбоксов из ui_state + слияние с локальными изменениями
       const serverChecked: Record<string, boolean> = (p?.ui_state?.checked as any) || {};
-      const merged = { ...serverChecked, ...localUiStateRef.current };
-      setCheckedMap(merged);
+      if (!savingCheckboxRef.current) setCheckedMap(serverChecked);
       // Инициализация заметок: не перетираем, если пользователь редактирует сейчас
-      if (!notesTouchedRef.current && !notesOpen) {
+      if (!notesTouchedRef.current && !notesOpenRef.current) {
         setNotesDraft(p?.notes || "");
       }
       // Подтянем имя клиента
@@ -216,27 +216,37 @@ export default function ProfileDetail() {
     }
   }
 
+
   // Сохранение состояния чекбоксов в Directus (profiles.ui_state JSON)
-  async function saveChecked(nextMap: Record<string, boolean>) {
-    // Очередь сохранений, чтобы клик не терялся при поллинге
-    (saveChecked as any)._queue = (saveChecked as any)._queue || [];
-    (saveChecked as any)._queue.push(nextMap);
-    if ((saveChecked as any)._running) return;
-    (saveChecked as any)._running = true;
+  const saveChecked = useCallback(async (nextMap: Record<string, boolean>) => {
+    savingCheckboxRef.current = true;
     try {
-      while ((saveChecked as any)._queue.length) {
-        const payload = (saveChecked as any)._queue.pop();
-        localUiStateRef.current = payload;
-        const res = await fetch(`/api/profiles/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ui_state: { checked: payload } }),
-        });
-        if (res.ok) setProfile((p) => (p ? { ...p, ui_state: { checked: payload } } : p));
-      }
+      const res = await fetch(`/api/profiles/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        cache: 'no-store',
+        body: JSON.stringify({ ui_state: { checked: nextMap } }),
+      });
+      if (res.ok) setProfile((p) => (p ? { ...p, ui_state: { checked: nextMap } } : p));
     } finally {
-      (saveChecked as any)._running = false;
+      savingCheckboxRef.current = false;
     }
+  }, [id]);
+
+  function markdownToHtml(md: string): string {
+    let html = md
+      .replace(/^###\s+(.*)$/gim, '<h3>$1</h3>')
+      .replace(/^##\s+(.*)$/gim, '<h2>$1</h2>')
+      .replace(/^#\s+(.*)$/gim, '<h1>$1</h1>')
+      .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/gim, '<em>$1</em>');
+    const listItems = html.match(/^\s*[-*]\s+.*$/gim);
+    if (listItems) {
+      html = html.replace(/^\s*[-*]\s+(.*)$/gim, '<li>$1</li>');
+      html = html.replace(/(<li>.*<\/li>)/gims, '<ul>$1</ul>');
+    }
+    return html.replace(/\n/g, '<br />');
   }
 
   // Ключи чекбоксов: новый (по хэшу текста) + легаси (по индексу и усечённому тексту)
@@ -252,13 +262,6 @@ export default function ProfileDetail() {
     }
     return (h >>> 0).toString(16);
   }
-  function makeHashKey(section: string, text: string): string {
-    return `${section}:h:${hashString(normalizeTextForHash(text))}`;
-  }
-  function makeLegacyKey(section: string, text: string, index: number): string {
-    const norm = (text || "").toString().slice(0, 80);
-    return `${section}:${index}:${norm}`;
-  }
 
   const renderedFromJson = useMemo(() => {
     if (!profile?.raw_json) return null;
@@ -269,6 +272,12 @@ export default function ProfileDetail() {
       return null;
     }
     const items = Array.isArray(payload) ? payload : [payload];
+
+    const makeHashKey = (section: string, text: string): string => `${section}:h:${hashString(normalizeTextForHash(text))}`;
+    const makeLegacyKey = (section: string, text: string, index: number): string => {
+      const norm = (text || "").toString().slice(0, 80);
+      return `${section}:${index}:${norm}`;
+    };
 
     const CheckList = ({ list, section }: { list: string[]; section: string }) => (
       <ul className="space-y-2">
@@ -286,7 +295,6 @@ export default function ProfileDetail() {
                 onChange={(e)=>{
                   const next = { ...checkedMap, [hashKey]: e.target.checked, [legacyKey]: e.target.checked };
                   setCheckedMap(next);
-                  localUiStateRef.current = next;
                   saveChecked(next);
                 }}
                 className="mt-0.5 h-[18px] w-[18px] rounded border-2 border-indigo-300 bg-indigo-100 text-indigo-600 focus:ring-0"
@@ -487,7 +495,7 @@ export default function ProfileDetail() {
         ))}
       </div>
     );
-  }, [profile?.raw_json, checkedMap, expandAll]);
+  }, [profile?.raw_json, checkedMap, saveChecked]);
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
@@ -605,19 +613,18 @@ export default function ProfileDetail() {
             <div className="font-semibold">Заметки по расчёту</div>
               <button className="text-gray-500 hover:text-gray-800" onClick={() => setNotesOpen(false)}>✕</button>
             </div>
-            {/* Мини-редактор markdown */}
-            <div className="flex flex-wrap gap-2">
-              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); setNotesDraft(prev=>prev + (prev && !prev.endsWith('\n') ? '\n\n' : '') + '**жирный** '); notesTouchedRef.current = true;}}>B</button>
-              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); setNotesDraft(prev=>prev + (prev && !prev.endsWith('\n') ? '\n\n' : '') + '*курсив* '); notesTouchedRef.current = true;}}>I</button>
-              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); setNotesDraft(prev=>prev + (prev && !prev.endsWith('\n') ? '\n\n' : '') + '## Заголовок\n'); notesTouchedRef.current = true;}}>H2</button>
-              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); setNotesDraft(prev=>prev + (prev && !prev.endsWith('\n') ? '\n\n' : '') + '- пункт\n- пункт\n'); notesTouchedRef.current = true;}}>• Список</button>
+            <div className="grid md:grid-cols-2 gap-4">
+              <textarea
+                className="w-full h-64 rounded-xl border p-3"
+                value={notesDraft}
+                onChange={(e)=>{ setNotesDraft(e.target.value); notesTouchedRef.current = true; }}
+                placeholder="Markdown поддерживается"
+              />
+              <div
+                className="w-full h-64 overflow-auto border rounded-xl p-3 prose"
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(notesDraft) }}
+              />
             </div>
-            <textarea
-              className="w-full h-64 rounded-xl border p-3"
-              value={notesDraft}
-              onChange={(e)=>{ setNotesDraft(e.target.value); notesTouchedRef.current = true; }}
-              placeholder="Markdown поддерживается"
-            />
             <div className="flex gap-2 justify-end">
               <button className="rounded-xl border px-4 py-2" onClick={()=>setNotesOpen(false)}>Отмена</button>
               <button
