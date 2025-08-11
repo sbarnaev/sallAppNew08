@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { getDirectusUrl } from "@/lib/env";
 
 // Функция для получения текущего пользователя
 async function getCurrentUser(token: string, baseUrl: string) {
@@ -33,7 +34,7 @@ async function getCurrentUser(token: string, baseUrl: string) {
 
 export async function GET(req: NextRequest) {
   const token = cookies().get("directus_access_token")?.value;
-  const baseUrl = process.env.DIRECTUS_URL;
+  const baseUrl = getDirectusUrl();
   
   console.log("Getting clients - Token:", token ? "Present" : "Missing");
   console.log("Getting clients - Base URL:", baseUrl);
@@ -113,7 +114,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const token = cookies().get("directus_access_token")?.value;
-  const baseUrl = process.env.DIRECTUS_URL;
+  const baseUrl = getDirectusUrl();
   
   console.log("Creating client - Token:", token ? "Present" : "Missing");
   console.log("Creating client - Base URL:", baseUrl);

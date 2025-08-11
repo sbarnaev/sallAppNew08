@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getDirectusUrl } from "@/lib/env";
 
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json();
-  if (!process.env.DIRECTUS_URL) {
+  const baseUrl = getDirectusUrl();
+  if (!baseUrl) {
     return NextResponse.json({ message: "DIRECTUS_URL is not set" }, { status: 500 });
   }
 
   let res: Response;
   let data: any;
   try {
-    res = await fetch(`${process.env.DIRECTUS_URL}/auth/login`, {
+    res = await fetch(`${baseUrl}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
