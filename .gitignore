@@ -1,0 +1,23 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# next.js
+.next
+out
+.turbo
+.vercel
+
+# env
+.env
+.env.*
+.env.local
+
+# builds
+dist
+coverage
+playwright/.cache
+
+# misc
+.DS_Store
