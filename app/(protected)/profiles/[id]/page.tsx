@@ -79,13 +79,19 @@ export default function ProfileDetail() {
         <ul>${weaknesses.map(w=>`<li>${w}</li>`).join('')}</ul>
         <div style="margin-top:40px;">${initials} ${contact}</div>
       </div>`;
-      const win = window.open('', '_blank');
-      if (!win) return;
-      win.document.write(`<html><head><title>PDF</title></head><body>${html}</body></html>`);
-      win.document.close();
-      win.focus();
-      win.print();
-      win.close();
+      const frame = document.createElement('iframe');
+      frame.style.position = 'fixed';
+      frame.style.right = '0';
+      frame.style.bottom = '0';
+      frame.style.width = '0';
+      frame.style.height = '0';
+      frame.style.border = '0';
+      document.body.appendChild(frame);
+      frame.srcdoc = html;
+      frame.onload = () => {
+        frame.contentWindow?.print();
+        setTimeout(() => document.body.removeChild(frame), 1000);
+      };
     }
     return (
       <div className="flex items-center gap-2 text-sm">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 export default function RichEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -8,6 +8,12 @@ export default function RichEditor({ value, onChange }: { value: string; onChang
     document.execCommand(command, false, arg);
     onChange(ref.current?.innerHTML || "");
   }
+  useEffect(() => {
+    if (ref.current && ref.current.innerHTML !== value) {
+      ref.current.innerHTML = value;
+    }
+  }, [value]);
+
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2 border-b pb-2 mb-2">
@@ -31,7 +37,6 @@ export default function RichEditor({ value, onChange }: { value: string; onChang
         className="w-full h-64 overflow-auto border rounded-xl p-3"
         contentEditable
         suppressContentEditableWarning
-        dangerouslySetInnerHTML={{ __html: value }}
         onInput={() => onChange(ref.current?.innerHTML || "")}
       />
     </div>
