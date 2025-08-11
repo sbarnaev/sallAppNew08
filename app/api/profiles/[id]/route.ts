@@ -16,6 +16,7 @@ export async function GET(_req: Request, ctx: { params: { id: string }}) {
     "raw_json",
     "ui_state",
     "notes",
+    "chat_history",
     "digits",
   ].join(",");
   const urlWithFields = `${url}?fields=${encodeURIComponent(fields)}`;
@@ -66,7 +67,8 @@ export async function PATCH(req: Request, ctx: { params: { id: string }}) {
 
   const allowed: Record<string, any> = {};
   if (body.ui_state !== undefined) allowed.ui_state = body.ui_state; // JSON в profiles
-  if (typeof body.notes === 'string') allowed.notes = body.notes;    // Markdown в profiles
+  if (typeof body.notes === 'string') allowed.notes = body.notes;    // HTML заметок
+  if (Array.isArray(body.chat_history)) allowed.chat_history = body.chat_history; // история чата
 
   const r = await fetch(`${baseUrl}/items/profiles/${id}`, {
     method: "PATCH",
