@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getDirectusUrl } from "@/lib/env";
 
 function generatePublicCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // без 0/O/1/I
@@ -13,7 +14,7 @@ function generatePublicCode(): string {
 
 export async function POST(req: Request) {
   const token = cookies().get("directus_access_token")?.value;
-  const directusUrl = process.env.DIRECTUS_URL;
+  const directusUrl = getDirectusUrl();
   const n8nUrl = process.env.N8N_CALC_URL;
   if (!token || !n8nUrl) {
     return NextResponse.json({ message: "Unauthorized or no N8N_CALC_URL" }, { status: 401 });

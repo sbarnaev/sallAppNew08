@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getDirectusUrl } from "@/lib/env";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
@@ -16,7 +17,7 @@ async function fetchProfileContext(profileId: number, token: string, baseUrl: st
 
 export async function POST(req: Request) {
   const token = cookies().get("directus_access_token")?.value;
-  const directusUrl = process.env.DIRECTUS_URL;
+  const directusUrl = getDirectusUrl();
   const openaiKey = process.env.OPENAI_API_KEY;
 
   const body = await req.json().catch(()=>({}));

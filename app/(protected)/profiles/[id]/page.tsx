@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 
 type Profile = {
@@ -31,6 +31,9 @@ export default function ProfileDetail() {
   const [notesDraft, setNotesDraft] = useState<string>("");
   const [savingNotes, setSavingNotes] = useState(false);
   const notesTouchedRef = useRef(false);
+  const notesTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const notesOpenRef = useRef(false);
+  useEffect(() => { notesOpenRef.current = notesOpen; }, [notesOpen]);
   const [chat, setChat] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
 
@@ -109,7 +112,7 @@ export default function ProfileDetail() {
       const merged = { ...serverChecked, ...localUiStateRef.current };
       setCheckedMap(merged);
       // Инициализация заметок: не перетираем, если пользователь редактирует сейчас
-      if (!notesTouchedRef.current && !notesOpen) {
+      if (!notesTouchedRef.current && !notesOpenRef.current) {
         setNotesDraft(p?.notes || "");
       }
       // Подтянем имя клиента
@@ -216,28 +219,72 @@ export default function ProfileDetail() {
     }
   }
 
+  function wrapSelection(prefix: string, suffix = prefix) {
+    const ta = notesTextareaRef.current;
+    if (!ta) return;
+    const { selectionStart, selectionEnd } = ta;
+    const before = notesDraft.slice(0, selectionStart);
+    const selected = notesDraft.slice(selectionStart, selectionEnd);
+    const after = notesDraft.slice(selectionEnd);
+    const next = before + prefix + selected + suffix + after;
+    setNotesDraft(next);
+    notesTouchedRef.current = true;
+    const cursorStart = selectionStart + prefix.length;
+    const cursorEnd = cursorStart + selected.length;
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(cursorStart, cursorEnd);
+    });
+  }
+
+  function prefixLines(prefix: string) {
+    const ta = notesTextareaRef.current;
+    if (!ta) return;
+    let { selectionStart, selectionEnd } = ta;
+    if (selectionStart === selectionEnd) {
+      selectionStart = notesDraft.lastIndexOf("\n", selectionStart - 1) + 1;
+      const lineEnd = notesDraft.indexOf("\n", selectionEnd);
+      selectionEnd = lineEnd === -1 ? notesDraft.length : lineEnd;
+    }
+    const before = notesDraft.slice(0, selectionStart);
+    const selected = notesDraft.slice(selectionStart, selectionEnd);
+    const after = notesDraft.slice(selectionEnd);
+    const newSelected = selected.split("\n").map(line => prefix + line).join("\n");
+    const next = before + newSelected + after;
+    setNotesDraft(next);
+    notesTouchedRef.current = true;
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(selectionStart, selectionStart + newSelected.length);
+    });
+  }
+
   // Сохранение состояния чекбоксов в Directus (profiles.ui_state JSON)
-  async function saveChecked(nextMap: Record<string, boolean>) {
+  const saveChecked = useCallback(async (nextMap: Record<string, boolean>) => {
     // Очередь сохранений, чтобы клик не терялся при поллинге
     (saveChecked as any)._queue = (saveChecked as any)._queue || [];
     (saveChecked as any)._queue.push(nextMap);
     if ((saveChecked as any)._running) return;
     (saveChecked as any)._running = true;
     try {
+      savingCheckboxRef.current = true;
       while ((saveChecked as any)._queue.length) {
         const payload = (saveChecked as any)._queue.pop();
         localUiStateRef.current = payload;
         const res = await fetch(`/api/profiles/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          cache: "no-store",
           body: JSON.stringify({ ui_state: { checked: payload } }),
         });
         if (res.ok) setProfile((p) => (p ? { ...p, ui_state: { checked: payload } } : p));
       }
     } finally {
+      savingCheckboxRef.current = false;
       (saveChecked as any)._running = false;
     }
-  }
+  }, [id]);
 
   // Ключи чекбоксов: новый (по хэшу текста) + легаси (по индексу и усечённому тексту)
   function normalizeTextForHash(text: string): string {
@@ -252,13 +299,6 @@ export default function ProfileDetail() {
     }
     return (h >>> 0).toString(16);
   }
-  function makeHashKey(section: string, text: string): string {
-    return `${section}:h:${hashString(normalizeTextForHash(text))}`;
-  }
-  function makeLegacyKey(section: string, text: string, index: number): string {
-    const norm = (text || "").toString().slice(0, 80);
-    return `${section}:${index}:${norm}`;
-  }
 
   const renderedFromJson = useMemo(() => {
     if (!profile?.raw_json) return null;
@@ -269,6 +309,12 @@ export default function ProfileDetail() {
       return null;
     }
     const items = Array.isArray(payload) ? payload : [payload];
+
+    const makeHashKey = (section: string, text: string): string => `${section}:h:${hashString(normalizeTextForHash(text))}`;
+    const makeLegacyKey = (section: string, text: string, index: number): string => {
+      const norm = (text || "").toString().slice(0, 80);
+      return `${section}:${index}:${norm}`;
+    };
 
     const CheckList = ({ list, section }: { list: string[]; section: string }) => (
       <ul className="space-y-2">
@@ -487,7 +533,7 @@ export default function ProfileDetail() {
         ))}
       </div>
     );
-  }, [profile?.raw_json, checkedMap, expandAll]);
+  }, [profile?.raw_json, checkedMap, saveChecked]);
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
@@ -607,12 +653,13 @@ export default function ProfileDetail() {
             </div>
             {/* Мини-редактор markdown */}
             <div className="flex flex-wrap gap-2">
-              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); setNotesDraft(prev=>prev + (prev && !prev.endsWith('\n') ? '\n\n' : '') + '**жирный** '); notesTouchedRef.current = true;}}>B</button>
-              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); setNotesDraft(prev=>prev + (prev && !prev.endsWith('\n') ? '\n\n' : '') + '*курсив* '); notesTouchedRef.current = true;}}>I</button>
-              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); setNotesDraft(prev=>prev + (prev && !prev.endsWith('\n') ? '\n\n' : '') + '## Заголовок\n'); notesTouchedRef.current = true;}}>H2</button>
-              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); setNotesDraft(prev=>prev + (prev && !prev.endsWith('\n') ? '\n\n' : '') + '- пункт\n- пункт\n'); notesTouchedRef.current = true;}}>• Список</button>
+              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); wrapSelection('**');}}>B</button>
+              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); wrapSelection('*');}}>I</button>
+              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); prefixLines('## ');}}>H2</button>
+              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); prefixLines('- ');}}>• Список</button>
             </div>
             <textarea
+              ref={notesTextareaRef}
               className="w-full h-64 rounded-xl border p-3"
               value={notesDraft}
               onChange={(e)=>{ setNotesDraft(e.target.value); notesTouchedRef.current = true; }}

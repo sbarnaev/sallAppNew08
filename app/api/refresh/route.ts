@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getDirectusUrl } from "@/lib/env";
 
 export async function POST() {
   const refreshToken = cookies().get("directus_refresh_token")?.value;
-  const baseUrl = process.env.DIRECTUS_URL;
-  
+  const baseUrl = getDirectusUrl();
+
   if (!refreshToken || !baseUrl) {
     return NextResponse.json({ message: "No refresh token or DIRECTUS_URL" }, { status: 401 });
   }

@@ -19,7 +19,8 @@ export default function DeleteClient({ id }: { id: string }) {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ confirm: true }),
-      }, { cache: 'no-store' } as any);
+        cache: "no-store",
+      });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.message || "Не удалось удалить клиента");
@@ -75,5 +76,4 @@ export default function DeleteClient({ id }: { id: string }) {
     </div>
   );
 }
-
 
