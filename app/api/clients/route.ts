@@ -60,20 +60,42 @@ export async function GET(req: NextRequest) {
     console.log("Getting clients - Could not resolve current user id, proceeding without explicit filter");
   }
 
-  const sp = new URLSearchParams(req.nextUrl.searchParams as any);
-  // Безопасные поля, на которые точно есть права
+  const incomingParams = req.nextUrl.searchParams;
+  const searchTerm = (incomingParams.get("search") || "").toString().trim();
+  const page = Math.max(parseInt(incomingParams.get("page") || "1", 10) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(incomingParams.get("limit") || "20", 10) || 20, 1), 100);
+  const offset = (page - 1) * limit;
+
+  const sp = new URLSearchParams();
+  incomingParams.forEach((value, key) => {
+    if (key === "page" || key === "limit" || key === "offset" || key === "meta" || key === "search") {
+      return;
+    }
+    sp.append(key, value);
+  });
+
+  sp.set("limit", String(limit));
+  sp.set("offset", String(offset));
+  if (!sp.has("meta")) sp.set("meta", "filter_count");
   if (!sp.has("fields")) {
     sp.set("fields", "id,name,birth_date,email,phone,source,communication_method,created_at");
   }
-  // Добавим фильтр по владельцу, если знаем id пользователя и фильтры не заданы явно
-  const hasAnyFilter = Array.from(sp.keys()).some((k) => k.startsWith("filter["));
-  if (!hasAnyFilter && currentUserId) {
+  if (!sp.has("sort")) sp.set("sort", "-created_at");
+
+  const hasExplicitFilter = Array.from(sp.keys()).some((k) => k.startsWith("filter["));
+  if (!hasExplicitFilter && currentUserId) {
     sp.set("filter[owner_user][_eq]", currentUserId);
   }
-  if (!sp.has("sort")) sp.set("sort", "-created_at");
-  if (!sp.has("limit")) sp.set("limit", "20");
-  if (!sp.has("offset")) sp.set("offset", "0");
-  if (!sp.has("meta")) sp.set("meta", "filter_count");
+
+  if (searchTerm) {
+    sp.set("search", searchTerm);
+    const hasCustomOrFilter = Array.from(sp.keys()).some((k) => k.startsWith("filter[_or]"));
+    if (!hasCustomOrFilter) {
+      sp.set("filter[_or][0][name][_icontains]", searchTerm);
+      sp.set("filter[_or][1][email][_icontains]", searchTerm);
+      sp.set("filter[_or][2][phone][_icontains]", searchTerm);
+    }
+  }
 
   const url = `${baseUrl}/items/clients?${sp.toString()}`;
   console.log("Getting clients - Directus URL:", url);

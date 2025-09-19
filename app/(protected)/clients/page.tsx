@@ -6,23 +6,32 @@ import { internalApiFetch } from "@/lib/fetchers";
 
 async function getClients(searchParams: Record<string, string | string[] | undefined>) {
   const params = new URLSearchParams();
-  const page = Number(searchParams.page || 1);
-  const limit = Number(searchParams.limit || 20);
+  const page = Math.max(parseInt(getSingleValue(searchParams.page) || "1", 10) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(getSingleValue(searchParams.limit) || "20", 10) || 20, 1), 100);
   const offset = (page - 1) * limit;
+
   params.set("limit", String(limit));
   params.set("offset", String(offset));
   params.set("meta", "filter_count");
 
-  const res = await internalApiFetch(`/api/clients?${params.toString()}`, { cache: 'no-store' });
+  const searchTerm = getSingleValue(searchParams.search).trim();
+  if (searchTerm) {
+    params.set("search", searchTerm);
+  }
+
+  const res = await internalApiFetch(`/api/clients?${params.toString()}`, { cache: "no-store" });
   const json = await res.json();
   return json;
 }
 
 export default async function ClientsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined>}) {
   const { data = [], meta = {} } = await getClients(searchParams);
-  const page = Number(searchParams.page || 1);
-  const limit = Number(searchParams.limit || 20);
+  const page = Math.max(parseInt(getSingleValue(searchParams.page) || "1", 10) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(getSingleValue(searchParams.limit) || "20", 10) || 20, 1), 100);
+  const searchTerm = getSingleValue(searchParams.search).trim();
   const total = meta?.filter_count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const displayPage = total === 0 ? 1 : page;
   const hasNext = page * limit < total;
   const hasPrev = page > 1;
 
@@ -51,11 +60,11 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
             <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <input 
-              name="search" 
-              defaultValue={(searchParams.search as string) || ""} 
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500" 
-              placeholder="Поиск по имени, email, телефону..." 
+            <input
+              name="search"
+              defaultValue={searchTerm}
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+              placeholder="Поиск по имени, email, телефону..."
             />
           </div>
           <button type="submit" className="rounded-xl bg-gray-900 text-white px-6 py-3 hover:bg-gray-800 flex items-center gap-2">
@@ -76,7 +85,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
             </svg>
             <h3 className="text-lg font-medium text-gray-900 mb-2">Клиенты не найдены</h3>
             <p className="text-gray-500 mb-4">
-              {searchParams.search ? 'Попробуйте изменить параметры поиска' : 'Создайте первого клиента'}
+              {searchTerm ? "Попробуйте изменить параметры поиска" : "Создайте первого клиента"}
             </p>
             <Link href="/clients/new" className="inline-flex items-center gap-2 rounded-xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,16 +176,16 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {hasPrev && (
-              <Link 
-                href={`/clients?search=${encodeURIComponent((searchParams.search as string) || "")}&page=${page-1}&limit=${limit}`} 
+              <Link
+                href={`/clients?search=${encodeURIComponent(searchTerm)}&page=${page-1}&limit=${limit}`}
                 className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors"
               >
                 ← Назад
               </Link>
             )}
             {hasNext && (
-              <Link 
-                href={`/clients?search=${encodeURIComponent((searchParams.search as string) || "")}&page=${page+1}&limit=${limit}`} 
+              <Link
+                href={`/clients?search=${encodeURIComponent(searchTerm)}&page=${page+1}&limit=${limit}`}
                 className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors"
               >
                 Вперёд →
@@ -184,12 +193,17 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
             )}
           </div>
           <div className="text-sm text-gray-500">
-            Страница {page} из {Math.ceil(total / limit)} • Всего {total} клиентов
+            Страница {displayPage} из {totalPages} • Всего {total} клиентов
           </div>
         </div>
       )}
     </div>
   );
+}
+
+function getSingleValue(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return value[0] ?? "";
+  return value ?? "";
 }
 
 // Вспомогательные функции для отображения меток
