@@ -16,9 +16,8 @@ export async function POST(req: Request) {
   const token = cookies().get("directus_access_token")?.value;
   const directusUrl = getDirectusUrl();
   const n8nUrl = process.env.N8N_CALC_URL;
-  if (!token || !n8nUrl) {
-    return NextResponse.json({ message: "Unauthorized or no N8N_CALC_URL" }, { status: 401 });
-  }
+  if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  if (!n8nUrl) return NextResponse.json({ message: "No N8N_CALC_URL configured" }, { status: 400 });
 
   let payload: any = {};
   try {
@@ -87,6 +86,8 @@ export async function POST(req: Request) {
   let r: Response;
   let data: any = null;
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
     r = await fetch(n8nUrl, {
       method: "POST",
       headers: {
@@ -103,14 +104,17 @@ export async function POST(req: Request) {
         // Дополнительный запрос пользователя (для целевого расчёта)
         request: request ?? clientRequest ?? query ?? prompt ?? null,
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
     data = await r.json().catch(() => ({}));
   } catch (error) {
     return NextResponse.json({ message: "Cannot connect to n8n", error: String(error) }, { status: 502 });
   }
 
   if (!r.ok) {
-    return NextResponse.json(data || { message: "Calculation failed" }, { status: r.status });
+    const msg = data?.message || data?.error || "Calculation failed";
+    return NextResponse.json({ ...data, message: msg }, { status: r.status });
   }
 
   // 3) Гарантируем возврат profileId + publicCode для мгновенного редиректа и отображения

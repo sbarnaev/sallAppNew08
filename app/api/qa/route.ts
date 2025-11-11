@@ -26,6 +26,9 @@ export async function POST(req: Request) {
   const wantStream = streamParam === "1" || Boolean(body?.stream);
 
   if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  if (!question || typeof question !== "string" || !question.trim()) {
+    return NextResponse.json({ message: "Вопрос пустой" }, { status: 400 });
+  }
 
   // If OpenAI key provided, answer via OpenAI. Otherwise fallback to n8n as раньше
   if (openaiKey) {
@@ -142,12 +145,21 @@ export async function POST(req: Request) {
   }
 
   // Fallback: n8n
-  if (!process.env.N8N_QA_URL) return NextResponse.json({ message: "No N8N_QA_URL" }, { status: 400 });
+  if (!process.env.N8N_QA_URL) {
+    return NextResponse.json(
+      { message: "Не настроен N8N_QA_URL и отсутствует OPENAI_API_KEY" },
+      { status: 400 }
+    );
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25_000);
   const r = await fetch(process.env.N8N_QA_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ profileId, question, history: Array.isArray(history) ? history.slice(-10) : [] }),
+    signal: controller.signal,
   });
+  clearTimeout(timeout);
   const data = await r.json().catch(()=>({}));
   return NextResponse.json(data);
 }

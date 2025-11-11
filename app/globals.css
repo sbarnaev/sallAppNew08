@@ -13,3 +13,21 @@ body {
 .card {
   @apply bg-white rounded-2xl shadow-soft p-6;
 }
+
+/* Мобильные улучшения касаний и типографики */
+@media (max-width: 640px) {
+  button, .btn {
+    min-height: 44px;
+    padding-left: 16px;
+    padding-right: 16px;
+    font-size: 16px;
+  }
+  input, select, textarea {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 16px;
+  }
+  .card {
+    border-radius: 14px;
+  }
+}

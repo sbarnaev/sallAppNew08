@@ -73,14 +73,28 @@ export default function ProfileDetail() {
         initials = [user.first_name, user.last_name].filter(Boolean).map((n:string)=>n[0]+'.').join('');
         contact = user.contact || '';
       } catch {}
-      const html = `<div style="font-family: sans-serif; padding:20px; max-width:700px;">
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>Профиль</title>
+        <style>
+          @media print {
+            @page { margin: 12mm; }
+            body { margin: 0; }
+          }
+          body { font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+          h1 { font-size: 22px; margin: 0 0 12px; }
+          h2 { font-size: 18px; margin: 16px 0 8px; }
+          ul { margin: 0; padding-left: 18px; }
+          li { margin: 4px 0; }
+          .footer { margin-top: 32px; color: #444; }
+        </style>
+      </head><body>
+      <div style="padding:20px; max-width:700px;">
         <h1>Расчёт профиля ${clientName ? '— '+clientName : ''}</h1>
         <h2>Сильные стороны</h2>
         <ul>${strengths.map(s=>`<li>${s}</li>`).join('')}</ul>
         <h2>Слабые стороны</h2>
         <ul>${weaknesses.map(w=>`<li>${w}</li>`).join('')}</ul>
-        <div style="margin-top:40px;">${initials} ${contact}</div>
-      </div>`;
+        <div class="footer">${initials} ${contact}</div>
+      </div></body></html>`;
       const frame = document.createElement('iframe');
       frame.style.position = 'fixed';
       frame.style.right = '0';
