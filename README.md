@@ -91,6 +91,32 @@ docker build -t sal-app-starter .
 docker run --rm -p 3000:3000 --env-file .env sal-app-starter
 ```
 
+## Bootstrap Directus (создание коллекций и связей)
+
+Если поднимаешь новый Directus — в проекте есть скрипт, который создаёт базовую структуру (коллекции, поля, связи) и поле `users.contact`.
+
+Запуск:
+```bash
+DIRECTUS_URL="https://directus.example.com" \
+DIRECTUS_ADMIN_TOKEN="your_admin_static_token" \
+npm run setup:directus
+```
+или с логином/паролем:
+```bash
+DIRECTUS_URL="https://directus.example.com" \
+DIRECTUS_ADMIN_EMAIL="admin@example.com" \
+DIRECTUS_ADMIN_PASSWORD="password" \
+npm run setup:directus
+```
+
+Что создаётся:
+- Коллекции: `clients`, `profiles`, `profile_chunks`, `qa`
+- Поля в `profiles`: `client_id` (M2O на `clients`), `ui_state` (JSON), `notes` (Text), `chat_history` (JSON), `raw_html` (Text)
+- Поля в `profile_chunks`: `profile_id` (M2O на `profiles`), `content` (Text)
+- Поля в `qa`: `profile_id` (M2O на `profiles`), `question` (Text), `answer` (Text), `created_at` (Datetime)
+- В `users`: поле `contact` (String)
+
+
 ## Дальше
 
 - Добавь формы параметров расчёта (имя, дата, т.п.) на `/profiles` → отправляй в `/api/calc`.
