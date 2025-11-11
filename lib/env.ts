@@ -1,3 +1,4 @@
 export function getDirectusUrl(): string {
-  return process.env.DIRECTUS_URL || process.env.NEXT_PUBLIC_DIRECTUS_URL || "";
+  const raw = process.env.DIRECTUS_URL || process.env.NEXT_PUBLIC_DIRECTUS_URL || "";
+  return raw.replace(/\/+$/, "");
 }

@@ -9,6 +9,14 @@ interface Props {
 
 export default function RichEditor({ value, onChange }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  // Инициализируем HTML начальным значением и синхронизируем при внешних изменениях
+  useEffect(() => {
+    if (!ref.current) return;
+    const html = value || "";
+    if (ref.current.innerHTML !== html) {
+      ref.current.innerHTML = html;
+    }
+  }, [value]);
 
   function exec(cmd: string, arg?: string) {
     if (!ref.current) return;
