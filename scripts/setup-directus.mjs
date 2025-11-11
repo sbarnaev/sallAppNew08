@@ -113,23 +113,18 @@ async function ensureM2O(token, { collection, field, related_collection }) {
   const relations = await getRelations(token);
   const exists = relations.some(
     (r) =>
-      r.collection === collection &&
-      r.field === field &&
-      r.related_collection === related_collection &&
-      r.type === 'm2o'
+      // Современный формат отдаёт many/one поля
+      ((r.collection === collection && r.field === field && r.related_collection === related_collection) ||
+        (r.many_collection === collection && r.many_field === field && r.one_collection === related_collection))
   );
   if (exists) return false;
+  // Современный payload без поля "type"
   await api('/relations', 'POST', token, {
-    collection,
-    field,
-    related_collection,
-    meta: { many_collection: collection, many_field: field, one_collection: related_collection },
-    schema: {
-      on_update: 'NO ACTION',
-      on_delete: 'SET NULL',
-      // Directus создаст внешний ключ автоматически
-    },
-    type: 'm2o',
+    many_collection: collection,
+    many_field: field,
+    one_collection: related_collection,
+    one_field: 'id',
+    one_deselect_action: 'nullify'
   });
   return true;
 }
