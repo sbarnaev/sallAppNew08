@@ -118,14 +118,33 @@ async function ensureM2O(token, { collection, field, related_collection }) {
         (r.many_collection === collection && r.many_field === field && r.one_collection === related_collection))
   );
   if (exists) return false;
-  // Современный payload без поля "type"
-  await api('/relations', 'POST', token, {
+  // Пытаемся сначала старый совместимый формат (требует collection/field/related_collection)
+  const payloadV1 = {
+    collection,
+    field,
+    related_collection,
+    meta: {
+      many_collection: collection,
+      many_field: field,
+      one_collection: related_collection,
+      one_field: 'id',
+      one_deselect_action: 'nullify'
+    }
+  };
+  // Если не прокатит, пробуем современный many/one формат без collection поля на корне
+  const payloadV2 = {
     many_collection: collection,
     many_field: field,
     one_collection: related_collection,
     one_field: 'id',
     one_deselect_action: 'nullify'
-  });
+  };
+  try {
+    await api('/relations', 'POST', token, payloadV1);
+  } catch (e) {
+    // Повторяем попытку с альтернативным форматом
+    await api('/relations', 'POST', token, payloadV2);
+  }
   return true;
 }
 
