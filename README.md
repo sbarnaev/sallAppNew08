@@ -67,6 +67,30 @@ pnpm dev # http://localhost:3000
 - Пропиши переменные окружения как в `.env.example`.
 - Проксируй через HTTPS.
 
+## Деплой в Dokploy
+
+Репозиторий готов к деплою через Dokploy:
+
+- В корне есть `Dockerfile` c standalone‑сборкой Next.js и `HEALTHCHECK`.
+- В корне есть `.dockerignore` для быстрых сборок.
+- В `next.config.mjs` включён `output: 'standalone'`.
+
+Как запускать в Dokploy:
+1. Создай приложение типа Docker → из Git репозитория.
+2. Включи автодеплой по пушам в `main` (или нужную ветку).
+3. Переменные окружения (секреты) задай в интерфейсе Dokploy по образцу:
+   - `DIRECTUS_URL` / `NEXT_PUBLIC_DIRECTUS_URL`
+   - `N8N_CALC_URL`, `N8N_QA_URL`
+   - `OPENAI_API_KEY` (опционально)
+4. Порт контейнера: `3000` (Dokploy сам проксирует наружу).
+5. Healthcheck уже настроен в Dockerfile.
+
+Локальная проверка образа:
+```bash
+docker build -t sal-app-starter .
+docker run --rm -p 3000:3000 --env-file .env sal-app-starter
+```
+
 ## Дальше
 
 - Добавь формы параметров расчёта (имя, дата, т.п.) на `/profiles` → отправляй в `/api/calc`.

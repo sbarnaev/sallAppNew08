@@ -1,0 +1,15 @@
+node_modules
+.next/cache
+.next/trace
+.next/static
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+.git
+.gitignore
+.DS_Store
+.env
+.env.*
+Dockerfile
+.dockerignore
+
