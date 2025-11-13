@@ -1,0 +1,12 @@
+[phases.setup]
+nixPkgs = ["nodejs_18", "npm-8_x"]
+
+[phases.install]
+cmds = ["npm ci --no-audit --prefer-offline"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm run start"
+

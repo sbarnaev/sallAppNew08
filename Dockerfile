@@ -6,12 +6,14 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
-# Очищаем кэш npm перед установкой
-RUN npm cache clean --force
+# Отключаем кэш npm полностью для экономии места
+ENV npm_config_cache=/tmp/.npm
 
 # Устанавливаем все зависимости (включая dev для сборки)
 COPY package.json package-lock.json* ./
-RUN npm ci --prefer-offline --no-audit
+RUN npm ci --no-audit --prefer-offline --cache=/tmp/.npm && \
+    rm -rf /tmp/.npm && \
+    npm cache clean --force
 
 ############################
 # 2) Build Next.js         #
@@ -26,8 +28,10 @@ COPY . .
 
 # Собираем Next.js
 ENV NEXT_TELEMETRY_DISABLED=1
-# Очищаем кэш перед сборкой и после
-RUN npm cache clean --force && npm run build && npm cache clean --force
+ENV npm_config_cache=/tmp/.npm
+RUN npm run build && \
+    rm -rf /tmp/.npm && \
+    npm cache clean --force
 
 ############################
 # 3) Runtime (small image) #
