@@ -2,6 +2,9 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 function generatePublicCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // без 0/O/1/I
   const len = 5 + Math.floor(Math.random() * 3); // 5-7
