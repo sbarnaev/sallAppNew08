@@ -264,7 +264,14 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         return null;
       }).filter((img) => img != null);
       
-      console.log("[DEBUG] Processed images from S3:", processedImages);
+      console.log("[DEBUG] Processed images from S3:", {
+        count: processedImages.length,
+        images: processedImages.map(img => ({
+          id: img.id,
+          url: img.url,
+          position: img.position
+        }))
+      });
     } catch (imagesError) {
       console.warn("[DEBUG] Error processing images:", imagesError);
     }
@@ -477,10 +484,18 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       (data as any).data = { 
         ...item, 
         client_id: clientId,
-        images: processedImages || itemImages, // Используем обработанные изображения или оригинал
+        // Всегда используем processedImages, если они есть (с URL из S3)
+        images: processedImages || (itemImages ? [itemImages] : []),
         images_id: processedImages || itemImages, // Дублируем для совместимости
         "Images ID": processedImages || itemImages, // Дублируем для совместимости
       };
+      
+      // Логируем финальный формат images для отладки
+      console.log("[DEBUG] Final images in response:", {
+        processedImagesCount: processedImages ? processedImages.length : 0,
+        hasItemImages: !!itemImages,
+        finalImages: (data as any).data.images
+      });
       
       // Логируем данные для диагностики
       console.log("[DEBUG] Profile API response:", {

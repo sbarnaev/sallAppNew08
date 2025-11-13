@@ -49,8 +49,20 @@ export function getS3ImageUrl(imageId: number | string): string {
   // Убираем слеши в начале и конце пути
   const cleanPath = s3Path.replace(/^\/+|\/+$/g, '');
   
-  // Формируем URL: https://s3.ru1.storage.beget.cloud/da0eaeb06b35-sal-app/sall_app/photo/30.jpeg
+  // Для S3 Beget может быть два формата:
+  // 1. https://s3.ru1.storage.beget.cloud/{bucket}/{path}
+  // 2. https://{bucket}.s3.ru1.storage.beget.cloud/{path}
+  // Пробуем первый формат (как указал пользователь)
   const url = `${s3Endpoint}/${s3Bucket}/${cleanPath}/${imageId}.jpeg`;
+  
+  // Логируем для отладки
+  console.log("[DEBUG] S3 Image URL generated:", {
+    imageId,
+    endpoint: s3Endpoint,
+    bucket: s3Bucket,
+    path: cleanPath,
+    fullUrl: url
+  });
   
   return url;
 }
