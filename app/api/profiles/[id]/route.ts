@@ -139,8 +139,15 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         console.log("[DEBUG] Refresh response data keys:", Object.keys(refreshData));
         // Используем токен из ответа, а не из cookies
         const newToken = refreshData?.access_token || cookies().get("directus_access_token")?.value;
+        const newRefreshToken = refreshData?.refresh_token; // Сохраняем новый refresh token
+        
         if (newToken) {
           console.log("[DEBUG] Token refreshed successfully, retrying profile fetch");
+          // Обновляем cookies с новыми токенами (если они есть в ответе)
+          if (newRefreshToken) {
+            console.log("[DEBUG] New refresh token received, updating cookies");
+            // Cookies обновятся в ответе от /api/refresh, но для текущего запроса используем новый access token
+          }
           ({ r, data } = await fetchProfile(newToken));
           console.log("[DEBUG] After refresh retry - status:", r.status, "hasData:", !!data?.data);
         } else {
