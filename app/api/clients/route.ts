@@ -101,12 +101,20 @@ export async function GET(req: NextRequest) {
   console.log("Getting clients - Directus URL:", url);
 
   async function fetchList(accessToken: string) {
-    const r = await fetch(url, {
-      headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
-      cache: "no-store",
-    });
-    const data = await r.json().catch(() => ({ data: [], meta: {} }));
-    return { r, data } as const;
+    try {
+      const r = await fetch(url, {
+        headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+        cache: "no-store",
+      });
+      const data = await r.json().catch(() => ({ data: [], meta: {}, errors: [] }));
+      return { r, data } as const;
+    } catch (error) {
+      console.error("Error fetching from Directus:", error);
+      return { 
+        r: new Response(null, { status: 500 }), 
+        data: { data: [], meta: { filter_count: 0 }, errors: [{ message: String(error) }] } 
+      } as const;
+    }
   }
 
   let { r, data } = await fetchList(token);
@@ -129,10 +137,18 @@ export async function GET(req: NextRequest) {
   console.log("Getting clients - Directus response status:", r.status);
   console.log("Getting clients - Directus response data:", data);
 
+  // Обработка различных статусов
   if (r.status === 404) {
     return NextResponse.json({ data: [], meta: { filter_count: 0 }, upstreamStatus: 404 });
   }
-  return NextResponse.json(data, { status: r.status });
+  
+  // Если ошибка, но есть данные - возвращаем пустой массив
+  if (!r.ok && (!data || !data.data)) {
+    console.error("Directus error response:", data);
+    return NextResponse.json({ data: [], meta: { filter_count: 0 } }, { status: 200 });
+  }
+  
+  return NextResponse.json(data, { status: r.ok ? 200 : r.status });
 }
 
 export async function POST(req: NextRequest) {
