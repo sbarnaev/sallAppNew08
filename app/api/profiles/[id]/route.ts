@@ -2,6 +2,9 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request, ctx: { params: { id: string }}) {
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
