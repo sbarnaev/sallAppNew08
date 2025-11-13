@@ -96,8 +96,21 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
 
   if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
     // попробуем освежить токен
-    const origin = new URL(req.url).origin;
-    console.log("[DEBUG] Token expired, attempting to refresh, origin:", origin);
+    // Используем заголовки для определения правильного origin
+    const headersList = req.headers;
+    const host = headersList.get("host") || headersList.get("x-forwarded-host") || "localhost:3000";
+    const protocol = headersList.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+    const origin = `${protocol}://${host}`;
+    
+    console.log("[DEBUG] Token expired, attempting to refresh", {
+      origin,
+      host,
+      protocol,
+      requestUrl: req.url,
+      forwardedHost: headersList.get("x-forwarded-host"),
+      forwardedProto: headersList.get("x-forwarded-proto")
+    });
+    
     try {
       const refreshRes = await fetch(`${origin}/api/refresh`, {
         method: "POST",

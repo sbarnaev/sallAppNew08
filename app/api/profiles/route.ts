@@ -46,7 +46,12 @@ export async function GET(req: NextRequest) {
   let { r, data } = await fetchList(token);
 
   if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
-    const origin = req.nextUrl.origin;
+    // Используем заголовки для определения правильного origin
+    const headersList = req.headers;
+    const host = headersList.get("host") || headersList.get("x-forwarded-host") || "localhost:3000";
+    const protocol = headersList.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+    const origin = `${protocol}://${host}`;
+    
     try {
       const refreshRes = await fetch(`${origin}/api/refresh`, {
         method: "POST",
