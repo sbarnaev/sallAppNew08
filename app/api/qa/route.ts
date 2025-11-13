@@ -202,11 +202,13 @@ export async function POST(req: Request) {
                   if (payload !== "[DONE]") {
                     try {
                       const json = JSON.parse(payload);
-                      const delta = json?.choices?.[0]?.delta?.content || "";
-                      if (delta) {
+                      const delta = json?.choices?.[0]?.delta?.content;
+                      if (delta && typeof delta === 'string') {
                         controller.enqueue(encoder.encode(`data: ${delta}\n\n`));
                       }
-                    } catch {}
+                    } catch (e) {
+                      console.warn("[DEBUG] Failed to parse remaining buffer:", e);
+                    }
                   }
                 }
               }
