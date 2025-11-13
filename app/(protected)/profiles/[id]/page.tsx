@@ -485,8 +485,28 @@ export default function ProfileDetail() {
       let hasRaw = false;
       if (p?.raw_json) {
         try {
-          const rawStr = typeof p.raw_json === 'string' ? p.raw_json : JSON.stringify(p.raw_json);
-          hasRaw = rawStr.length > 2 && rawStr !== '{}' && rawStr !== '[]' && rawStr !== 'null';
+          // raw_json может быть строкой или объектом
+          let rawStr: string;
+          if (typeof p.raw_json === 'string') {
+            rawStr = p.raw_json.trim();
+            // Если это JSON-строка, попробуем распарсить для проверки
+            try {
+              const parsed = JSON.parse(rawStr);
+              // Если распарсилось, проверяем что это не пустой объект/массив
+              if (typeof parsed === 'object' && parsed !== null) {
+                hasRaw = Object.keys(parsed).length > 0 || Array.isArray(parsed) && parsed.length > 0;
+              } else {
+                hasRaw = rawStr.length > 2 && rawStr !== 'null' && rawStr !== 'undefined';
+              }
+            } catch {
+              // Не JSON, просто строка - проверяем длину
+              hasRaw = rawStr.length > 2;
+            }
+          } else {
+            // Это уже объект
+            rawStr = JSON.stringify(p.raw_json);
+            hasRaw = rawStr.length > 2 && rawStr !== '{}' && rawStr !== '[]' && rawStr !== 'null';
+          }
         } catch {
           hasRaw = false;
         }
