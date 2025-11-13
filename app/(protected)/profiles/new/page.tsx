@@ -16,6 +16,11 @@ export default function NewCalculationPage() {
   const [client, setClient] = useState<any | null>(null);
   const canStart = Boolean(name && birthday);
   const [targetText, setTargetText] = useState("");
+  // Поля для партнерского расчета
+  const [partnerName, setPartnerName] = useState("");
+  const [partnerBirthday, setPartnerBirthday] = useState("");
+  const [partnerGoal, setPartnerGoal] = useState<string>("");
+  const canStartPartner = Boolean(name && birthday && partnerName && partnerBirthday && partnerGoal);
 
   useEffect(() => {
     if (clientIdParam) {
@@ -39,6 +44,12 @@ export default function NewCalculationPage() {
       setError("Нет имени или даты рождения. Подождите автозаполнение или используйте форму ниже.");
       return;
     }
+    if (type === "partner") {
+      if (!partnerName || !partnerBirthday || !partnerGoal) {
+        setError("Для партнерского расчета заполните все поля: имя и дата рождения второго человека, цель расчета.");
+        return;
+      }
+    }
     setLoading(true);
     try {
       const payload: any = {
@@ -48,6 +59,11 @@ export default function NewCalculationPage() {
       };
       if (clientIdParam) payload.clientId = Number(clientIdParam);
       if (type === "target") payload.request = targetText || undefined;
+      if (type === "partner") {
+        payload.partnerName = partnerName;
+        payload.partnerBirthday = partnerBirthday;
+        payload.goal = partnerGoal;
+      }
 
       const res = await fetch("/api/calc", {
         method: "POST",
@@ -148,14 +164,60 @@ export default function NewCalculationPage() {
             </div>
           </div>
 
-          <button
-            disabled={loading || !canStart}
-            onClick={() => startCalc("partner")}
-            className="card text-left hover:shadow-md transition disabled:opacity-60"
-          >
+          <div className="card text-left">
             <div className="text-lg font-semibold mb-1">Партнёрский</div>
-            <div className="text-sm text-gray-600">Расчёт для пары (два клиента)</div>
-          </button>
+            <div className="text-sm text-gray-600 mb-3">Расчёт для пары (два человека)</div>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Имя второго человека</label>
+                <input
+                  type="text"
+                  className="w-full rounded-xl border p-2 text-sm"
+                  placeholder="Имя"
+                  value={partnerName}
+                  onChange={(e) => setPartnerName(e.target.value)}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Дата рождения второго человека</label>
+                <input
+                  type="date"
+                  className="w-full rounded-xl border p-2 text-sm"
+                  value={partnerBirthday}
+                  onChange={(e) => setPartnerBirthday(e.target.value)}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Цель расчета</label>
+                <select
+                  className="w-full rounded-xl border p-2 text-sm"
+                  value={partnerGoal}
+                  onChange={(e) => setPartnerGoal(e.target.value)}
+                >
+                  <option value="">Выберите цель</option>
+                  <option value="family">Семья (супруги/партнеры)</option>
+                  <option value="parent-child">Родитель и ребенок</option>
+                  <option value="business">Бизнес-партнеры</option>
+                  <option value="friends">Друзья</option>
+                  <option value="colleagues">Коллеги</option>
+                  <option value="other">Другое</option>
+                </select>
+              </div>
+              
+              <div className="mt-3 flex justify-end">
+                <button
+                  disabled={loading || !canStartPartner}
+                  onClick={() => startCalc("partner")}
+                  className="rounded-2xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 disabled:opacity-60"
+                >
+                  Запустить партнёрский расчёт
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
       </div>

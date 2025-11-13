@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     payload = {};
   }
 
-  const { clientId, name, birthday, type, request, clientRequest, query, prompt } = payload || {};
+  const { clientId, name, birthday, type, request, clientRequest, query, prompt, partnerName, partnerBirthday, goal } = payload || {};
   const publicCode = generatePublicCode();
 
   // 1) Пытаемся создать пустой профиль в Directus, чтобы получить profileId для дальнейшего поллинга
@@ -105,6 +105,10 @@ export async function POST(req: Request) {
       public_code: publicCode,
       // Дополнительный запрос пользователя (для целевого расчёта)
       request: request ?? clientRequest ?? query ?? prompt ?? null,
+      // Поля для партнерского расчета
+      partnerName: type === "partner" ? partnerName : undefined,
+      partnerBirthday: type === "partner" ? partnerBirthday : undefined,
+      goal: type === "partner" ? goal : undefined,
       // Передаем URL Directus для n8n workflow (без слеша в конце)
       directusUrl: cleanDirectusUrl,
       // Передаем токены в body для n8n workflow
