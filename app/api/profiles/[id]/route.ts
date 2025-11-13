@@ -46,14 +46,19 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         }
       }
       
-      console.log("Fetching profile from Directus:", finalUrl);
+      console.log("[DEBUG] Fetching profile from Directus:", finalUrl);
       const r = await fetch(finalUrl, {
         headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
         cache: "no-store",
       });
       const rawData = await r.text();
-      console.log("Directus raw response status:", r.status);
-      console.log("Directus raw response (first 500 chars):", rawData.substring(0, 500));
+      console.log("[DEBUG] Directus raw response status:", r.status, r.statusText);
+      console.log("[DEBUG] Directus raw response (first 500 chars):", rawData.substring(0, 500));
+      
+      // Если статус не 200, логируем полный ответ
+      if (!r.ok) {
+        console.error("[DEBUG] Directus error - full response:", rawData);
+      }
       
       let data;
       try {
@@ -125,7 +130,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       (data as any).data = { ...item, client_id: clientId };
       
       // Логируем данные для диагностики
-      console.log("Profile API response:", {
+      console.log("[DEBUG] Profile API response:", {
         id: item?.id,
         hasHtml: !!(item?.html),
         hasRawJson: !!item?.raw_json,
@@ -134,14 +139,35 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         hasDigits: !!item?.digits,
         fields: Object.keys(item || {})
       });
+    } else {
+      console.warn("[DEBUG] Profile API: data.data is null or undefined", {
+        hasData: !!data,
+        dataKeys: data ? Object.keys(data) : [],
+        responseStatus: r.status,
+        responseOk: r.ok
+      });
     }
-  } catch {}
+  } catch (normalizeError) {
+    console.error("[DEBUG] Error normalizing profile data:", normalizeError);
+  }
   
   // Если ошибка сети, возвращаем null
   if (!r.ok && !data?.data) {
-    console.error("Directus error response:", data);
+    console.error("[DEBUG] Directus error response:", {
+      status: r.status,
+      statusText: r.statusText,
+      data: data,
+      errors: (data as any)?.errors
+    });
     return NextResponse.json({ data: null }, { status: 200 });
   }
+  
+  // Логируем финальный ответ
+  console.log("[DEBUG] Returning profile data:", {
+    hasData: !!data?.data,
+    dataId: (data as any)?.data?.id,
+    status: r.ok ? 200 : r.status
+  });
   
   return NextResponse.json(data, { status: r.ok ? 200 : r.status });
 }
