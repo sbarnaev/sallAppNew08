@@ -2278,7 +2278,12 @@ export default function ProfileDetail() {
         const getImageUrl = (img: any): string | null => {
           if (!img) return null;
           
-          // Если это обработанное изображение из коллекции images (с полями id и code)
+          // Приоритет 1: Если есть прямой URL из S3 (новый формат)
+          if (typeof img === 'object' && img.url) {
+            return img.url;
+          }
+          
+          // Приоритет 2: Если это обработанное изображение из коллекции images (с полями id и code)
           if (typeof img === 'object' && img.code) {
             // Используем code для получения изображения
             // Если code - это ID файла, используем /api/files/{code}
@@ -2289,20 +2294,18 @@ export default function ProfileDetail() {
             return img.code;
           }
           
-          // Если это объект файла Directus с полным URL
+          // Приоритет 3: Если это объект файла Directus с полным URL
           if (typeof img === 'object') {
             if (img.id) {
               // Используем API прокси для изображений
               return `/api/files/${img.id}`;
             }
-            // Если есть прямой URL
-            if (img.url) return img.url;
             if (img.filename_download) {
               return img.id ? `/api/files/${img.id}` : null;
             }
           }
           
-          // Если это строка
+          // Приоритет 4: Если это строка
           if (typeof img === 'string') {
             // Если уже полный URL
             if (img.startsWith('http')) return img;

@@ -35,3 +35,22 @@ export function getDirectusUrl(): string {
   
   return url;
 }
+
+/**
+ * Формирует URL изображения из S3 хранилища
+ * @param imageId - ID изображения из JSON поля Images ID
+ * @returns Полный URL к изображению в S3
+ */
+export function getS3ImageUrl(imageId: number | string): string {
+  const s3Endpoint = process.env.S3_ENDPOINT || "https://s3.ru1.storage.beget.cloud";
+  const s3Bucket = process.env.S3_BUCKET || "da0eaeb06b35-sal-app";
+  const s3Path = process.env.S3_IMAGES_PATH || "sall_app/photo";
+  
+  // Убираем слеши в начале и конце пути
+  const cleanPath = s3Path.replace(/^\/+|\/+$/g, '');
+  
+  // Формируем URL: https://s3.ru1.storage.beget.cloud/da0eaeb06b35-sal-app/sall_app/photo/30.jpeg
+  const url = `${s3Endpoint}/${s3Bucket}/${cleanPath}/${imageId}.jpeg`;
+  
+  return url;
+}

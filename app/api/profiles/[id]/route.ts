@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { getDirectusUrl } from "@/lib/env";
+import { getDirectusUrl, getS3ImageUrl } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -239,6 +239,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   }
   
   // Обрабатываем images, если они есть
+  // Теперь используем S3 хранилище вместо Directus
   let processedImages: any = null;
   if (imagesFromMainRequest) {
     try {
@@ -247,39 +248,28 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         imagesObj = JSON.parse(imagesObj);
       }
       console.log("[DEBUG] Parsed images object:", imagesObj);
-      const imageIds = Object.values(imagesObj).filter((id: any) => id != null && id !== '') as number[];
-      console.log("[DEBUG] Image IDs to fetch:", imageIds);
-      if (imageIds.length > 0) {
-        const imagesUrl = `${baseUrl}/items/images?filter[id][_in]=${imageIds.join(',')}&fields=id,code`;
-        console.log("[DEBUG] Fetching images from collection:", imagesUrl);
-        const imagesRes = await fetch(imagesUrl, {
-          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-          cache: "no-store",
-        });
-        if (imagesRes.ok) {
-          const imagesData = await imagesRes.json().catch(() => ({ data: [] }));
-          console.log("[DEBUG] Images collection response:", imagesData);
-          const imagesMap = new Map((imagesData?.data || []).map((img: any) => [img.id, img.code]));
-          const sortedKeys = Object.keys(imagesObj).sort((a, b) => parseInt(a) - parseInt(b));
-          processedImages = sortedKeys.map((key) => {
-            const id = imagesObj[key];
-            return {
-              id: id,
-              code: imagesMap.get(id) || null,
-              position: key,
-            };
-          }).filter((img) => img.code != null);
-          console.log("[DEBUG] Processed images:", processedImages);
-        } else {
-          const errorText = await imagesRes.text().catch(() => '');
-          console.warn("[DEBUG] Failed to load images from collection:", imagesRes.status, errorText);
+      
+      // Формируем массив изображений с прямыми ссылками на S3
+      const sortedKeys = Object.keys(imagesObj).sort((a, b) => parseInt(a) - parseInt(b));
+      processedImages = sortedKeys.map((key) => {
+        const imageId = imagesObj[key];
+        if (imageId != null && imageId !== '') {
+          const s3Url = getS3ImageUrl(imageId);
+          return {
+            id: imageId,
+            url: s3Url,
+            position: key,
+          };
         }
-      }
+        return null;
+      }).filter((img) => img != null);
+      
+      console.log("[DEBUG] Processed images from S3:", processedImages);
     } catch (imagesError) {
       console.warn("[DEBUG] Error processing images:", imagesError);
     }
   } else {
-    console.warn("[DEBUG] No images field found. Check Directus: Settings > Roles & Permissions > [Your Role] > Profiles collection > Read access for 'images' field.");
+    console.warn("[DEBUG] No images field found in profile data.");
   }
   
   // Если получили 403 из-за поля images (старая логика, на случай если images был в fields)
@@ -460,50 +450,25 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
             imagesObj = JSON.parse(imagesObj);
           }
           
-          // Получаем все ID изображений из объекта (значения объекта)
-          const imageIds = Object.values(imagesObj).filter((id: any) => id != null && id !== '') as number[];
-          
-          if (imageIds.length > 0) {
-            // Запрашиваем изображения из коллекции images по ID
-            try {
-              const imagesUrl = `${baseUrl}/items/images?filter[id][_in]=${imageIds.join(',')}&fields=id,code`;
-              console.log("[DEBUG] Fetching images from collection (fallback):", imagesUrl);
-              
-              const imagesRes = await fetch(imagesUrl, {
-                headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-                cache: "no-store",
-              });
-              
-              if (imagesRes.ok) {
-                const imagesData = await imagesRes.json().catch(() => ({ data: [] }));
-                const imagesMap = new Map((imagesData?.data || []).map((img: any) => [img.id, img.code]));
-                
-                // Создаем массив изображений в правильном порядке (по ключам объекта: "1", "2", ...)
-                const sortedKeys = Object.keys(imagesObj).sort((a, b) => parseInt(a) - parseInt(b));
-                processedImages = sortedKeys.map((key) => {
-                  const id = imagesObj[key];
-                  return {
-                    id: id,
-                    code: imagesMap.get(id) || null,
-                    position: key, // Сохраняем позицию для отображения
-                  };
-                }).filter((img) => img.code != null); // Фильтруем только те, у которых есть code
-                
-                console.log("[DEBUG] Loaded images (fallback):", {
-                  requestedIds: imageIds,
-                  loadedCount: processedImages.length,
-                  images: processedImages
-                });
-              } else {
-                const errorText = await imagesRes.text().catch(() => '');
-                console.warn("[DEBUG] Failed to load images from collection (fallback):", imagesRes.status, errorText);
-              }
-            } catch (imagesError) {
-              console.error("[DEBUG] Error loading images (fallback):", imagesError);
+          // Формируем массив изображений с прямыми ссылками на S3
+          const sortedKeys = Object.keys(imagesObj).sort((a, b) => parseInt(a) - parseInt(b));
+          processedImages = sortedKeys.map((key) => {
+            const imageId = imagesObj[key];
+            if (imageId != null && imageId !== '') {
+              const s3Url = getS3ImageUrl(imageId);
+              return {
+                id: imageId,
+                url: s3Url,
+                position: key,
+              };
             }
-          } else {
-            console.log("[DEBUG] No image IDs found in images object");
-          }
+            return null;
+          }).filter((img) => img != null);
+          
+          console.log("[DEBUG] Loaded images from S3 (fallback):", {
+            loadedCount: processedImages.length,
+            images: processedImages
+          });
         } catch (parseError) {
           console.error("[DEBUG] Error parsing images:", parseError);
         }
