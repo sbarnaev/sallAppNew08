@@ -4,14 +4,14 @@
 # 1) Base deps for install #
 ############################
 FROM node:20-alpine AS deps
-ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
 # Ускоряем сборку: только файлы для зависимостей
+# Устанавливаем все зависимости включая dev (нужны для сборки)
 COPY package.json package-lock.json* ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --include=dev
+    npm ci
 
 ############################
 # 2) Build Next.js         #
