@@ -124,12 +124,14 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   let processedImages: any = null;
   try {
     const imagesOnlyUrl = `${baseUrl}/items/profiles/${id}?fields=images`;
+    console.log("[DEBUG] Fetching images field:", imagesOnlyUrl);
     const imagesOnlyRes = await fetch(imagesOnlyUrl, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       cache: "no-store",
     });
     if (imagesOnlyRes.ok) {
       const imagesOnlyData = await imagesOnlyRes.json().catch(() => ({}));
+      console.log("[DEBUG] Images field data:", imagesOnlyData?.data?.images);
       if (imagesOnlyData?.data?.images) {
         // Обрабатываем images
         try {
@@ -137,15 +139,19 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
           if (typeof imagesObj === 'string') {
             imagesObj = JSON.parse(imagesObj);
           }
+          console.log("[DEBUG] Parsed images object:", imagesObj);
           const imageIds = Object.values(imagesObj).filter((id: any) => id != null && id !== '') as number[];
+          console.log("[DEBUG] Image IDs to fetch:", imageIds);
           if (imageIds.length > 0) {
             const imagesUrl = `${baseUrl}/items/images?filter[id][_in]=${imageIds.join(',')}&fields=id,code`;
+            console.log("[DEBUG] Fetching images from collection:", imagesUrl);
             const imagesRes = await fetch(imagesUrl, {
               headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
               cache: "no-store",
             });
             if (imagesRes.ok) {
               const imagesData = await imagesRes.json().catch(() => ({ data: [] }));
+              console.log("[DEBUG] Images collection response:", imagesData);
               const imagesMap = new Map((imagesData?.data || []).map((img: any) => [img.id, img.code]));
               const sortedKeys = Object.keys(imagesObj).sort((a, b) => parseInt(a) - parseInt(b));
               processedImages = sortedKeys.map((key) => {
@@ -156,15 +162,22 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
                   position: key,
                 };
               }).filter((img) => img.code != null);
+              console.log("[DEBUG] Processed images:", processedImages);
+            } else {
+              const errorText = await imagesRes.text().catch(() => '');
+              console.warn("[DEBUG] Failed to load images from collection:", imagesRes.status, errorText);
             }
           }
         } catch (imagesError) {
           console.warn("[DEBUG] Error processing images:", imagesError);
         }
       }
+    } else {
+      const errorText = await imagesOnlyRes.text().catch(() => '');
+      console.warn("[DEBUG] Failed to load images field:", imagesOnlyRes.status, errorText);
     }
   } catch (imagesError) {
-    // Игнорируем ошибки загрузки images
+    console.warn("[DEBUG] Error loading images:", imagesError);
   }
   
   // Если получили 403 из-за поля images (старая логика, на случай если images был в fields)
@@ -325,9 +338,9 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       const item = (data as any).data;
       const clientId = item?.client_id ?? item?.client?.id ?? null;
       
-      // Обрабатываем images: это JSON объект {"1": 10, "2": 30, ...} где значения - ID из коллекции images
-      let processedImages: any = null;
-      if (item?.images) {
+      // Используем processedImages из первого блока, если они были загружены
+      // Если нет, пробуем обработать images из item
+      if (!processedImages && item?.images) {
         try {
           let imagesObj: any = item.images;
           if (typeof imagesObj === 'string') {
@@ -341,7 +354,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
             // Запрашиваем изображения из коллекции images по ID
             try {
               const imagesUrl = `${baseUrl}/items/images?filter[id][_in]=${imageIds.join(',')}&fields=id,code`;
-              console.log("[DEBUG] Fetching images from collection:", imagesUrl);
+              console.log("[DEBUG] Fetching images from collection (fallback):", imagesUrl);
               
               const imagesRes = await fetch(imagesUrl, {
                 headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
@@ -363,17 +376,17 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
                   };
                 }).filter((img) => img.code != null); // Фильтруем только те, у которых есть code
                 
-                console.log("[DEBUG] Loaded images:", {
+                console.log("[DEBUG] Loaded images (fallback):", {
                   requestedIds: imageIds,
                   loadedCount: processedImages.length,
                   images: processedImages
                 });
               } else {
                 const errorText = await imagesRes.text().catch(() => '');
-                console.warn("[DEBUG] Failed to load images from collection:", imagesRes.status, errorText);
+                console.warn("[DEBUG] Failed to load images from collection (fallback):", imagesRes.status, errorText);
               }
             } catch (imagesError) {
-              console.error("[DEBUG] Error loading images:", imagesError);
+              console.error("[DEBUG] Error loading images (fallback):", imagesError);
             }
           } else {
             console.log("[DEBUG] No image IDs found in images object");
