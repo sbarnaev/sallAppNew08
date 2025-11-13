@@ -44,7 +44,8 @@ export async function POST() {
 
   try {
     const refreshUrl = `${finalBaseUrl}/auth/refresh`;
-    console.log("Making refresh request to:", refreshUrl);
+    console.log("[DEBUG] Making refresh request to:", refreshUrl);
+    console.log("[DEBUG] Refresh token length:", refreshToken?.length);
     
     const res = await fetch(refreshUrl, {
       method: "POST",

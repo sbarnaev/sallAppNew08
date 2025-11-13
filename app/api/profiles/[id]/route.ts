@@ -88,8 +88,8 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
     // попробуем освежить токен
     const origin = new URL(req.url).origin;
+    console.log("[DEBUG] Token expired, attempting to refresh, origin:", origin);
     try {
-      console.log("Attempting to refresh token, origin:", origin);
       const refreshRes = await fetch(`${origin}/api/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -97,25 +97,36 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         signal: AbortSignal.timeout(10000), // 10 секунд
       });
       
+      console.log("[DEBUG] Refresh response status:", refreshRes.status, refreshRes.statusText);
+      
       if (refreshRes.ok) {
         const refreshData = await refreshRes.json().catch(() => ({}));
+        console.log("[DEBUG] Refresh response data keys:", Object.keys(refreshData));
         // Используем токен из ответа, а не из cookies
         const newToken = refreshData?.access_token || cookies().get("directus_access_token")?.value;
         if (newToken) {
-          console.log("Token refreshed successfully, retrying profile fetch");
+          console.log("[DEBUG] Token refreshed successfully, retrying profile fetch");
           ({ r, data } = await fetchProfile(newToken));
+          console.log("[DEBUG] After refresh retry - status:", r.status, "hasData:", !!data?.data);
         } else {
-          console.warn("Token refresh returned no access_token");
+          console.warn("[DEBUG] Token refresh returned no access_token", refreshData);
         }
       } else {
-        const refreshErrorData = await refreshRes.json().catch(() => ({}));
-        console.error("Token refresh failed:", refreshRes.status, refreshErrorData);
+        const refreshErrorText = await refreshRes.text().catch(() => '');
+        const refreshErrorData = JSON.parse(refreshErrorText).catch(() => ({}));
+        console.error("[DEBUG] Token refresh failed:", {
+          status: refreshRes.status,
+          statusText: refreshRes.statusText,
+          error: refreshErrorData,
+          errorText: refreshErrorText.substring(0, 200)
+        });
       }
     } catch (refreshError: any) {
-      console.error("Error refreshing token:", {
+      console.error("[DEBUG] Error refreshing token:", {
         message: refreshError?.message,
         code: refreshError?.code,
         cause: refreshError?.cause,
+        name: refreshError?.name,
         stack: refreshError?.stack?.substring(0, 500)
       });
       // Не прерываем выполнение - вернем ошибку 401
