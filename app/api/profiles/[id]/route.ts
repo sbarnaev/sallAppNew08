@@ -78,6 +78,17 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       const item = (data as any).data;
       const clientId = item?.client_id ?? item?.client?.id ?? null;
       (data as any).data = { ...item, client_id: clientId };
+      
+      // Логируем данные для диагностики
+      console.log("Profile API response:", {
+        id: item?.id,
+        hasHtml: !!(item?.html),
+        hasRawJson: !!item?.raw_json,
+        rawJsonType: typeof item?.raw_json,
+        rawJsonLength: item?.raw_json ? (typeof item?.raw_json === 'string' ? item?.raw_json.length : JSON.stringify(item?.raw_json).length) : 0,
+        hasDigits: !!item?.digits,
+        fields: Object.keys(item || {})
+      });
     }
   } catch {}
   

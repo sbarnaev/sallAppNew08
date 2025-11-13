@@ -425,17 +425,29 @@ export default function ProfileDetail() {
       const p = data?.data || null;
       
       // Логируем данные для диагностики
+      console.log("API response:", {
+        status: res?.status,
+        hasData: !!data,
+        hasDataData: !!data?.data,
+        profileKeys: p ? Object.keys(p) : [],
+        fullResponse: data
+      });
+      
       if (p) {
         console.log("Profile data received:", {
           id: p.id,
           hasHtml: !!(p.html || p.raw_html || p.content || p.html_content),
+          htmlValue: p.html ? String(p.html).substring(0, 100) : null,
           hasRawJson: !!p.raw_json,
           rawJsonType: typeof p.raw_json,
           rawJsonLength: p.raw_json ? (typeof p.raw_json === 'string' ? p.raw_json.length : JSON.stringify(p.raw_json).length) : 0,
+          rawJsonPreview: p.raw_json ? (typeof p.raw_json === 'string' ? p.raw_json.substring(0, 100) : JSON.stringify(p.raw_json).substring(0, 100)) : null,
           hasDigits: !!p.digits,
           digitsType: typeof p.digits,
           digitsValue: p.digits
         });
+      } else {
+        console.warn("⚠️ Profile data is null!", { data, response: res });
       }
       
       // если идёт локальное сохранение чекбоксов — не перетирать ui_state
