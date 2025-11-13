@@ -16,10 +16,10 @@ export async function POST() {
     return NextResponse.json({ message: "Invalid DIRECTUS_URL" }, { status: 500 });
   }
 
-  console.log("🔍 ===== TOKEN REFRESH DEBUG =====");
-  console.log("🔍 Refreshing token, Directus URL:", baseUrl);
-  console.log("🔍 Refresh token present:", !!refreshToken, "Length:", refreshToken?.length);
-  console.log("🔍 URL type check:", {
+  console.log("[DEBUG] ===== TOKEN REFRESH DEBUG =====");
+  console.log("[DEBUG] Refreshing token, Directus URL:", baseUrl);
+  console.log("[DEBUG] Refresh token present:", !!refreshToken, "Length:", refreshToken?.length);
+  console.log("[DEBUG] URL type check:", {
     startsWithHttps: baseUrl.startsWith('https://'),
     startsWithHttp: baseUrl.startsWith('http://'),
     containsPort: baseUrl.includes(':'),
@@ -27,18 +27,23 @@ export async function POST() {
   });
 
   // Проверяем, что URL действительно валидный для HTTPS
+  let finalBaseUrl = baseUrl;
   if (baseUrl.startsWith('https://')) {
     // Убираем порт если он указан неправильно (например, :443 для HTTPS)
-    const urlObj = new URL(baseUrl);
-    if (urlObj.port === '443') {
-      urlObj.port = '';
-      baseUrl = urlObj.toString();
-      console.log("Removed port 443 from HTTPS URL, new URL:", baseUrl);
+    try {
+      const urlObj = new URL(baseUrl);
+      if (urlObj.port === '443') {
+        urlObj.port = '';
+        finalBaseUrl = urlObj.toString();
+        console.log("[DEBUG] Removed port 443 from HTTPS URL, new URL:", finalBaseUrl);
+      }
+    } catch (urlError) {
+      console.error("[DEBUG] Failed to parse URL for port check:", urlError);
     }
   }
 
   try {
-    const refreshUrl = `${baseUrl}/auth/refresh`;
+    const refreshUrl = `${finalBaseUrl}/auth/refresh`;
     console.log("Making refresh request to:", refreshUrl);
     
     const res = await fetch(refreshUrl, {
@@ -107,7 +112,8 @@ export async function POST() {
       message: error?.message,
       code: error?.code,
       cause: error?.cause,
-      directusUrl: baseUrl,
+      directusUrl: finalBaseUrl,
+      originalUrl: baseUrl,
       stack: error?.stack?.substring(0, 500)
     });
     
@@ -117,7 +123,8 @@ export async function POST() {
         message: "SSL connection error. Check DIRECTUS_URL format (should be https://...)", 
         error: error?.message,
         code: error?.code,
-        directusUrl: baseUrl
+        directusUrl: finalBaseUrl,
+        originalUrl: baseUrl
       }, { status: 502 });
     }
     

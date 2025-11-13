@@ -14,15 +14,15 @@ export function getDirectusUrl(): string {
   }
   
   // ВРЕМЕННО: Всегда логируем URL для диагностики SSL ошибки
-  console.log("🔍 Directus URL (from env):", raw);
-  console.log("🔍 Directus URL (processed):", url);
-  console.log("🔍 URL starts with https:", url.startsWith('https://'));
-  console.log("🔍 URL starts with http:", url.startsWith('http://'));
+  console.log("[DEBUG] Directus URL (from env):", raw);
+  console.log("[DEBUG] Directus URL (processed):", url);
+  console.log("[DEBUG] URL starts with https:", url.startsWith('https://'));
+  console.log("[DEBUG] URL starts with http:", url.startsWith('http://'));
   
   // Парсим URL для детальной диагностики
   try {
     const urlObj = new URL(url);
-    console.log("🔍 URL parsed:", {
+    console.log("[DEBUG] URL parsed:", {
       protocol: urlObj.protocol,
       hostname: urlObj.hostname,
       port: urlObj.port || '(default)',
@@ -30,7 +30,7 @@ export function getDirectusUrl(): string {
       full: urlObj.toString()
     });
   } catch (e) {
-    console.error("🔍 Failed to parse URL:", e);
+    console.error("[DEBUG] Failed to parse URL:", e);
   }
   
   return url;
