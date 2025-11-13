@@ -794,6 +794,40 @@ export default function ProfileDetail() {
     return (h >>> 0).toString(16);
   }
 
+  // Определение типа консультации
+  const consultationType = useMemo(() => {
+    if (!profile?.raw_json) return null;
+    let payload: any = profile.raw_json;
+    try {
+      if (typeof payload === "string") payload = JSON.parse(payload);
+    } catch {
+      return null;
+    }
+    const items = Array.isArray(payload) ? payload : (payload && typeof payload === 'object' ? [payload] : []);
+    if (items.length === 0) return null;
+    const item = items[0];
+    
+    // Партнерская консультация - есть compatibility или firstParticipant/secondParticipant
+    if (item.compatibility || item.firstParticipantCodes || item.secondParticipantCodes || 
+        item.partnerCodes || 
+        (item.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant))) {
+      return "partner";
+    }
+    
+    // Целевая консультация - есть goalDecomposition, warnings, plan123 и т.д., но нет opener/personalitySummary
+    if ((item.goalDecomposition || item.warnings || item.plan123 || item.request) && 
+        !item.opener && !item.personalitySummary) {
+      return "target";
+    }
+    
+    // Базовый расчет - есть opener, personalitySummary, strengths, weaknesses и т.д.
+    if (item.opener || item.personalitySummary || item.strengths || item.weaknesses) {
+      return "base";
+    }
+    
+    return null;
+  }, [profile?.raw_json]);
+
   const renderedFromJson = useMemo(() => {
     if (!profile?.raw_json) {
       console.log("[DEBUG] renderedFromJson: no raw_json");
@@ -1950,16 +1984,37 @@ export default function ProfileDetail() {
     );
   }, [profile?.raw_json, checkedMap, saveChecked]);
 
+  // Название типа консультации
+  const consultationTypeLabel = consultationType === "base" ? "Базовый" : 
+                                  consultationType === "target" ? "Целевой" : 
+                                  consultationType === "partner" ? "Партнерский" : 
+                                  "Расчет";
+
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-2xl font-semibold">{clientName || "Профиль"}</div>
-          {profile?.created_at && (
-            <div className="text-sm text-gray-500 mt-1">Создан: {new Date(profile.created_at).toLocaleString("ru-RU")}</div>
-          )}
+      {/* Общая шапка */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <div className="text-2xl font-semibold text-gray-900">{clientName || "Профиль"}</div>
+            <div className="flex items-center gap-4 mt-2">
+              {profile?.created_at && (
+                <div className="text-sm text-gray-500">
+                  <span className="font-medium">Дата создания:</span> {new Date(profile.created_at).toLocaleString("ru-RU")}
+                </div>
+              )}
+              {consultationType && (
+                <div className="text-sm">
+                  <span className="text-gray-500 font-medium">Тип консультации:</span>{" "}
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {consultationTypeLabel}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          <ActionBar />
         </div>
-        <ActionBar />
       </div>
 
       {/* Пять кубиков (как в шаблоне) */}
