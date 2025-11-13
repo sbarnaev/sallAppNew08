@@ -222,13 +222,16 @@ export default function ProfileDetail() {
     }
     .page {
       page-break-after: always;
+      page-break-inside: avoid;
       min-height: 250mm;
       padding: 20mm;
       display: flex;
       flex-direction: column;
+      break-after: page;
     }
     .page:last-child {
       page-break-after: auto;
+      break-after: auto;
     }
     .header {
       margin-bottom: 30px;
@@ -437,23 +440,20 @@ export default function ProfileDetail() {
       
       // Создаем контейнер для PDF
       const element = document.createElement('div');
-      // Делаем элемент видимым для html2canvas, но очень маленьким в углу экрана
+      // Делаем элемент видимым для html2canvas, но вне видимой области экрана
       element.style.width = '210mm';
       element.style.minHeight = '297mm';
       element.style.padding = '0';
       element.style.margin = '0';
       element.style.backgroundColor = 'white';
-      element.style.position = 'fixed';
-      element.style.top = '0';
+      element.style.position = 'absolute';
+      element.style.top = '-9999px'; // Сдвигаем за экран, но элемент остается в DOM
       element.style.left = '0';
       element.style.visibility = 'visible';
       element.style.opacity = '1';
       element.style.pointerEvents = 'none';
       element.style.overflow = 'visible';
       element.style.zIndex = '999999';
-      // Используем scale для уменьшения видимого размера, но сохраняем реальный размер для canvas
-      element.style.transform = 'scale(0.1)';
-      element.style.transformOrigin = 'top left';
       
       // Копируем стили
       if (styleElement) {
@@ -498,12 +498,13 @@ export default function ProfileDetail() {
         html2canvas: { 
           scale: 2, 
           useCORS: true,
-          logging: true, // Включаем логирование для отладки
+          logging: false,
           backgroundColor: '#ffffff',
-          width: element.scrollWidth,
-          height: element.scrollHeight,
-          windowWidth: element.scrollWidth,
-          windowHeight: element.scrollHeight
+          width: element.scrollWidth || 794, // A4 width in pixels at 96 DPI
+          height: element.scrollHeight || 1123, // A4 height in pixels
+          windowWidth: element.scrollWidth || 794,
+          windowHeight: element.scrollHeight || 1123,
+          removeContainer: false
         },
         jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
