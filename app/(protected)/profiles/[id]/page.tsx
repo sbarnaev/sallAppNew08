@@ -472,10 +472,11 @@ export default function ProfileDetail() {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // Дополнительная проверка - убеждаемся, что контент отрендерился
-      const hasContent = element.children.length > 0 || element.textContent?.trim().length > 0;
+      const textContent = element.textContent?.trim() || '';
+      const hasContent = element.children.length > 0 || textContent.length > 0;
       console.log('PDF element ready:', {
         childrenCount: element.children.length,
-        hasText: element.textContent?.trim().length > 0,
+        hasText: textContent.length > 0,
         computedStyle: window.getComputedStyle(element).display
       });
       
