@@ -34,8 +34,20 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
 
   async function fetchProfile(accessToken: string) {
     try {
-      console.log("Fetching profile from Directus:", urlWithFields);
-      const r = await fetch(urlWithFields, {
+      // Проверяем и исправляем URL если нужно
+      let finalUrl = urlWithFields;
+      if (baseUrl.startsWith('https://')) {
+        const urlObj = new URL(baseUrl);
+        if (urlObj.port === '443') {
+          urlObj.port = '';
+          const correctedBase = urlObj.toString();
+          finalUrl = finalUrl.replace(baseUrl, correctedBase);
+          console.log("Corrected URL (removed port 443):", finalUrl);
+        }
+      }
+      
+      console.log("Fetching profile from Directus:", finalUrl);
+      const r = await fetch(finalUrl, {
         headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
         cache: "no-store",
       });
@@ -52,11 +64,16 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       }
       
       return { r, data } as const;
-    } catch (error) {
-      console.error("Error fetching profile from Directus:", error);
+    } catch (error: any) {
+      console.error("Error fetching profile from Directus:", {
+        message: error?.message,
+        code: error?.code,
+        url: urlWithFields,
+        baseUrl: baseUrl
+      });
       return { 
         r: new Response(null, { status: 500 }), 
-        data: { data: null, errors: [{ message: String(error) }] } 
+        data: { data: null, errors: [{ message: String(error?.message || error) }] } 
       } as const;
     }
   }
