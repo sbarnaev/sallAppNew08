@@ -53,7 +53,9 @@ export async function GET(req: NextRequest) {
         headers: { "Content-Type": "application/json" },
       });
       if (refreshRes.ok) {
-        const newToken = cookies().get("directus_access_token")?.value;
+        const refreshData = await refreshRes.json().catch(() => ({}));
+        // Используем токен из ответа, а не из cookies (cookies обновятся только в следующем запросе)
+        const newToken = refreshData?.access_token || cookies().get("directus_access_token")?.value;
         if (newToken) {
           ({ r, data } = await fetchList(newToken));
         }

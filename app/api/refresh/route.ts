@@ -26,7 +26,11 @@ export async function POST() {
     const access = data?.data?.access_token;
     const refresh = data?.data?.refresh_token;
 
-    const response = NextResponse.json({ ok: true });
+    const response = NextResponse.json({ 
+      ok: true, 
+      access_token: access, // Возвращаем токен в ответе для использования в том же запросе
+      refresh_token: refresh 
+    });
     const secure = process.env.NODE_ENV === "production";
     
     if (access) {
@@ -34,7 +38,8 @@ export async function POST() {
         httpOnly: true, 
         secure, 
         sameSite: "lax", 
-        path: "/" 
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7 // 7 дней
       });
     }
     
@@ -43,7 +48,8 @@ export async function POST() {
         httpOnly: true, 
         secure, 
         sameSite: "lax", 
-        path: "/" 
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30 // 30 дней
       });
     }
 

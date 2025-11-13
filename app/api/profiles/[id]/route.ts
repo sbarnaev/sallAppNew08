@@ -60,7 +60,9 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         headers: { "Content-Type": "application/json" },
       });
       if (refreshRes.ok) {
-        const newToken = cookies().get("directus_access_token")?.value;
+        const refreshData = await refreshRes.json().catch(() => ({}));
+        // Используем токен из ответа, а не из cookies
+        const newToken = refreshData?.access_token || cookies().get("directus_access_token")?.value;
         if (newToken) {
           ({ r, data } = await fetchProfile(newToken));
         }
