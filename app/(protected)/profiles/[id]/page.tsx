@@ -231,36 +231,23 @@ export default function ProfileDetail() {
     <h1>Расчёт профиля${clientName ? ' — ' + clientName : ''}</h1>
     ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
     
-    ${digits.length > 0 ? `
-    <div class="digits">
-      ${digits.slice(0, 5).map((d: any) => `<div class="digit-box">${d || ''}</div>`).join('')}
-    </div>
-    ` : ''}
-    
-    ${personalitySummary ? `
-    <div class="section">
-      <h2>Описание личности</h2>
-      <div class="personality">${personalitySummary.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-    </div>
-    ` : ''}
-    
     ${strengths.length > 0 ? `
     <div class="section">
-        <h2>Сильные стороны</h2>
+      <h2>Сильные стороны</h2>
       <ul>${strengths.map((s: string) => `<li>${String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('')}</ul>
     </div>
     ` : ''}
     
     ${weaknesses.length > 0 ? `
     <div class="section">
-        <h2>Слабые стороны</h2>
+      <h2>Слабые стороны</h2>
       <ul>${weaknesses.map((w: string) => `<li>${String(w).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('')}</ul>
     </div>
     ` : ''}
     
     ${(resourceSignals.length > 0 || deficitSignals.length > 0) ? `
     <div class="section">
-      <h2>Диагностика ресурсов</h2>
+      <h2>Чек-лист ресурсов</h2>
       ${resourceSignals.length > 0 ? `
       <div style="margin-bottom: 20px;">
         <h3 style="font-size: 16px; margin-bottom: 8px; color: #059669;">Признаки плюса (ресурс)</h3>
@@ -293,13 +280,6 @@ export default function ProfileDetail() {
         </ul>
       </div>
       ` : ''}
-    </div>
-    ` : ''}
-    
-    ${happinessFormula ? `
-    <div class="section">
-      <h2>Формула счастья</h2>
-      <div class="happiness">${happinessFormula.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
     </div>
     ` : ''}
     
