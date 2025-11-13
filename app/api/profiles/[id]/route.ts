@@ -28,7 +28,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
     "notes",
     "chat_history",
     "digits",
-    "images",
+    "images", // JSON объект с ID изображений: {"1": 10, "2": 30, ...}
   ].join(",");
   const urlWithFields = `${url}?fields=${encodeURIComponent(fields)}`;
 
@@ -185,7 +185,70 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
     if ((data as any)?.data) {
       const item = (data as any).data;
       const clientId = item?.client_id ?? item?.client?.id ?? null;
-      (data as any).data = { ...item, client_id: clientId };
+      
+      // Обрабатываем images: это JSON объект {"1": 10, "2": 30, ...} где значения - ID из коллекции images
+      let processedImages: any = null;
+      if (item?.images) {
+        try {
+          let imagesObj: any = item.images;
+          if (typeof imagesObj === 'string') {
+            imagesObj = JSON.parse(imagesObj);
+          }
+          
+          // Получаем все ID изображений из объекта (значения объекта)
+          const imageIds = Object.values(imagesObj).filter((id: any) => id != null && id !== '') as number[];
+          
+          if (imageIds.length > 0) {
+            // Запрашиваем изображения из коллекции images по ID
+            try {
+              const imagesUrl = `${baseUrl}/items/images?filter[id][_in]=${imageIds.join(',')}&fields=id,code`;
+              console.log("[DEBUG] Fetching images from collection:", imagesUrl);
+              
+              const imagesRes = await fetch(imagesUrl, {
+                headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+                cache: "no-store",
+              });
+              
+              if (imagesRes.ok) {
+                const imagesData = await imagesRes.json().catch(() => ({ data: [] }));
+                const imagesMap = new Map((imagesData?.data || []).map((img: any) => [img.id, img.code]));
+                
+                // Создаем массив изображений в правильном порядке (по ключам объекта: "1", "2", ...)
+                const sortedKeys = Object.keys(imagesObj).sort((a, b) => parseInt(a) - parseInt(b));
+                processedImages = sortedKeys.map((key) => {
+                  const id = imagesObj[key];
+                  return {
+                    id: id,
+                    code: imagesMap.get(id) || null,
+                    position: key, // Сохраняем позицию для отображения
+                  };
+                }).filter((img) => img.code != null); // Фильтруем только те, у которых есть code
+                
+                console.log("[DEBUG] Loaded images:", {
+                  requestedIds: imageIds,
+                  loadedCount: processedImages.length,
+                  images: processedImages
+                });
+              } else {
+                const errorText = await imagesRes.text().catch(() => '');
+                console.warn("[DEBUG] Failed to load images from collection:", imagesRes.status, errorText);
+              }
+            } catch (imagesError) {
+              console.error("[DEBUG] Error loading images:", imagesError);
+            }
+          } else {
+            console.log("[DEBUG] No image IDs found in images object");
+          }
+        } catch (parseError) {
+          console.error("[DEBUG] Error parsing images:", parseError);
+        }
+      }
+      
+      (data as any).data = { 
+        ...item, 
+        client_id: clientId,
+        images: processedImages || item.images // Используем обработанные изображения или оригинал
+      };
       
       // Логируем данные для диагностики
       console.log("[DEBUG] Profile API response:", {
@@ -195,6 +258,8 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         rawJsonType: typeof item?.raw_json,
         rawJsonLength: item?.raw_json ? (typeof item?.raw_json === 'string' ? item?.raw_json.length : JSON.stringify(item?.raw_json).length) : 0,
         hasDigits: !!item?.digits,
+        hasImages: !!item?.images,
+        processedImagesCount: processedImages ? processedImages.length : 0,
         fields: Object.keys(item || {})
       });
     } else {
