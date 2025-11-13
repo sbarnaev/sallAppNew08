@@ -11,7 +11,16 @@ export async function GET(req: NextRequest) {
   if (!token || !baseUrl) return NextResponse.json({ data: [] }, { status: 401 });
 
   const sp = new URLSearchParams(req.nextUrl.searchParams as any);
-  if (!sp.has("fields")) sp.set("fields", "id,client_id,created_at,html,raw_json,digits");
+  // Добавляем расширение для получения имени клиента
+  const defaultFields = "id,client_id,created_at,html,raw_json,digits";
+  if (!sp.has("fields")) {
+    sp.set("fields", defaultFields);
+  }
+  // Добавляем client.name если его нет
+  const fields = sp.get("fields") || defaultFields;
+  if (!fields.includes("client.name")) {
+    sp.set("fields", fields + ",client.name");
+  }
   if (!sp.has("limit")) sp.set("limit", "50");
   if (!sp.has("offset")) sp.set("offset", "0");
   if (!sp.has("meta")) sp.set("meta", "filter_count");

@@ -74,19 +74,46 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
         <button className="rounded-2xl bg-gray-900 text-white px-4 py-2">Фильтровать</button>
       </form>
 
-      <div className="grid gap-4">
-        {profiles.length === 0 && <div className="card">Нет данных</div>}
-        {profiles.map((p:any)=>(
-          <Link key={p.id} href={`/profiles/${p.id}`} className="card hover:shadow-md transition">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-medium">ID: {p.id}</div>
-                <div className="text-sm text-gray-500">{new Date(p.created_at).toLocaleString()}</div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {profiles.length === 0 && <div className="col-span-full card">Нет данных</div>}
+        {profiles.map((p:any) => {
+          // Определяем тип расчета из raw_json
+          let consultationType = "Базовый";
+          try {
+            let payload: any = p.raw_json;
+            if (typeof payload === "string") payload = JSON.parse(payload);
+            const item = Array.isArray(payload) ? payload[0] : payload;
+            if (item) {
+              if (item.compatibility || item.firstParticipantCodes || item.secondParticipantCodes || 
+                  item.partnerCodes || 
+                  (item.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant))) {
+                consultationType = "Партнерский";
+              } else if ((item.goalDecomposition || item.warnings || item.plan123 || item.request) && 
+                         !item.opener && !item.personalitySummary) {
+                consultationType = "Целевой";
+              }
+            }
+          } catch {}
+          
+          const clientName = p.client?.name || (p.client_id ? `Клиент #${p.client_id}` : "Без клиента");
+          const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString("ru-RU") : "";
+          
+          return (
+            <Link key={p.id} href={`/profiles/${p.id}`} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-all hover:border-blue-300">
+              <div className="space-y-3">
+                <div className="font-semibold text-lg text-gray-900 break-words">{clientName}</div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>📅 {dateStr}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {consultationType}
+                  </span>
+                </div>
               </div>
-              <div className="text-sm text-gray-500">{p.client_id ? `Клиент #${p.client_id}` : ""}</div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
 
       {(hasPrev || hasNext) && (

@@ -52,53 +52,6 @@ export default function ProfileDetail() {
   }, [chat]);
 
   function ActionBar() {
-    async function copyLink() {
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-        alert('Ссылка скопирована!');
-      } catch {}
-    }
-    
-    async function duplicateProfile() {
-      if (!profile) return;
-      if (!confirm('Создать копию этого профиля?')) return;
-      
-      try {
-        const res = await fetch(`/api/profiles/${id}`, { cache: 'no-store' });
-        const data = await res.json().catch(()=>({}));
-        const originalProfile = data?.data;
-        
-        if (!originalProfile) {
-          alert('Не удалось загрузить профиль');
-          return;
-        }
-        
-        // Создаём новый профиль с теми же данными
-        const newProfileData: any = {
-          client_id: originalProfile.client_id,
-          digits: originalProfile.digits,
-        };
-        
-        if (originalProfile.raw_json) newProfileData.raw_json = originalProfile.raw_json;
-        if (originalProfile.html) newProfileData.html = originalProfile.html;
-        if (originalProfile.images) newProfileData.images = originalProfile.images;
-        
-        const createRes = await fetch('/api/profiles', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newProfileData),
-        });
-        
-        const newData = await createRes.json().catch(()=>({}));
-        if (createRes.ok && newData?.data?.id) {
-          window.location.href = `/profiles/${newData.data.id}`;
-        } else {
-          alert('Не удалось создать копию профиля');
-        }
-      } catch (err) {
-        alert('Ошибка при копировании профиля');
-      }
-    }
     async function exportPdf() {
       let strengths: string[] = [];
       let weaknesses: string[] = [];
@@ -374,13 +327,13 @@ export default function ProfileDetail() {
         }, 100);
       };
     }
+    // Показываем PDF только для базовых расчетов
+    if (consultationType !== "base") {
+      return null;
+    }
+    
     return (
-      <div className="flex items-center gap-2 text-sm">
-        <button onClick={() => setExpandAll(true)} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Развернуть всё</button>
-        <button onClick={() => setExpandAll(false)} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Свернуть всё</button>
-        <button onClick={() => window.print()} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Печать</button>
-        <button onClick={copyLink} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">🔗 Ссылка</button>
-        <button onClick={duplicateProfile} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">📋 Копировать</button>
+      <div className="flex items-center gap-2 text-sm flex-shrink-0">
         <button onClick={exportPdf} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">📄 PDF</button>
       </div>
     );
@@ -2040,11 +1993,11 @@ export default function ProfileDetail() {
     <div className="space-y-8 max-w-4xl mx-auto">
       {/* Общая шапка */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-      <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <div className="text-2xl font-semibold text-gray-900">{clientName || "Профиль"}</div>
-            <div className="flex items-center gap-4 mt-2">
-          {profile?.created_at && (
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="text-2xl font-semibold text-gray-900 break-words">{clientName || "Профиль"}</div>
+            <div className="flex items-center gap-4 mt-2 flex-wrap">
+              {profile?.created_at && (
                 <div className="text-sm text-gray-500">
                   <span className="font-medium">Дата создания:</span> {new Date(profile.created_at).toLocaleString("ru-RU")}
                 </div>
@@ -2058,8 +2011,8 @@ export default function ProfileDetail() {
                 </div>
               )}
             </div>
-        </div>
-        <ActionBar />
+          </div>
+          <ActionBar />
         </div>
       </div>
 
@@ -2256,6 +2209,19 @@ export default function ProfileDetail() {
                 <a
                   key={item.id}
                   href={`#${item.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const element = document.getElementById(item.id);
+                    if (element) {
+                      const offset = 100; // Отступ сверху в пикселях
+                      const elementPosition = element.getBoundingClientRect().top;
+                      const offsetPosition = elementPosition + window.pageYOffset - offset;
+                      window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                      });
+                    }
+                  }}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
                 >
                   {item.icon && <span>{item.icon}</span>}
