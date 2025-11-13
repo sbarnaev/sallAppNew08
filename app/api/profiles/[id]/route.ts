@@ -28,8 +28,9 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   console.log("[DEBUG] Profile request URL:", url);
   // Не включаем images в основной запрос, так как может быть 403
   // Загружаем images отдельно после успешного получения профиля
-  // Пробуем включить images в основной запрос
+  // Пробуем включить Images ID в основной запрос
   // Если будет 403, обработаем это отдельно
+  // В Directus поле может называться "Images ID" (с пробелом), но в API обычно используется snake_case
   const fields = [
     "id",
     "client_id",
@@ -40,7 +41,9 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
     "notes",
     "chat_history",
     "digits",
-    "images", // Пробуем включить images
+    "images_id", // Пробуем разные варианты названия поля
+    "Images ID",
+    "images",
   ].join(",");
   const urlWithFields = `${url}?fields=${encodeURIComponent(fields)}`;
 
@@ -122,11 +125,16 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
 
   let { r, data } = await fetchProfile(token);
   
-  // Проверяем, получили ли мы images в основном запросе
+  // Проверяем, получили ли мы Images ID в основном запросе
+  // Пробуем разные варианты названия поля
   let imagesFromMainRequest: any = null;
-  if (r.ok && (data as any)?.data?.images) {
-    imagesFromMainRequest = (data as any).data.images;
-    console.log("[DEBUG] Images received in main request:", imagesFromMainRequest);
+  const profileData = (data as any)?.data;
+  if (r.ok && profileData) {
+    // Пробуем разные варианты названия поля
+    imagesFromMainRequest = profileData["Images ID"] || profileData["images_id"] || profileData["images"] || profileData["Images_ID"];
+    if (imagesFromMainRequest) {
+      console.log("[DEBUG] Images received in main request:", imagesFromMainRequest);
+    }
   } else if (r.status === 403) {
     // Если получили 403, возможно из-за поля images, пробуем запрос без fields
     console.log("[DEBUG] Got 403, trying request without fields restriction");
@@ -138,9 +146,11 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       });
       if (allFieldsRes.ok) {
         const allFieldsData = await allFieldsRes.json().catch(() => ({}));
-        console.log("[DEBUG] All fields response keys:", Object.keys(allFieldsData?.data || {}));
-        if (allFieldsData?.data?.images) {
-          imagesFromMainRequest = allFieldsData.data.images;
+        const allFieldsProfileData = allFieldsData?.data || {};
+        console.log("[DEBUG] All fields response keys:", Object.keys(allFieldsProfileData));
+        // Пробуем разные варианты названия поля
+        imagesFromMainRequest = allFieldsProfileData["Images ID"] || allFieldsProfileData["images_id"] || allFieldsProfileData["images"] || allFieldsProfileData["Images_ID"];
+        if (imagesFromMainRequest) {
           console.log("[DEBUG] Images received from all-fields request:", imagesFromMainRequest);
           // Обновляем data, чтобы использовать его дальше
           data = allFieldsData;
@@ -149,21 +159,27 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
           // Пробуем server endpoint (может иметь другие права)
           console.log("[DEBUG] Trying server endpoint for images");
           try {
-            const serverUrl = `${baseUrl}/server/items/profiles/${id}?fields=images`;
-            const serverRes = await fetch(serverUrl, {
-              headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-              cache: "no-store",
-            });
-            if (serverRes.ok) {
-              const serverData = await serverRes.json().catch(() => ({}));
-              console.log("[DEBUG] Server endpoint response:", serverData);
-              if (serverData?.data?.images) {
-                imagesFromMainRequest = serverData.data.images;
-                console.log("[DEBUG] Images received from server endpoint:", imagesFromMainRequest);
+            // Пробуем разные варианты названия поля
+            const fieldVariants = ["Images ID", "images_id", "images", "Images_ID"];
+            for (const fieldName of fieldVariants) {
+              const serverUrl = `${baseUrl}/server/items/profiles/${id}?fields=${encodeURIComponent(fieldName)}`;
+              const serverRes = await fetch(serverUrl, {
+                headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+                cache: "no-store",
+              });
+              if (serverRes.ok) {
+                const serverData = await serverRes.json().catch(() => ({}));
+                console.log("[DEBUG] Server endpoint response (field:", fieldName, "):", serverData);
+                const serverProfileData = serverData?.data || {};
+                imagesFromMainRequest = serverProfileData[fieldName] || serverProfileData["Images ID"] || serverProfileData["images_id"] || serverProfileData["images"];
+                if (imagesFromMainRequest) {
+                  console.log("[DEBUG] Images received from server endpoint:", imagesFromMainRequest);
+                  break;
+                }
+              } else {
+                const errorText = await serverRes.text().catch(() => '');
+                console.warn("[DEBUG] Server endpoint failed (field:", fieldName, "):", serverRes.status, errorText);
               }
-            } else {
-              const errorText = await serverRes.text().catch(() => '');
-              console.warn("[DEBUG] Server endpoint failed:", serverRes.status, errorText);
             }
           } catch (serverError) {
             console.warn("[DEBUG] Server endpoint error:", serverError);
@@ -174,13 +190,16 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
             console.log("[DEBUG] Trying GraphQL query for images");
             try {
               const graphqlUrl = `${baseUrl}/graphql`;
-              const graphqlQuery = {
-                query: `query {
-                  profiles_by_id(id: ${id}) {
-                    images
-                  }
-                }`
-              };
+              // Пробуем разные варианты названия поля в GraphQL
+              const fieldVariants = ["images_id", "images", "Images_ID"];
+              for (const fieldName of fieldVariants) {
+                const graphqlQuery = {
+                  query: `query {
+                    profiles_by_id(id: ${id}) {
+                      ${fieldName}
+                    }
+                  }`
+                };
               const graphqlRes = await fetch(graphqlUrl, {
                 method: 'POST',
                 headers: { 
@@ -191,16 +210,19 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
                 body: JSON.stringify(graphqlQuery),
                 cache: "no-store",
               });
-              if (graphqlRes.ok) {
-                const graphqlData = await graphqlRes.json().catch(() => ({}));
-                console.log("[DEBUG] GraphQL response:", graphqlData);
-                if (graphqlData?.data?.profiles_by_id?.images) {
-                  imagesFromMainRequest = graphqlData.data.profiles_by_id.images;
-                  console.log("[DEBUG] Images received from GraphQL:", imagesFromMainRequest);
+                if (graphqlRes.ok) {
+                  const graphqlData = await graphqlRes.json().catch(() => ({}));
+                  console.log("[DEBUG] GraphQL response (field:", fieldName, "):", graphqlData);
+                  const graphqlProfileData = graphqlData?.data?.profiles_by_id || {};
+                  imagesFromMainRequest = graphqlProfileData[fieldName] || graphqlProfileData["images_id"] || graphqlProfileData["images"];
+                  if (imagesFromMainRequest) {
+                    console.log("[DEBUG] Images received from GraphQL:", imagesFromMainRequest);
+                    break;
+                  }
+                } else {
+                  const errorText = await graphqlRes.text().catch(() => '');
+                  console.warn("[DEBUG] GraphQL failed (field:", fieldName, "):", graphqlRes.status, errorText);
                 }
-              } else {
-                const errorText = await graphqlRes.text().catch(() => '');
-                console.warn("[DEBUG] GraphQL failed:", graphqlRes.status, errorText);
               }
             } catch (graphqlError) {
               console.warn("[DEBUG] GraphQL query failed:", graphqlError);
@@ -294,22 +316,31 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         data = retryParsed;
         console.log("[DEBUG] Successfully fetched profile without images field");
         
-        // Теперь попробуем загрузить images отдельно
+        // Теперь попробуем загрузить Images ID отдельно
         try {
-          const imagesOnlyUrl = `${baseUrl}/items/profiles/${id}?fields=images`;
-          const imagesOnlyRes = await fetch(imagesOnlyUrl, {
-            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-            cache: "no-store",
-          });
-          if (imagesOnlyRes.ok) {
-            const imagesOnlyData = await imagesOnlyRes.json().catch(() => ({}));
-            if (imagesOnlyData?.data?.images) {
-              (retryParsed as any).data.images = imagesOnlyData.data.images;
-              console.log("[DEBUG] Successfully loaded images field separately");
+          // Пробуем разные варианты названия поля
+          const fieldVariants = ["Images ID", "images_id", "images", "Images_ID"];
+          for (const fieldName of fieldVariants) {
+            const imagesOnlyUrl = `${baseUrl}/items/profiles/${id}?fields=${encodeURIComponent(fieldName)}`;
+            const imagesOnlyRes = await fetch(imagesOnlyUrl, {
+              headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+              cache: "no-store",
+            });
+            if (imagesOnlyRes.ok) {
+              const imagesOnlyData = await imagesOnlyRes.json().catch(() => ({}));
+              const imagesOnlyProfileData = imagesOnlyData?.data || {};
+              const imagesValue = imagesOnlyProfileData[fieldName] || imagesOnlyProfileData["Images ID"] || imagesOnlyProfileData["images_id"] || imagesOnlyProfileData["images"];
+              if (imagesValue) {
+                (retryParsed as any).data["Images ID"] = imagesValue;
+                (retryParsed as any).data["images_id"] = imagesValue;
+                (retryParsed as any).data["images"] = imagesValue;
+                console.log("[DEBUG] Successfully loaded Images ID field separately (as:", fieldName, ")");
+                break;
+              }
             }
           }
         } catch (imagesError) {
-          console.warn("[DEBUG] Could not load images separately:", imagesError);
+          console.warn("[DEBUG] Could not load Images ID separately:", imagesError);
         }
       }
     } catch (retryError) {
@@ -419,10 +450,12 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       const clientId = item?.client_id ?? item?.client?.id ?? null;
       
       // Используем processedImages из первого блока, если они были загружены
-      // Если нет, пробуем обработать images из item
-      if (!processedImages && item?.images) {
+      // Если нет, пробуем обработать Images ID из item
+      // Пробуем разные варианты названия поля
+      const itemImages = item?.["Images ID"] || item?.["images_id"] || item?.images || item?.["Images_ID"];
+      if (!processedImages && itemImages) {
         try {
-          let imagesObj: any = item.images;
+          let imagesObj: any = itemImages;
           if (typeof imagesObj === 'string') {
             imagesObj = JSON.parse(imagesObj);
           }
@@ -479,7 +512,9 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       (data as any).data = { 
         ...item, 
         client_id: clientId,
-        images: processedImages || item.images // Используем обработанные изображения или оригинал
+        images: processedImages || itemImages, // Используем обработанные изображения или оригинал
+        images_id: processedImages || itemImages, // Дублируем для совместимости
+        "Images ID": processedImages || itemImages, // Дублируем для совместимости
       };
       
       // Логируем данные для диагностики
@@ -490,7 +525,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         rawJsonType: typeof item?.raw_json,
         rawJsonLength: item?.raw_json ? (typeof item?.raw_json === 'string' ? item?.raw_json.length : JSON.stringify(item?.raw_json).length) : 0,
         hasDigits: !!item?.digits,
-        hasImages: !!item?.images,
+        hasImages: !!(processedImages || itemImages),
         processedImagesCount: processedImages ? processedImages.length : 0,
         fields: Object.keys(item || {})
       });
