@@ -87,15 +87,150 @@ export async function GET(req: NextRequest) {
     sp.set("filter[owner_user][_eq]", currentUserId);
   }
 
+  // Если есть поиск, делаем два запроса и объединяем результаты
+  let allClientIds = new Set<number>();
+  let finalData: any = null;
+  
   if (searchTerm) {
-    sp.set("search", searchTerm);
-    const hasCustomOrFilter = Array.from(sp.keys()).some((k) => k.startsWith("filter[_or]"));
-    if (!hasCustomOrFilter) {
-      sp.set("filter[_or][0][name][_icontains]", searchTerm);
-      sp.set("filter[_or][1][email][_icontains]", searchTerm);
-      sp.set("filter[_or][2][phone][_icontains]", searchTerm);
-      // Поиск по дате рождения (формат может быть разный, пробуем несколько вариантов)
-      sp.set("filter[_or][3][birth_date][_icontains]", searchTerm);
+    // Пробуем преобразовать поисковый запрос в формат даты
+    let dateFormats: string[] = [];
+    
+    // Формат ДД.ММ.ГГГГ -> YYYY-MM-DD
+    const ddmmyyyy = searchTerm.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (ddmmyyyy) {
+      const [, dd, mm, yyyy] = ddmmyyyy;
+      dateFormats.push(`${yyyy}-${mm}-${dd}`);
+    }
+    
+    // Формат ДД-ММ-ГГГГ -> YYYY-MM-DD
+    const ddmmyyyyDash = searchTerm.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (ddmmyyyyDash) {
+      const [, dd, mm, yyyy] = ddmmyyyyDash;
+      dateFormats.push(`${yyyy}-${mm}-${dd}`);
+    }
+    
+    // Формат YYYY-MM-DD (уже правильный)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(searchTerm)) {
+      dateFormats.push(searchTerm);
+    }
+    
+    // Формат ГГГГ (год)
+    let yearFilter: { start?: string; end?: string } = {};
+    if (/^\d{4}$/.test(searchTerm) && !ddmmyyyy && !ddmmyyyyDash) {
+      yearFilter.start = `${searchTerm}-01-01`;
+      yearFilter.end = `${searchTerm}-12-31`;
+    }
+    
+    // 1. Поиск по имени, email, телефону
+    const nameSearchParams = new URLSearchParams(sp);
+    nameSearchParams.set("filter[_or][0][name][_icontains]", searchTerm);
+    nameSearchParams.set("filter[_or][1][email][_icontains]", searchTerm);
+    nameSearchParams.set("filter[_or][2][phone][_icontains]", searchTerm);
+    nameSearchParams.delete("search"); // Убираем общий search параметр
+    nameSearchParams.set("limit", "1000"); // Получаем все результаты для объединения
+    nameSearchParams.set("offset", "0");
+    
+    const nameUrl = `${baseUrl}/items/clients?${nameSearchParams.toString()}`;
+    try {
+      const nameRes = await fetch(nameUrl, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        cache: "no-store",
+      });
+      if (nameRes.ok) {
+        const nameData = await nameRes.json().catch(() => ({ data: [] }));
+        (nameData?.data || []).forEach((c: any) => {
+          if (c.id) allClientIds.add(c.id);
+        });
+      }
+    } catch (error) {
+      console.error("Error searching clients by name:", error);
+    }
+    
+    // 2. Поиск по дате рождения (если поисковый запрос похож на дату)
+    if (dateFormats.length > 0) {
+      for (const dateFormat of dateFormats) {
+        const dateSearchParams = new URLSearchParams(sp);
+        dateSearchParams.set("filter[birth_date][_eq]", dateFormat);
+        dateSearchParams.delete("search");
+        dateSearchParams.delete("filter[_or][0][name][_icontains]");
+        dateSearchParams.delete("filter[_or][1][email][_icontains]");
+        dateSearchParams.delete("filter[_or][2][phone][_icontains]");
+        dateSearchParams.set("limit", "1000");
+        dateSearchParams.set("offset", "0");
+        
+        const dateUrl = `${baseUrl}/items/clients?${dateSearchParams.toString()}`;
+        try {
+          const dateRes = await fetch(dateUrl, {
+            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+            cache: "no-store",
+          });
+          if (dateRes.ok) {
+            const dateData = await dateRes.json().catch(() => ({ data: [] }));
+            (dateData?.data || []).forEach((c: any) => {
+              if (c.id) allClientIds.add(c.id);
+            });
+          }
+        } catch (error) {
+          console.error("Error searching clients by date:", error);
+        }
+      }
+    }
+    
+    // 3. Поиск по году (диапазон дат)
+    if (yearFilter.start && yearFilter.end) {
+      const yearSearchParams = new URLSearchParams(sp);
+      yearSearchParams.set("filter[birth_date][_gte]", yearFilter.start);
+      yearSearchParams.set("filter[birth_date][_lte]", yearFilter.end);
+      yearSearchParams.delete("search");
+      yearSearchParams.delete("filter[_or][0][name][_icontains]");
+      yearSearchParams.delete("filter[_or][1][email][_icontains]");
+      yearSearchParams.delete("filter[_or][2][phone][_icontains]");
+      yearSearchParams.set("limit", "1000");
+      yearSearchParams.set("offset", "0");
+      
+      const yearUrl = `${baseUrl}/items/clients?${yearSearchParams.toString()}`;
+      try {
+        const yearRes = await fetch(yearUrl, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+          cache: "no-store",
+        });
+        if (yearRes.ok) {
+          const yearData = await yearRes.json().catch(() => ({ data: [] }));
+          (yearData?.data || []).forEach((c: any) => {
+            if (c.id) allClientIds.add(c.id);
+          });
+        }
+      } catch (error) {
+        console.error("Error searching clients by year:", error);
+      }
+    }
+    
+    // Если нашли клиентов, делаем финальный запрос с фильтром по ID
+    if (allClientIds.size > 0) {
+      const clientIdsArray = Array.from(allClientIds);
+      // Создаем новый URLSearchParams с базовыми параметрами
+      const finalSearchParams = new URLSearchParams();
+      finalSearchParams.set("limit", String(limit));
+      finalSearchParams.set("offset", String(offset));
+      finalSearchParams.set("meta", "filter_count");
+      if (sp.has("fields")) finalSearchParams.set("fields", sp.get("fields")!);
+      if (sp.has("sort")) finalSearchParams.set("sort", sp.get("sort")!);
+      // Сохраняем фильтр owner_user если был
+      if (currentUserId && !hasExplicitFilter) {
+        finalSearchParams.set("filter[owner_user][_eq]", currentUserId);
+      }
+      
+      if (clientIdsArray.length === 1) {
+        finalSearchParams.set("filter[id][_eq]", String(clientIdsArray[0]));
+      } else {
+        finalSearchParams.set("filter[id][_in]", clientIdsArray.join(','));
+      }
+      
+      // Переопределяем sp для финального запроса
+      sp = finalSearchParams;
+    } else {
+      // Если ничего не найдено, возвращаем пустой результат
+      return NextResponse.json({ data: [], meta: { filter_count: 0 } }, { status: 200 });
     }
   }
 
