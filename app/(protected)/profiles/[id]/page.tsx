@@ -177,13 +177,13 @@ export default function ProfileDetail() {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Расчёт профиля${clientName ? ' — ' + clientName : ''}</title>
-  <style>
-    @media print {
+        <style>
+          @media print {
       @page { 
         margin: 15mm;
         size: A4;
       }
-      body { margin: 0; }
+            body { margin: 0; }
       .no-print { display: none !important; }
     }
     @media screen {
@@ -271,7 +271,7 @@ export default function ProfileDetail() {
     .footer-line {
       margin: 4px 0;
     }
-  </style>
+        </style>
 </head>
 <body>
   <div class="container">
@@ -293,14 +293,14 @@ export default function ProfileDetail() {
     
     ${strengths.length > 0 ? `
     <div class="section">
-      <h2>Сильные стороны</h2>
+        <h2>Сильные стороны</h2>
       <ul>${strengths.map((s: string) => `<li>${String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('')}</ul>
     </div>
     ` : ''}
     
     ${weaknesses.length > 0 ? `
     <div class="section">
-      <h2>Слабые стороны</h2>
+        <h2>Слабые стороны</h2>
       <ul>${weaknesses.map((w: string) => `<li>${String(w).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('')}</ul>
     </div>
     ` : ''}
@@ -369,7 +369,7 @@ export default function ProfileDetail() {
       frame.srcdoc = html;
       frame.onload = () => {
         setTimeout(() => {
-          frame.contentWindow?.print();
+        frame.contentWindow?.print();
           setTimeout(() => document.body.removeChild(frame), 2000);
         }, 100);
       };
@@ -386,11 +386,11 @@ export default function ProfileDetail() {
     );
   }
 
-  function AccordionSection({ title, children }: { title: string; children: React.ReactNode }) {
+  function AccordionSection({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {
     // Всегда открыто, без кнопки, чтобы ничего не закрывалось само
     return (
-      <div className="rounded-2xl border border-blue-100 overflow-hidden">
-        <div className="w-full flex items-center justify-between px-4 py-4 text-left bg-white">
+      <div id={id} className="rounded-2xl border-2 border-blue-200 bg-white overflow-hidden shadow-sm">
+        <div className="w-full flex items-center justify-between px-6 py-4 text-left bg-white">
           <span className="font-semibold text-gray-900">{title}</span>
         </div>
         <div className="p-6">{children}</div>
@@ -522,7 +522,7 @@ export default function ProfileDetail() {
         (typeof p.digits === 'string' && p.digits.trim().length > 0)
       ));
       
-          tries += 1;
+      tries += 1;
           
           // Останавливаем поллинг если:
           // 1. Есть данные для отображения
@@ -627,11 +627,11 @@ export default function ProfileDetail() {
       setChat((prev)=>[...prev, { role: "assistant", content: "" }]);
       
       try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
           
-          const chunk = decoder.decode(value, { stream: true });
+        const chunk = decoder.decode(value, { stream: true });
           // SSE формат: каждая строка "data: текст\n\n"
           const lines = chunk.split("\n");
           
@@ -660,33 +660,33 @@ export default function ProfileDetail() {
               textChunk = payload;
             }
             acc += textChunk;
-            setAnswer(acc);
+          setAnswer(acc);
             
             // Обновляем последнее сообщение ассистента
-            setChat((prev)=>{
+          setChat((prev)=>{
               const next = [...prev];
-              for (let i = next.length - 1; i >= 0; i--) {
+            for (let i = next.length - 1; i >= 0; i--) {
                 if (next[i].role === "assistant") {
                   next[i] = { role: "assistant", content: acc };
                   break;
                 }
-              }
-              return next;
-            });
+            }
+            return next;
+          });
             
             // Автопрокрутка чата
             if (chatBoxRef.current) {
               chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
-            }
-          }
+        }
+      }
         }
       } catch (streamError) {
         console.error("Stream reading error:", streamError);
         if (acc) {
           // Если уже есть текст, сохраняем его
-          const finalHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: acc }];
+      const finalHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: acc }];
           setChat(finalHistory);
-          await saveChatHistory(finalHistory);
+      await saveChatHistory(finalHistory);
         }
       }
       const finalHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: acc }];
@@ -977,148 +977,56 @@ export default function ProfileDetail() {
       return null;
     }
     
+    // Определяем тип консультации для первого элемента
+    const item = items[0];
+    const isPartner = !!(item?.compatibility || item?.firstParticipantCodes || item?.secondParticipantCodes || 
+      item?.partnerCodes || 
+      (item?.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant)));
+    const isTarget = !!(item?.goalDecomposition || item?.warnings || item?.plan123 || item?.request) && 
+      !item?.opener && !item?.personalitySummary;
+    const isBase = !!(item?.opener || item?.personalitySummary || item?.strengths || item?.weaknesses);
+
+    // Выбираем функцию рендеринга в зависимости от типа
+    if (isPartner) {
+      return renderPartnerConsultation(items, CheckList, Entry, checkedMap, setCheckedMap, localUiStateRef, saveChecked);
+    } else if (isTarget) {
+      return renderTargetConsultation(items, CheckList, Entry, checkedMap, setCheckedMap, localUiStateRef, saveChecked);
+    } else if (isBase) {
+      return renderBaseConsultation(items, CheckList, Entry, checkedMap, setCheckedMap, localUiStateRef, saveChecked);
+    }
+
+    return null;
+  }, [profile?.raw_json, checkedMap, saveChecked]);
+
+  // Функция рендеринга базового расчета
+  function renderBaseConsultation(
+    items: any[],
+    CheckList: any,
+    Entry: any,
+    checkedMap: Record<string, boolean>,
+    setCheckedMap: (map: Record<string, boolean>) => void,
+    localUiStateRef: React.MutableRefObject<Record<string, boolean>>,
+    saveChecked: (map: Record<string, boolean>) => void
+  ) {
     return (
       <div className="space-y-6">
-        {items.map((item, idx) => {
-          // Проверяем, это партнерская консультация (есть compatibility или firstParticipantCodes/secondParticipantCodes)
-          const isPartnerConsultation = !!(item.compatibility || item.firstParticipantCodes || item.secondParticipantCodes || 
-            (item.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant)));
-          
-          return (
+        {items.map((item, idx) => (
           <div key={idx} className="space-y-6">
-            {/* Отображение кодов для партнерской консультации (массив кодов) */}
-            {(item.firstParticipantCodes || item.secondParticipantCodes) && (
-              <section className="rounded-2xl border border-blue-100 p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
-                <h2 className="m-0 text-base font-bold text-gray-800 mb-4">Коды участников</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  {/* Первый участник */}
-                  <div className="bg-white rounded-xl p-4 border-2 border-blue-200">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Первый участник</h3>
-                    <div className="grid grid-cols-5 gap-2">
-                      {['Личность', 'Коннектор', 'Реализация', 'Генератор', 'Миссия'].map((label, i) => (
-                        <div key={i} className="text-center">
-                          <div className="text-xs text-gray-500 mb-1">{label}</div>
-                          <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
-                            {Array.isArray(item.firstParticipantCodes) && item.firstParticipantCodes[i] != null ? item.firstParticipantCodes[i] : '—'}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Второй участник */}
-                  <div className="bg-white rounded-xl p-4 border-2 border-indigo-200">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Второй участник</h3>
-                    <div className="grid grid-cols-5 gap-2">
-                      {['Личность', 'Коннектор', 'Реализация', 'Генератор', 'Миссия'].map((label, i) => (
-                        <div key={i} className="text-center">
-                          <div className="text-xs text-gray-500 mb-1">{label}</div>
-                          <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
-                            {Array.isArray(item.secondParticipantCodes) && item.secondParticipantCodes[i] != null ? item.secondParticipantCodes[i] : '—'}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </section>
-            )}
-            {/* Коды партнеров в двух колонках (для партнерской консультации) */}
-            {item.partnerCodes && (
-              <section className="rounded-2xl border border-blue-100 p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
-                <h2 className="m-0 text-base font-bold text-gray-800 mb-4">Коды САЛ партнеров</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  {/* Первый партнер */}
-                  <div className="bg-white rounded-xl p-4 border-2 border-blue-200">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Первый партнер</h3>
-                    <div className="grid grid-cols-5 gap-2">
-                      <div className="text-center">
-                        <div className="text-xs text-gray-500 mb-1">Личность</div>
-                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
-                          {item.partnerCodes.first?.personality || '—'}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs text-gray-500 mb-1">Коннектор</div>
-                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
-                          {item.partnerCodes.first?.connector || '—'}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs text-gray-500 mb-1">Реализация</div>
-                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
-                          {item.partnerCodes.first?.realization || '—'}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs text-gray-500 mb-1">Генератор</div>
-                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
-                          {item.partnerCodes.first?.generator || '—'}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs text-gray-500 mb-1">Миссия</div>
-                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
-                          {item.partnerCodes.first?.mission || '—'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Второй партнер */}
-                  <div className="bg-white rounded-xl p-4 border-2 border-indigo-200">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Второй партнер</h3>
-                    <div className="grid grid-cols-5 gap-2">
-                      <div className="text-center">
-                        <div className="text-xs text-gray-500 mb-1">Личность</div>
-                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
-                          {item.partnerCodes.second?.personality || '—'}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs text-gray-500 mb-1">Коннектор</div>
-                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
-                          {item.partnerCodes.second?.connector || '—'}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs text-gray-500 mb-1">Реализация</div>
-                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
-                          {item.partnerCodes.second?.realization || '—'}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs text-gray-500 mb-1">Генератор</div>
-                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
-                          {item.partnerCodes.second?.generator || '—'}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs text-gray-500 mb-1">Миссия</div>
-                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
-                          {item.partnerCodes.second?.mission || '—'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            )}
-            {(item.opener || item.personalitySummary) && (
-              <section className="space-y-6">
+            {/* Скажите клиенту */}
                 {item.opener && (
-                  <article className="rounded-2xl border border-blue-100 p-6">
-                    <h2 className="m-0 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-600">
-                      <span className="inline-block w-[22px] text-center">❗</span>
+              <section id="opener" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
+                <h2 className="m-0 flex items-center gap-2 text-sm font-bold text-gray-800 mb-3">
+                  <span className="text-lg">❗</span>
                       Скажите клиенту
                     </h2>
                     <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.opener}</p>
-                  </article>
+              </section>
                 )}
 
+            {/* Описание личности */}
                 {item.personalitySummary && (
-                  <article className="rounded-2xl border border-blue-100 p-6">
-                    <h2 className="title-up m-0 text-sm font-bold uppercase tracking-wide text-gray-600">Описание личности</h2>
+              <section id="personality" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">👤 Описание личности</h2>
                     {Array.isArray(item.personalitySummary) ? (
                       <div className="mt-3 space-y-2">
                         {item.personalitySummary.map((t: string, idx: number) => (
@@ -1127,16 +1035,16 @@ export default function ProfileDetail() {
                       </div>
                     ) : (
                       <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.personalitySummary}</p>
-                    )}
-                  </article>
                 )}
               </section>
             )}
 
+            {/* Сильные и слабые стороны */}
             {(item.strengths || item.strengths_text || item.weaknesses || item.weaknesses_text) && (
-              <section className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                <article className="rounded-2xl bg-orange-400/90 p-6 text-gray-900">
-                  <h3 className="title-up m-0 text-base font-bold">Сильные стороны</h3>
+              <section id="strengths-weaknesses" className="space-y-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <article className="rounded-2xl border-2 border-orange-300 bg-orange-50 p-6 shadow-sm">
+                    <h3 className="m-0 text-base font-bold text-gray-900 mb-3">⚖️ Сильные стороны</h3>
                   <div className="mt-3">
                     {Array.isArray(item.strengths) ? (
                       <CheckList list={item.strengths} section="strengths" />
@@ -1147,8 +1055,8 @@ export default function ProfileDetail() {
                     )}
                   </div>
                 </article>
-                <article className="rounded-2xl bg-orange-400/90 p-6 text-gray-900">
-                  <h3 className="title-up m-0 text-base font-bold">Слабые стороны</h3>
+                  <article className="rounded-2xl border-2 border-orange-300 bg-orange-50 p-6 shadow-sm">
+                    <h3 className="m-0 text-base font-bold text-gray-900 mb-3">⚖️ Слабые стороны</h3>
                   <div className="mt-3">
                     {Array.isArray(item.weaknesses) ? (
                       <CheckList list={item.weaknesses} section="weaknesses" />
@@ -1159,27 +1067,30 @@ export default function ProfileDetail() {
                     )}
                   </div>
                 </article>
+                </div>
               </section>
             )}
 
+            {/* Формула счастья */}
             {item.happinessFormula && (
-              <section className="rounded-2xl bg-sky-500 text-white p-6">
-                <h2 className="m-0 text-lg font-bold">☺️ Формула счастья</h2>
+              <section id="happiness" className="rounded-2xl border-2 border-sky-300 bg-sky-50 p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">☺️ Формула счастья</h2>
                 {Array.isArray(item.happinessFormula) ? (
                   <div className="mt-3 space-y-2">
                     {item.happinessFormula.map((t: string, i: number) => (
-                      <p key={i} className="whitespace-pre-wrap leading-relaxed">{t}</p>
+                      <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800">{t}</p>
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-3 whitespace-pre-wrap leading-relaxed">{item.happinessFormula}</p>
+                  <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.happinessFormula}</p>
                 )}
               </section>
             )}
 
+            {/* Пояснение кодов */}
             {Array.isArray(item.codesExplanation) && item.codesExplanation.length > 0 && (
-              <section className="rounded-2xl border border-blue-100 p-6">
-                <h2 className="title-up m-0 text-sm font-bold uppercase tracking-wide text-gray-600">Пояснение кодов</h2>
+              <section id="codes" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">🔢 Пояснение кодов</h2>
                 <div className="mt-3 space-y-2">
                   {item.codesExplanation.map((t: string, i: number) => (
                     <p key={i} className="whitespace-pre-wrap text-gray-800">{t}</p>
@@ -1188,15 +1099,16 @@ export default function ProfileDetail() {
               </section>
             )}
 
+            {/* Диагностика ресурсов */}
             {(item.resourceSignals || item.resourceSignals_text || item.deficitSignals || item.deficitSignals_text) && (
-              <>
-                <article className="rounded-2xl border border-blue-100 p-6">
-                  <h2 className="title-up m-0 text-sm font-bold uppercase tracking-wide text-gray-600">Диагностика ресурсов</h2>
+              <section id="diagnostics" className="space-y-6">
+                <article className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
+                  <h2 className="m-0 text-base font-bold text-gray-800 mb-3">🔍 Диагностика ресурсов</h2>
                   <p className="mt-3 text-sm text-gray-700">Оцените совпадение пунктов «плюса» и «минуса», подведите итог и сделайте вывод о текущем ресурсе.</p>
                 </article>
-                <section className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                  <article className="rounded-2xl bg-orange-400/90 p-6 text-gray-900">
-                    <h3 className="title-up m-0 text-base font-bold">Признаки плюса</h3>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <article className="rounded-2xl border-2 border-green-300 bg-green-50 p-6 shadow-sm">
+                    <h3 className="m-0 text-base font-bold text-gray-900 mb-3">✅ Признаки плюса</h3>
                     <div className="mt-3">
                       {Array.isArray(item.resourceSignals) ? (
                         <CheckList list={item.resourceSignals} section="resourceSignals" />
@@ -1207,8 +1119,8 @@ export default function ProfileDetail() {
                       )}
                     </div>
                   </article>
-                  <article className="rounded-2xl bg-orange-400/90 p-6 text-gray-900">
-                    <h3 className="title-up m-0 text-base font-bold">Признаки минуса</h3>
+                  <article className="rounded-2xl border-2 border-red-300 bg-red-50 p-6 shadow-sm">
+                    <h3 className="m-0 text-base font-bold text-gray-900 mb-3">❌ Признаки минуса</h3>
                     <div className="mt-3">
                       {Array.isArray(item.deficitSignals) ? (
                         <CheckList list={item.deficitSignals} section="deficitSignals" />
@@ -1219,12 +1131,13 @@ export default function ProfileDetail() {
                       )}
                     </div>
                   </article>
+                </div>
                 </section>
-              </>
             )}
 
+            {/* Конфликты и проблемы */}
             {Array.isArray(item.conflicts) && item.conflicts.length > 0 && (
-              <AccordionSection title="Конфликты и проблемы">
+              <AccordionSection title="⚠️ Конфликты и проблемы" id="conflicts">
                 <div className="space-y-6">
                   {item.conflicts.map((c: any, i: number) => (
                     <Entry key={i} title={c.title}>
@@ -1251,118 +1164,103 @@ export default function ProfileDetail() {
               </AccordionSection>
             )}
 
-            {/* Поля для целевой консультации */}
-            {(item.request || item.answer || item.recommendations || item.analysis) && (
-              <section className="space-y-6">
-                {item.request && (
-                  <article className="rounded-2xl border border-blue-100 p-6">
-                    <h2 className="m-0 text-sm font-bold uppercase tracking-wide text-gray-600 mb-3">Запрос клиента</h2>
-                    <p className="whitespace-pre-wrap leading-relaxed text-gray-800">{item.request}</p>
-                  </article>
-                )}
-                {item.analysis && (
-                  <article className="rounded-2xl border border-blue-100 p-6">
-                    <h2 className="m-0 text-sm font-bold uppercase tracking-wide text-gray-600 mb-3">Анализ</h2>
-                    {typeof item.analysis === 'string' ? (
-                      <p className="whitespace-pre-wrap leading-relaxed text-gray-800">{item.analysis}</p>
-                    ) : Array.isArray(item.analysis) ? (
-                      <div className="space-y-2">
-                        {item.analysis.map((t: string, i: number) => (
-                          <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800">{t}</p>
-                        ))}
-                      </div>
-                    ) : null}
-                  </article>
-                )}
-                {item.answer && (
-                  <article className="rounded-2xl border border-blue-100 p-6">
-                    <h2 className="m-0 text-sm font-bold uppercase tracking-wide text-gray-600 mb-3">Ответ</h2>
-                    {typeof item.answer === 'string' ? (
-                      <p className="whitespace-pre-wrap leading-relaxed text-gray-800">{item.answer}</p>
-                    ) : Array.isArray(item.answer) ? (
-                      <div className="space-y-2">
-                        {item.answer.map((t: string, i: number) => (
-                          <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800">{t}</p>
-                        ))}
-                      </div>
-                    ) : null}
-                  </article>
-                )}
-                {item.recommendations && (
-                  <article className="rounded-2xl border border-blue-100 p-6">
-                    <h2 className="m-0 text-sm font-bold uppercase tracking-wide text-gray-600 mb-3">Рекомендации</h2>
-                    {Array.isArray(item.recommendations) ? (
-                      <ul className="list-disc list-inside space-y-2">
-                        {item.recommendations.map((r: string, i: number) => (
-                          <li key={i} className="leading-relaxed text-gray-800">{r}</li>
-                        ))}
-                      </ul>
-                    ) : typeof item.recommendations === 'string' ? (
-                      <p className="whitespace-pre-wrap leading-relaxed text-gray-800">{item.recommendations}</p>
-                    ) : null}
-                  </article>
-                )}
+            {/* Практики */}
+            {item.practices && (
+              <AccordionSection title="💡 Практики" id="practices">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  {Object.entries(item.practices).map(([blockKey, list]: any, i: number) => (
+                    <article key={i} className="rounded-2xl border-2 border-blue-200 bg-white p-4 shadow-sm">
+                      <div className="mb-2 font-semibold text-gray-800">{mapPracticeKey(blockKey)}</div>
+                      {Array.isArray(list) ? (
+                        <div className="space-y-3">
+                          {list.map((pr: any, j: number) => (
+                            <Entry key={j} title={pr.title}>
+                              {pr.p1 && <p className="text-sm whitespace-pre-wrap">{pr.p1}</p>}
+                              {pr.p2 && <p className="text-sm whitespace-pre-wrap">{pr.p2}</p>}
+                              {pr.description && <p className="text-sm whitespace-pre-wrap">{pr.description}</p>}
+                            </Entry>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500">Нет данных</div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              </AccordionSection>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Функция рендеринга целевой консультации
+  function renderTargetConsultation(
+    items: any[],
+    CheckList: any,
+    Entry: any,
+    checkedMap: Record<string, boolean>,
+    setCheckedMap: (map: Record<string, boolean>) => void,
+    localUiStateRef: React.MutableRefObject<Record<string, boolean>>,
+    saveChecked: (map: Record<string, boolean>) => void
+  ) {
+    return (
+      <div className="space-y-6">
+        {items.map((item, idx) => (
+          <div key={idx} className="space-y-6">
+            {/* Цель клиента */}
+            {item.request && (
+              <section id="goal" className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">🎯 Цель клиента</h2>
+                <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.request}</p>
+              </section>
+            )}
+
+            {/* Декомпозиция цели */}
+            {Array.isArray(item.goalDecomposition) && item.goalDecomposition.length > 0 && (
+              <section id="goal-decomposition" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">📋 Декомпозиция цели</h2>
+                <ol className="space-y-3 list-decimal list-inside">
+                  {item.goalDecomposition.map((goal: string, i: number) => (
+                    <li key={i} className="text-gray-700 leading-relaxed">{goal}</li>
+                  ))}
+                </ol>
               </section>
             )}
 
             {/* Предупреждения */}
             {Array.isArray(item.warnings) && item.warnings.length > 0 && (
-              <article className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6">
+              <section id="warnings" className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 shadow-sm">
                 <h2 className="m-0 text-base font-bold text-amber-900 mb-3">⚠️ Предупреждения</h2>
                 <ul className="space-y-2">
                   {item.warnings.map((w: string, i: number) => (
                     <li key={i} className="text-amber-800 leading-relaxed">• {w}</li>
                   ))}
                 </ul>
-              </article>
+              </section>
             )}
 
-            {/* Декомпозиция целей */}
-            {Array.isArray(item.goalDecomposition) && item.goalDecomposition.length > 0 && (
-              <article className="rounded-2xl border border-blue-100 p-6">
-                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">🎯 Декомпозиция целей</h2>
-                <ol className="space-y-3 list-decimal list-inside">
-                  {item.goalDecomposition.map((goal: string, i: number) => (
-                    <li key={i} className="text-gray-700 leading-relaxed">{goal}</li>
-                  ))}
-                </ol>
-              </article>
-            )}
-
-            {/* Ресурсы по этапам */}
-            {Array.isArray(item.resourcesForStages) && item.resourcesForStages.length > 0 && (
-              <AccordionSection title="Ресурсы по этапам">
-                <div className="space-y-6">
-                  {item.resourcesForStages.map((stage: any, stageIdx: number) => (
-                    <div key={stageIdx} className="rounded-xl border border-blue-100 p-5">
-                      <h3 className="text-lg font-semibold mb-4">Этап {stage.stage}</h3>
-                      <div className="space-y-4">
-                        {Array.isArray(stage.resources) && stage.resources.map((res: any, resIdx: number) => (
-                          <div key={resIdx} className="bg-gray-50 rounded-lg p-4">
-                            <div className="font-semibold text-gray-800 mb-2">{res.resource}</div>
-                            {res.why && <p className="text-sm text-gray-600 mb-2">{res.why}</p>}
-                            {Array.isArray(res.successSignals) && res.successSignals.length > 0 && (
-                              <div className="mt-2">
-                                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Признаки успеха:</div>
-                                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
-                                  {res.successSignals.map((signal: string, sigIdx: number) => (
-                                    <li key={sigIdx}>{signal}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+            {/* Вопросы для уточнения */}
+            {Array.isArray(item.currentDiagnostics?.questions) && item.currentDiagnostics.questions.length > 0 && (
+              <section id="questions" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">❓ Вопросы для уточнения</h2>
+                <div className="space-y-3">
+                  {item.currentDiagnostics.questions.map((q: any, i: number) => (
+                    <div key={i} className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                      <p className="text-gray-800 mb-1">{q.question}</p>
+                      {q.salResource && (
+                        <span className="text-xs text-gray-500">Ресурс: {q.salResource}</span>
+                      )}
                     </div>
                   ))}
                 </div>
-              </AccordionSection>
+              </section>
             )}
 
-            {/* Текущая диагностика */}
+            {/* Диагностика */}
             {item.currentDiagnostics && (
-              <AccordionSection title="Текущая диагностика">
+              <AccordionSection title="🔍 Диагностика" id="diagnostics">
                 <div className="space-y-6">
                   {Array.isArray(item.currentDiagnostics.resourceStates) && item.currentDiagnostics.resourceStates.length > 0 && (
                     <div>
@@ -1374,14 +1272,7 @@ export default function ProfileDetail() {
                             state.state === 'minus' ? 'border-red-200 bg-red-50' :
                             'border-gray-200 bg-gray-50'
                           }`}>
-                            <div className="font-semibold mb-2">
-                              {state.resource}
-                              {state.partner && (
-                                <span className="ml-2 text-xs font-normal text-gray-500">
-                                  ({state.partner === 'first' ? 'Первый партнер' : 'Второй партнер'})
-                                </span>
-                              )}
-                            </div>
+                            <div className="font-semibold mb-2">{state.resource}</div>
                             {Array.isArray(state.evidence) && state.evidence.length > 0 && (
                               <div className="mb-2">
                                 <div className="text-xs font-semibold text-gray-600 mb-1">Доказательства:</div>
@@ -1429,28 +1320,44 @@ export default function ProfileDetail() {
                       )}
                     </div>
                   )}
-                  {Array.isArray(item.currentDiagnostics.questions) && item.currentDiagnostics.questions.length > 0 && (
-                    <div>
-                      <h3 className="text-base font-semibold mb-3">Вопросы для уточнения</h3>
-                      <div className="space-y-3">
-                        {item.currentDiagnostics.questions.map((q: any, i: number) => (
-                          <div key={i} className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                            <p className="text-gray-800 mb-1">{q.question}</p>
-                            {q.salResource && (
-                              <span className="text-xs text-gray-500">Ресурс: {q.salResource}</span>
+                </div>
+              </AccordionSection>
+            )}
+
+            {/* Ресурсы по этапам */}
+            {Array.isArray(item.resourcesForStages) && item.resourcesForStages.length > 0 && (
+              <AccordionSection title="📊 Ресурсы по этапам" id="resources-stages">
+                <div className="space-y-6">
+                  {item.resourcesForStages.map((stage: any, stageIdx: number) => (
+                    <div key={stageIdx} className="rounded-xl border border-blue-100 p-5">
+                      <h3 className="text-lg font-semibold mb-4">Этап {stage.stage}</h3>
+                      <div className="space-y-4">
+                        {Array.isArray(stage.resources) && stage.resources.map((res: any, resIdx: number) => (
+                          <div key={resIdx} className="bg-gray-50 rounded-lg p-4">
+                            <div className="font-semibold text-gray-800 mb-2">{res.resource} {res.code && `(${res.code})`}</div>
+                            {res.why && <p className="text-sm text-gray-600 mb-2">{res.why}</p>}
+                            {Array.isArray(res.successSignals) && res.successSignals.length > 0 && (
+                              <div className="mt-2">
+                                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Признаки успеха:</div>
+                                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                                  {res.successSignals.map((signal: string, sigIdx: number) => (
+                                    <li key={sigIdx}>{signal}</li>
+                                  ))}
+                                </ul>
+                              </div>
                             )}
                           </div>
                         ))}
                       </div>
                     </div>
-                  )}
+                  ))}
                 </div>
               </AccordionSection>
             )}
 
-            {/* План по этапам */}
+            {/* План действий */}
             {Array.isArray(item.plan123) && item.plan123.length > 0 && (
-              <AccordionSection title="План действий">
+              <AccordionSection title="📝 План действий" id="plan">
                 <div className="space-y-6">
                   {item.plan123.map((plan: any, i: number) => (
                     <div key={i} className="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-5">
@@ -1469,14 +1376,11 @@ export default function ProfileDetail() {
                         <div className="mb-4">
                           <div className="text-sm font-semibold text-gray-700 mb-2">Ресурсы:</div>
                           <div className="flex flex-wrap gap-2">
-                            {plan.resources.map((res: any, j: number) => {
-                              const partnerLabel = res.partner === 'first' ? ' (1-й)' : res.partner === 'second' ? ' (2-й)' : '';
-                              return (
-                                <span key={j} className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
-                                  {res.resource} {res.code}{partnerLabel}
-                                </span>
-                              );
-                            })}
+                            {plan.resources.map((res: any, j: number) => (
+                              <span key={j} className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+                                {res.resource} {res.code && `(${res.code})`}
+                              </span>
+                            ))}
                           </div>
                         </div>
                       )}
@@ -1500,7 +1404,7 @@ export default function ProfileDetail() {
 
             {/* Метрики прогресса */}
             {item.progressMetrics && (
-              <AccordionSection title="Метрики прогресса">
+              <AccordionSection title="📈 Метрики прогресса" id="metrics">
                 <div className="space-y-4">
                   {Array.isArray(item.progressMetrics.earlySignals) && item.progressMetrics.earlySignals.length > 0 && (
                     <div>
@@ -1538,7 +1442,7 @@ export default function ProfileDetail() {
 
             {/* Что делать в разных ситуациях */}
             {item.whatIf && (
-              <AccordionSection title="Что делать в разных ситуациях">
+              <AccordionSection title="🔄 Что делать в разных ситуациях" id="what-if">
                 <div className="space-y-4">
                   {Array.isArray(item.whatIf.fatigue) && item.whatIf.fatigue.length > 0 && (
                     <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
@@ -1556,17 +1460,6 @@ export default function ProfileDetail() {
                       <ul className="list-disc list-inside space-y-1 text-sm text-red-800">
                         {item.whatIf.overwhelm.map((o: string, i: number) => (
                           <li key={i}>{o}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {/* Конфликты (для партнерской консультации) */}
-                  {Array.isArray(item.whatIf.conflicts) && item.whatIf.conflicts.length > 0 && (
-                    <div className="rounded-lg border border-pink-200 bg-pink-50 p-4">
-                      <h3 className="text-sm font-semibold text-pink-900 mb-2">Конфликты</h3>
-                      <ul className="list-disc list-inside space-y-1 text-sm text-pink-800">
-                        {item.whatIf.conflicts.map((c: string, i: number) => (
-                          <li key={i}>{c}</li>
                         ))}
                       </ul>
                     </div>
@@ -1597,7 +1490,7 @@ export default function ProfileDetail() {
 
             {/* Обработка возражений */}
             {Array.isArray(item.objectionHandling) && item.objectionHandling.length > 0 && (
-              <AccordionSection title="Обработка возражений">
+              <AccordionSection title="💬 Обработка возражений" id="objections">
                 <div className="space-y-4">
                   {item.objectionHandling.map((obj: any, i: number) => (
                     <div key={i} className="rounded-lg border border-blue-100 bg-blue-50 p-4">
@@ -1611,19 +1504,58 @@ export default function ProfileDetail() {
 
             {/* Финальная стратегия */}
             {Array.isArray(item.finalStrategy) && item.finalStrategy.length > 0 && (
-              <article className="rounded-2xl border-2 border-green-200 bg-green-50 p-6">
+              <section id="strategy" className="rounded-2xl border-2 border-green-200 bg-green-50 p-6 shadow-sm">
                 <h2 className="m-0 text-base font-bold text-green-900 mb-3">✅ Финальная стратегия</h2>
                 <div className="space-y-3">
                   {item.finalStrategy.map((strategy: string, i: number) => (
                     <p key={i} className="text-green-800 leading-relaxed">{strategy}</p>
                   ))}
                 </div>
-              </article>
+              </section>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Функция рендеринга партнерской консультации
+  function renderPartnerConsultation(
+    items: any[],
+    CheckList: any,
+    Entry: any,
+    checkedMap: Record<string, boolean>,
+    setCheckedMap: (map: Record<string, boolean>) => void,
+    localUiStateRef: React.MutableRefObject<Record<string, boolean>>,
+    saveChecked: (map: Record<string, boolean>) => void
+  ) {
+    return (
+      <div className="space-y-6">
+        {items.map((item, idx) => (
+          <div key={idx} className="space-y-6">
+            {/* Цель консультации */}
+            {item.goal && (
+              <section id="goal" className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">🎯 Цель консультации</h2>
+                <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.goal}</p>
+              </section>
             )}
 
-            {/* Совместимость ресурсов (для партнерской консультации) */}
+            {/* Предупреждения */}
+            {Array.isArray(item.warnings) && item.warnings.length > 0 && (
+              <section id="warnings" className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-amber-900 mb-3">⚠️ Предупреждения</h2>
+                <ul className="space-y-2">
+                  {item.warnings.map((w: string, i: number) => (
+                    <li key={i} className="text-amber-800 leading-relaxed">• {w}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {/* Совместимость ресурсов */}
             {item.compatibility && (
-              <AccordionSection title="Совместимость ресурсов">
+              <AccordionSection title="🤝 Совместимость ресурсов" id="compatibility">
                 <div className="space-y-6">
                   {Array.isArray(item.compatibility.complementary) && item.compatibility.complementary.length > 0 && (
                     <div>
@@ -1666,9 +1598,9 @@ export default function ProfileDetail() {
               </AccordionSection>
             )}
 
-            {/* Зоны конфликтов (для партнерской консультации) */}
+            {/* Зоны конфликтов */}
             {Array.isArray(item.currentDiagnostics?.conflictZones) && item.currentDiagnostics.conflictZones.length > 0 && (
-              <AccordionSection title="Зоны конфликтов">
+              <AccordionSection title="⚔️ Зоны конфликтов" id="conflict-zones">
                 <div className="space-y-4">
                   {item.currentDiagnostics.conflictZones.map((zone: any, i: number) => (
                     <div key={i} className="rounded-lg border-2 border-amber-200 bg-amber-50 p-4">
@@ -1696,9 +1628,75 @@ export default function ProfileDetail() {
               </AccordionSection>
             )}
 
-            {/* Диагностика для партнерской консультации (с разделением по участникам) */}
-            {isPartnerConsultation && item.currentDiagnostics && (
-              <AccordionSection title="Диагностика участников">
+            {/* Диагностика */}
+            {item.currentDiagnostics && !item.currentDiagnostics.firstParticipant && !item.currentDiagnostics.secondParticipant && (
+              <AccordionSection title="🔍 Диагностика" id="diagnostics">
+                <div className="space-y-6">
+                  {Array.isArray(item.currentDiagnostics.resourceStates) && item.currentDiagnostics.resourceStates.length > 0 && (
+                    <div>
+                      <h3 className="text-base font-semibold mb-3">Состояние ресурсов</h3>
+                      <div className="space-y-3">
+                        {item.currentDiagnostics.resourceStates.map((state: any, i: number) => (
+                          <div key={i} className={`rounded-lg p-4 border-2 ${
+                            state.state === 'plus' ? 'border-green-200 bg-green-50' :
+                            state.state === 'minus' ? 'border-red-200 bg-red-50' :
+                            'border-gray-200 bg-gray-50'
+                          }`}>
+                            <div className="font-semibold mb-2">{state.resource}</div>
+                            {Array.isArray(state.evidence) && state.evidence.length > 0 && (
+                              <div className="mb-2">
+                                <div className="text-xs font-semibold text-gray-600 mb-1">Доказательства:</div>
+                                <ul className="list-disc list-inside text-sm text-gray-700">
+                                  {state.evidence.map((e: string, j: number) => (
+                                    <li key={j}>{e}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {Array.isArray(state.correction) && state.correction.length > 0 && (
+                              <div>
+                                <div className="text-xs font-semibold text-gray-600 mb-1">Коррекция:</div>
+                                <ul className="list-disc list-inside text-sm text-gray-700">
+                                  {state.correction.map((c: string, j: number) => (
+                                    <li key={j}>{c}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {item.currentDiagnostics.readiness && (
+                    <div className="rounded-lg border border-blue-100 p-4">
+                      <h3 className="text-base font-semibold mb-2">Готовность</h3>
+                      <div className="mb-2">
+                        <span className="text-sm text-gray-600">Желание: </span>
+                        <span className="font-semibold">{item.currentDiagnostics.readiness.willingness}/10</span>
+                      </div>
+                      {Array.isArray(item.currentDiagnostics.readiness.blockers) && item.currentDiagnostics.readiness.blockers.length > 0 && (
+                        <div className="mb-2">
+                          <div className="text-xs font-semibold text-gray-600 mb-1">Блокеры:</div>
+                          <ul className="list-disc list-inside text-sm text-gray-700">
+                            {item.currentDiagnostics.readiness.blockers.map((b: string, i: number) => (
+                              <li key={i}>{b}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {item.currentDiagnostics.readiness.comment && (
+                        <p className="text-sm text-gray-700 mt-2">{item.currentDiagnostics.readiness.comment}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </AccordionSection>
+            )}
+
+            {/* Диагностика участников */}
+            {(item.currentDiagnostics?.firstParticipant || item.currentDiagnostics?.secondParticipant) && (
+              <AccordionSection title="👥 Диагностика участников" id="participants-diagnostics">
                 <div className="space-y-6">
                   {/* Первый участник */}
                   {item.currentDiagnostics.firstParticipant && Array.isArray(item.currentDiagnostics.firstParticipant.resourceStates) && (
@@ -1779,10 +1777,10 @@ export default function ProfileDetail() {
               </AccordionSection>
             )}
 
-            {/* Обновленная диагностика для партнерской консультации (если есть вопросы с указанием участника) */}
-            {isPartnerConsultation && Array.isArray(item.currentDiagnostics?.questions) && item.currentDiagnostics.questions.length > 0 && (
-              <div>
-                <h3 className="text-base font-semibold mb-3">Вопросы для уточнения</h3>
+            {/* Вопросы для уточнения */}
+            {Array.isArray(item.currentDiagnostics?.questions) && item.currentDiagnostics.questions.length > 0 && (
+              <section id="questions" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">❓ Вопросы для уточнения</h2>
                 <div className="space-y-3">
                   {item.currentDiagnostics.questions.map((q: any, i: number) => (
                     <div key={i} className="bg-blue-50 rounded-lg p-4 border border-blue-100">
@@ -1802,12 +1800,59 @@ export default function ProfileDetail() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
 
-            {/* Обновленные ресурсы по этапам для партнерской консультации (с указанием участника) */}
-            {isPartnerConsultation && Array.isArray(item.resourcesForStages) && item.resourcesForStages.length > 0 && (
-              <AccordionSection title="Ресурсы по этапам">
+            {/* План действий */}
+            {Array.isArray(item.plan123) && item.plan123.length > 0 && (
+              <AccordionSection title="📝 План действий" id="plan">
+                <div className="space-y-6">
+                  {item.plan123.map((plan: any, i: number) => (
+                    <div key={i} className="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-5">
+                      <h3 className="text-lg font-semibold mb-4">{plan.stageTitle}</h3>
+                      {Array.isArray(plan.actions) && plan.actions.length > 0 && (
+                        <div className="mb-4">
+                          <div className="text-sm font-semibold text-gray-700 mb-2">Действия:</div>
+                          <ul className="list-disc list-inside space-y-1 text-gray-700">
+                            {plan.actions.map((action: string, j: number) => (
+                              <li key={j}>{action}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {Array.isArray(plan.resources) && plan.resources.length > 0 && (
+                        <div className="mb-4">
+                          <div className="text-sm font-semibold text-gray-700 mb-2">Ресурсы:</div>
+                          <div className="flex flex-wrap gap-2">
+                            {plan.resources.map((res: any, j: number) => (
+                              <span key={j} className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+                                {res.resource} {res.code && `(${res.code})`}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {plan.successCriteria && (
+                        <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                          <div className="text-sm font-semibold text-green-800 mb-1">Критерий успеха:</div>
+                          <p className="text-sm text-green-700">{plan.successCriteria}</p>
+                        </div>
+                      )}
+                      {plan.riskNotes && (
+                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                          <div className="text-sm font-semibold text-amber-800 mb-1">⚠️ Риски:</div>
+                          <p className="text-sm text-amber-700">{plan.riskNotes}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </AccordionSection>
+            )}
+
+            {/* Ресурсы по этапам */}
+            {Array.isArray(item.resourcesForStages) && item.resourcesForStages.length > 0 && (
+              <AccordionSection title="📊 Ресурсы по этапам" id="resources-stages">
                 <div className="space-y-6">
                   {item.resourcesForStages.map((stage: any, stageIdx: number) => (
                     <div key={stageIdx} className="rounded-xl border border-blue-100 p-5">
@@ -1816,7 +1861,7 @@ export default function ProfileDetail() {
                         {Array.isArray(stage.resources) && stage.resources.map((res: any, resIdx: number) => (
                           <div key={resIdx} className="bg-gray-50 rounded-lg p-4">
                             <div className="font-semibold text-gray-800 mb-2">
-                              {res.resource} 
+                              {res.resource} {res.code && `(${res.code})`}
                               {res.participant && (
                                 <span className="text-sm font-normal text-gray-600 ml-2">
                                   ({res.participant === 'first' ? 'Первый участник' : 'Второй участник'})
@@ -1843,61 +1888,47 @@ export default function ProfileDetail() {
               </AccordionSection>
             )}
 
-            {/* Обновленный план для партнерской консультации (с указанием участника) */}
-            {isPartnerConsultation && Array.isArray(item.plan123) && item.plan123.length > 0 && (
-              <AccordionSection title="План действий">
-                <div className="space-y-6">
-                  {item.plan123.map((plan: any, i: number) => (
-                    <div key={i} className="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-5">
-                      <h3 className="text-lg font-semibold mb-4">{plan.stageTitle}</h3>
-                      {Array.isArray(plan.actions) && plan.actions.length > 0 && (
-                        <div className="mb-4">
-                          <div className="text-sm font-semibold text-gray-700 mb-2">Действия:</div>
-                          <ul className="list-disc list-inside space-y-1 text-gray-700">
-                            {plan.actions.map((action: string, j: number) => (
-                              <li key={j}>{action}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {Array.isArray(plan.resources) && plan.resources.length > 0 && (
-                        <div className="mb-4">
-                          <div className="text-sm font-semibold text-gray-700 mb-2">Ресурсы:</div>
-                          <div className="flex flex-wrap gap-2">
-                            {plan.resources.map((res: any, j: number) => (
-                              <span key={j} className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
-                                {res.resource}
-                                {res.participant && (
-                                  <span className="ml-1 text-xs">
-                                    ({res.participant === 'first' ? '1' : '2'})
-                                  </span>
-                                )}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {plan.successCriteria && (
-                        <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
-                          <div className="text-sm font-semibold text-green-800 mb-1">Критерий успеха:</div>
-                          <p className="text-sm text-green-700">{plan.successCriteria}</p>
-                        </div>
-                      )}
-                      {plan.riskNotes && (
-                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                          <div className="text-sm font-semibold text-amber-800 mb-1">⚠️ Риски:</div>
-                          <p className="text-sm text-amber-700">{plan.riskNotes}</p>
-                        </div>
-                      )}
+            {/* Метрики прогресса */}
+            {item.progressMetrics && (
+              <AccordionSection title="📈 Метрики прогресса" id="metrics">
+                <div className="space-y-4">
+                  {Array.isArray(item.progressMetrics.earlySignals) && item.progressMetrics.earlySignals.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Ранние сигналы</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
+                        {item.progressMetrics.earlySignals.map((s: string, i: number) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
                     </div>
-                  ))}
+                  )}
+                  {Array.isArray(item.progressMetrics.midSignals) && item.progressMetrics.midSignals.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Средние сигналы</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
+                        {item.progressMetrics.midSignals.map((s: string, i: number) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(item.progressMetrics.resultSignals) && item.progressMetrics.resultSignals.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Итоговые сигналы</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
+                        {item.progressMetrics.resultSignals.map((s: string, i: number) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </AccordionSection>
             )}
 
-            {/* Обновленный whatIf для партнерской консультации (с полем conflicts) */}
-            {isPartnerConsultation && item.whatIf && (
-              <AccordionSection title="Что делать в разных ситуациях">
+            {/* Что делать в разных ситуациях */}
+            {item.whatIf && (
+              <AccordionSection title="🔄 Что делать в разных ситуациях" id="what-if">
                 <div className="space-y-4">
                   {Array.isArray(item.whatIf.fatigue) && item.whatIf.fatigue.length > 0 && (
                     <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
@@ -1953,36 +1984,36 @@ export default function ProfileDetail() {
               </AccordionSection>
             )}
 
-            {item.practices && (
-              <AccordionSection title="Практики">
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                  {Object.entries(item.practices).map(([blockKey, list]: any, i: number) => (
-                    <article key={i} className="rounded-2xl border border-blue-100 p-4">
-                      <div className="mb-2 font-semibold">{mapPracticeKey(blockKey)}</div>
-                      {Array.isArray(list) ? (
-                        <div className="space-y-3">
-                          {list.map((pr: any, j: number) => (
-                            <Entry key={j} title={pr.title}>
-                              {pr.p1 && <p className="text-sm whitespace-pre-wrap">{pr.p1}</p>}
-                              {pr.p2 && <p className="text-sm whitespace-pre-wrap">{pr.p2}</p>}
-                              {pr.description && <p className="text-sm whitespace-pre-wrap">{pr.description}</p>}
-                            </Entry>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-sm text-gray-500">Нет данных</div>
-                      )}
-                    </article>
+            {/* Обработка возражений */}
+            {Array.isArray(item.objectionHandling) && item.objectionHandling.length > 0 && (
+              <AccordionSection title="💬 Обработка возражений" id="objections">
+                <div className="space-y-4">
+                  {item.objectionHandling.map((obj: any, i: number) => (
+                    <div key={i} className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+                      <div className="font-semibold text-gray-800 mb-2">&ldquo;{obj.objection}&rdquo;</div>
+                      <p className="text-sm text-gray-700">{obj.reply}</p>
+                    </div>
                   ))}
                 </div>
               </AccordionSection>
             )}
+
+            {/* Финальная стратегия */}
+            {Array.isArray(item.finalStrategy) && item.finalStrategy.length > 0 && (
+              <section id="strategy" className="rounded-2xl border-2 border-green-200 bg-green-50 p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-green-900 mb-3">✅ Финальная стратегия</h2>
+                <div className="space-y-3">
+                  {item.finalStrategy.map((strategy: string, i: number) => (
+                    <p key={i} className="text-green-800 leading-relaxed">{strategy}</p>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
-          );
-        })}
+        ))}
       </div>
     );
-  }, [profile?.raw_json, checkedMap, saveChecked]);
+  }
 
   // Название типа консультации
   const consultationTypeLabel = consultationType === "base" ? "Базовый" : 
@@ -1994,11 +2025,11 @@ export default function ProfileDetail() {
     <div className="space-y-8 max-w-4xl mx-auto">
       {/* Общая шапка */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-        <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="text-2xl font-semibold text-gray-900">{clientName || "Профиль"}</div>
             <div className="flex items-center gap-4 mt-2">
-              {profile?.created_at && (
+          {profile?.created_at && (
                 <div className="text-sm text-gray-500">
                   <span className="font-medium">Дата создания:</span> {new Date(profile.created_at).toLocaleString("ru-RU")}
                 </div>
@@ -2012,8 +2043,8 @@ export default function ProfileDetail() {
                 </div>
               )}
             </div>
-          </div>
-          <ActionBar />
+        </div>
+        <ActionBar />
         </div>
       </div>
 
@@ -2109,7 +2140,7 @@ export default function ProfileDetail() {
         };
         
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {displayImages.slice(0, 5).map((img: any, i: number) => {
               const imageUrl = getImageUrl(img);
               
@@ -2130,13 +2161,13 @@ export default function ProfileDetail() {
                         }}
                       />
                       <div className="hidden absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-50">
-                        Изображение {i + 1}
-                      </div>
+            Изображение {i + 1}
+          </div>
                     </>
                   ) : (
                     <div className="text-gray-400">Изображение {i + 1}</div>
                   )}
-                </div>
+      </div>
               );
             })}
           </div>
@@ -2379,7 +2410,7 @@ export default function ProfileDetail() {
         <div className="fixed inset-0 bg-black/40 z-50 grid place-items-center p-4" onClick={() => setNotesOpen(false)}>
           <div className="bg-white rounded-2xl w-full max-w-2xl p-4 space-y-3" onClick={(e)=>e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <div className="font-semibold">Заметки по расчёту</div>
+            <div className="font-semibold">Заметки по расчёту</div>
               <button className="text-gray-500 hover:text-gray-800" onClick={() => setNotesOpen(false)}>✕</button>
             </div>
             
