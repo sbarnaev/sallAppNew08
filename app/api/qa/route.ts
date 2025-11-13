@@ -69,28 +69,76 @@ export async function POST(req: Request) {
 
       // Streaming branch
       if (wantStream) {
-        console.log("Starting OpenAI streaming request");
-        const r = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${openaiKey}`,
-          },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            messages,
-            temperature: 0.4,
-            max_tokens: 600,
-            stream: true,
-          }),
+        console.log("[DEBUG] Starting OpenAI streaming request", {
+          model: "gpt-4o-mini",
+          messagesCount: messages.length,
+          hasOpenAIKey: !!openaiKey,
+          openAIKeyLength: openaiKey?.length || 0,
+          openAIKeyPreview: openaiKey ? `${openaiKey.substring(0, 10)}...${openaiKey.substring(openaiKey.length - 4)}` : 'null'
         });
         
-        if (!r.ok) {
-          const errorData = await r.json().catch(() => ({}));
-          console.error("OpenAI API error:", r.status, errorData);
+        let r: Response;
+        try {
+          r = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${openaiKey}`,
+            },
+            body: JSON.stringify({
+              model: "gpt-4o-mini",
+              messages,
+              temperature: 0.4,
+              max_tokens: 600,
+              stream: true,
+            }),
+          });
+        } catch (fetchError: any) {
+          console.error("[DEBUG] OpenAI fetch error:", {
+            message: fetchError?.message,
+            code: fetchError?.code,
+            cause: fetchError?.cause
+          });
           return NextResponse.json({ 
-            message: "OpenAI API error", 
-            error: errorData?.error?.message || String(r.status) 
+            message: "Ошибка подключения к OpenAI API", 
+            error: fetchError?.message || String(fetchError),
+            code: fetchError?.code
+          }, { status: 502 });
+        }
+        
+        if (!r.ok) {
+          const errorText = await r.text().catch(() => '');
+          let errorData: any = {};
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { raw: errorText.substring(0, 200) };
+          }
+          
+          console.error("[DEBUG] OpenAI API error:", {
+            status: r.status,
+            statusText: r.statusText,
+            error: errorData,
+            errorText: errorText.substring(0, 500)
+          });
+          
+          // Более понятные сообщения об ошибках
+          let errorMessage = "Ошибка OpenAI API";
+          if (r.status === 401) {
+            errorMessage = "Неверный API ключ OpenAI. Проверьте переменную окружения OPENAI_API_KEY";
+          } else if (r.status === 429) {
+            errorMessage = "Превышен лимит запросов к OpenAI API. Попробуйте позже";
+          } else if (r.status === 500 || r.status === 502 || r.status === 503) {
+            errorMessage = "Сервис OpenAI временно недоступен. Попробуйте позже";
+          } else if (errorData?.error?.message) {
+            errorMessage = errorData.error.message;
+          }
+          
+          return NextResponse.json({ 
+            message: errorMessage,
+            error: errorData?.error?.message || errorData?.error?.type || String(r.status),
+            status: r.status,
+            details: errorData
           }, { status: r.status });
         }
 
@@ -172,24 +220,70 @@ export async function POST(req: Request) {
       }
 
       // Non-streaming branch
-      const r = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${openaiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages,
-          temperature: 0.4,
-          max_tokens: 600,
-        }),
-      });
+      let r: Response;
+      try {
+        r = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${openaiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages,
+            temperature: 0.4,
+            max_tokens: 600,
+          }),
+        });
+      } catch (fetchError: any) {
+        console.error("[DEBUG] OpenAI fetch error (non-streaming):", fetchError);
+        return NextResponse.json({ 
+          message: "Ошибка подключения к OpenAI API", 
+          error: fetchError?.message || String(fetchError)
+        }, { status: 502 });
+      }
+      
+      if (!r.ok) {
+        const errorText = await r.text().catch(() => '');
+        let errorData: any = {};
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { raw: errorText.substring(0, 200) };
+        }
+        
+        console.error("[DEBUG] OpenAI API error (non-streaming):", {
+          status: r.status,
+          error: errorData
+        });
+        
+        let errorMessage = "Ошибка OpenAI API";
+        if (r.status === 401) {
+          errorMessage = "Неверный API ключ OpenAI";
+        } else if (r.status === 429) {
+          errorMessage = "Превышен лимит запросов к OpenAI API";
+        } else if (errorData?.error?.message) {
+          errorMessage = errorData.error.message;
+        }
+        
+        return NextResponse.json({ 
+          message: errorMessage,
+          error: errorData?.error?.message || String(r.status)
+        }, { status: r.status });
+      }
+      
       const data = await r.json().catch(()=>({}));
       const answer = data?.choices?.[0]?.message?.content || data?.answer || data?.content || null;
       return NextResponse.json({ answer: answer || "" });
     } catch (e: any) {
-      return NextResponse.json({ message: "OpenAI request failed", error: String(e) }, { status: 500 });
+      console.error("[DEBUG] OpenAI request exception:", {
+        message: e?.message,
+        stack: e?.stack?.substring(0, 500)
+      });
+      return NextResponse.json({ 
+        message: "Ошибка при запросе к OpenAI", 
+        error: String(e?.message || e) 
+      }, { status: 500 });
     }
   }
 

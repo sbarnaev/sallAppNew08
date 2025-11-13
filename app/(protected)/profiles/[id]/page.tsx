@@ -585,11 +585,26 @@ export default function ProfileDetail() {
       // Если сервер не отдал поток — fallback на обычный json
       if (!res.body || (res.headers.get("content-type") || "").indexOf("text/event-stream") === -1) {
         let a = "Нет ответа";
+        let errorMessage = "";
         try {
           const data = await res.json();
           a = data?.answer || data?.message || a;
+          errorMessage = data?.error || "";
+          
+          // Если это ошибка, показываем более понятное сообщение
+          if (!res.ok) {
+            if (res.status === 401) {
+              a = "Ошибка: Неверный API ключ OpenAI. Проверьте настройки сервера.";
+            } else if (res.status === 429) {
+              a = "Ошибка: Превышен лимит запросов к OpenAI API. Попробуйте позже.";
+            } else if (data?.message) {
+              a = `Ошибка: ${data.message}`;
+            } else {
+              a = `Ошибка: ${res.status} ${res.statusText}`;
+            }
+          }
         } catch {
-          a = `Ошибка: ${res.status}`;
+          a = `Ошибка: ${res.status} ${res.statusText || "Неизвестная ошибка"}`;
         }
         const newHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: a }];
         setAnswer(a);
