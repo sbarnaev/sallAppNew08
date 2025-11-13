@@ -122,64 +122,77 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
 
   let { r, data } = await fetchProfile(token);
   
-  // Пытаемся загрузить images отдельно (если нужно)
-  let processedImages: any = null;
-  try {
-    const imagesOnlyUrl = `${baseUrl}/items/profiles/${id}?fields=images`;
-    console.log("[DEBUG] Fetching images field:", imagesOnlyUrl);
-    const imagesOnlyRes = await fetch(imagesOnlyUrl, {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-      cache: "no-store",
-    });
-    if (imagesOnlyRes.ok) {
-      const imagesOnlyData = await imagesOnlyRes.json().catch(() => ({}));
-      console.log("[DEBUG] Images field data:", imagesOnlyData?.data?.images);
-      if (imagesOnlyData?.data?.images) {
-        // Обрабатываем images
-        try {
-          let imagesObj: any = imagesOnlyData.data.images;
-          if (typeof imagesObj === 'string') {
-            imagesObj = JSON.parse(imagesObj);
-          }
-          console.log("[DEBUG] Parsed images object:", imagesObj);
-          const imageIds = Object.values(imagesObj).filter((id: any) => id != null && id !== '') as number[];
-          console.log("[DEBUG] Image IDs to fetch:", imageIds);
-          if (imageIds.length > 0) {
-            const imagesUrl = `${baseUrl}/items/images?filter[id][_in]=${imageIds.join(',')}&fields=id,code`;
-            console.log("[DEBUG] Fetching images from collection:", imagesUrl);
-            const imagesRes = await fetch(imagesUrl, {
-              headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-              cache: "no-store",
-            });
-            if (imagesRes.ok) {
-              const imagesData = await imagesRes.json().catch(() => ({ data: [] }));
-              console.log("[DEBUG] Images collection response:", imagesData);
-              const imagesMap = new Map((imagesData?.data || []).map((img: any) => [img.id, img.code]));
-              const sortedKeys = Object.keys(imagesObj).sort((a, b) => parseInt(a) - parseInt(b));
-              processedImages = sortedKeys.map((key) => {
-                const id = imagesObj[key];
-                return {
-                  id: id,
-                  code: imagesMap.get(id) || null,
-                  position: key,
-                };
-              }).filter((img) => img.code != null);
-              console.log("[DEBUG] Processed images:", processedImages);
-            } else {
-              const errorText = await imagesRes.text().catch(() => '');
-              console.warn("[DEBUG] Failed to load images from collection:", imagesRes.status, errorText);
-            }
-          }
-        } catch (imagesError) {
-          console.warn("[DEBUG] Error processing images:", imagesError);
+  // Проверяем, получили ли мы images в основном запросе
+  let imagesFromMainRequest: any = null;
+  if (r.ok && (data as any)?.data?.images) {
+    imagesFromMainRequest = (data as any).data.images;
+    console.log("[DEBUG] Images received in main request:", imagesFromMainRequest);
+  } else if (r.status === 403) {
+    // Если получили 403, возможно из-за поля images, пробуем запрос без fields
+    console.log("[DEBUG] Got 403, trying request without fields restriction");
+    try {
+      const allFieldsUrl = `${baseUrl}/items/profiles/${id}`;
+      const allFieldsRes = await fetch(allFieldsUrl, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        cache: "no-store",
+      });
+      if (allFieldsRes.ok) {
+        const allFieldsData = await allFieldsRes.json().catch(() => ({}));
+        if (allFieldsData?.data?.images) {
+          imagesFromMainRequest = allFieldsData.data.images;
+          console.log("[DEBUG] Images received from all-fields request:", imagesFromMainRequest);
+          // Обновляем data, чтобы использовать его дальше
+          data = allFieldsData;
+          r = allFieldsRes;
         }
       }
-    } else {
-      const errorText = await imagesOnlyRes.text().catch(() => '');
-      console.warn("[DEBUG] Failed to load images field:", imagesOnlyRes.status, errorText);
+    } catch (error) {
+      console.warn("[DEBUG] Error trying all-fields request:", error);
     }
-  } catch (imagesError) {
-    console.warn("[DEBUG] Error loading images:", imagesError);
+  }
+  
+  // Обрабатываем images, если они есть
+  let processedImages: any = null;
+  if (imagesFromMainRequest) {
+    try {
+      let imagesObj: any = imagesFromMainRequest;
+      if (typeof imagesObj === 'string') {
+        imagesObj = JSON.parse(imagesObj);
+      }
+      console.log("[DEBUG] Parsed images object:", imagesObj);
+      const imageIds = Object.values(imagesObj).filter((id: any) => id != null && id !== '') as number[];
+      console.log("[DEBUG] Image IDs to fetch:", imageIds);
+      if (imageIds.length > 0) {
+        const imagesUrl = `${baseUrl}/items/images?filter[id][_in]=${imageIds.join(',')}&fields=id,code`;
+        console.log("[DEBUG] Fetching images from collection:", imagesUrl);
+        const imagesRes = await fetch(imagesUrl, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+          cache: "no-store",
+        });
+        if (imagesRes.ok) {
+          const imagesData = await imagesRes.json().catch(() => ({ data: [] }));
+          console.log("[DEBUG] Images collection response:", imagesData);
+          const imagesMap = new Map((imagesData?.data || []).map((img: any) => [img.id, img.code]));
+          const sortedKeys = Object.keys(imagesObj).sort((a, b) => parseInt(a) - parseInt(b));
+          processedImages = sortedKeys.map((key) => {
+            const id = imagesObj[key];
+            return {
+              id: id,
+              code: imagesMap.get(id) || null,
+              position: key,
+            };
+          }).filter((img) => img.code != null);
+          console.log("[DEBUG] Processed images:", processedImages);
+        } else {
+          const errorText = await imagesRes.text().catch(() => '');
+          console.warn("[DEBUG] Failed to load images from collection:", imagesRes.status, errorText);
+        }
+      }
+    } catch (imagesError) {
+      console.warn("[DEBUG] Error processing images:", imagesError);
+    }
+  } else {
+    console.warn("[DEBUG] No images field found. Check Directus: Settings > Roles & Permissions > [Your Role] > Profiles collection > Read access for 'images' field.");
   }
   
   // Если получили 403 из-за поля images (старая логика, на случай если images был в fields)
