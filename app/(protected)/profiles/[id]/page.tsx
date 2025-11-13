@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import html2pdf from "html2pdf.js";
 
 type Profile = {
   id: number;
@@ -68,12 +69,73 @@ export default function ProfileDetail() {
         if (typeof payload === 'string') payload = JSON.parse(payload);
         const item = Array.isArray(payload) ? payload[0] : payload;
         
-        strengths = item?.strengths || (item?.strengths_text ? String(item.strengths_text).split(/\n+/).filter(Boolean) : []);
-        weaknesses = item?.weaknesses || (item?.weaknesses_text ? String(item.weaknesses_text).split(/\n+/).filter(Boolean) : []);
+        // Обрабатываем сильные стороны - убираем формат словаря
+        if (item?.strengths) {
+          if (Array.isArray(item.strengths)) {
+            strengths = item.strengths.map((s: any) => {
+              if (typeof s === 'string') return s;
+              if (typeof s === 'object' && s !== null) {
+                // Если это объект, берем значение или текст
+                return s.text || s.value || s.content || JSON.stringify(s).replace(/[{}"]/g, '');
+              }
+              return String(s);
+            }).filter(Boolean);
+          } else if (typeof item.strengths === 'string') {
+            strengths = item.strengths.split(/\n+/).filter(Boolean);
+          } else if (item.strengths_text) {
+            strengths = String(item.strengths_text).split(/\n+/).filter(Boolean);
+          }
+        }
         
-        // Чеклисты ресурсов
-        resourceSignals = Array.isArray(item?.resourceSignals) ? item.resourceSignals : (item?.resourceSignals_text ? String(item.resourceSignals_text).split(/\n+/).filter(Boolean) : []);
-        deficitSignals = Array.isArray(item?.deficitSignals) ? item.deficitSignals : (item?.deficitSignals_text ? String(item.deficitSignals_text).split(/\n+/).filter(Boolean) : []);
+        // Обрабатываем слабые стороны - убираем формат словаря
+        if (item?.weaknesses) {
+          if (Array.isArray(item.weaknesses)) {
+            weaknesses = item.weaknesses.map((w: any) => {
+              if (typeof w === 'string') return w;
+              if (typeof w === 'object' && w !== null) {
+                return w.text || w.value || w.content || JSON.stringify(w).replace(/[{}"]/g, '');
+              }
+              return String(w);
+            }).filter(Boolean);
+          } else if (typeof item.weaknesses === 'string') {
+            weaknesses = item.weaknesses.split(/\n+/).filter(Boolean);
+          } else if (item.weaknesses_text) {
+            weaknesses = String(item.weaknesses_text).split(/\n+/).filter(Boolean);
+          }
+        }
+        
+        // Чеклисты ресурсов - убираем формат словаря
+        if (item?.resourceSignals) {
+          if (Array.isArray(item.resourceSignals)) {
+            resourceSignals = item.resourceSignals.map((r: any) => {
+              if (typeof r === 'string') return r;
+              if (typeof r === 'object' && r !== null) {
+                return r.text || r.value || r.content || JSON.stringify(r).replace(/[{}"]/g, '');
+              }
+              return String(r);
+            }).filter(Boolean);
+          } else if (typeof item.resourceSignals === 'string') {
+            resourceSignals = item.resourceSignals.split(/\n+/).filter(Boolean);
+          } else if (item.resourceSignals_text) {
+            resourceSignals = String(item.resourceSignals_text).split(/\n+/).filter(Boolean);
+          }
+        }
+        
+        if (item?.deficitSignals) {
+          if (Array.isArray(item.deficitSignals)) {
+            deficitSignals = item.deficitSignals.map((d: any) => {
+              if (typeof d === 'string') return d;
+              if (typeof d === 'object' && d !== null) {
+                return d.text || d.value || d.content || JSON.stringify(d).replace(/[{}"]/g, '');
+              }
+              return String(d);
+            }).filter(Boolean);
+          } else if (typeof item.deficitSignals === 'string') {
+            deficitSignals = item.deficitSignals.split(/\n+/).filter(Boolean);
+          } else if (item.deficitSignals_text) {
+            deficitSignals = String(item.deficitSignals_text).split(/\n+/).filter(Boolean);
+          }
+        }
         
         // Получаем состояние чекбоксов из ui_state
         const uiState = (profile as any)?.ui_state;
@@ -124,188 +186,247 @@ export default function ProfileDetail() {
       
       const dateStr = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('ru-RU') : '';
       
-      const html = `<!doctype html>
+      // Функция для очистки текста от формата словаря
+      const cleanText = (text: string): string => {
+        if (!text) return '';
+        let cleaned = String(text);
+        // Убираем формат {d:d} или подобные паттерны
+        cleaned = cleaned.replace(/\{[^}]*\}/g, '');
+        // Убираем лишние пробелы
+        cleaned = cleaned.replace(/\s+/g, ' ').trim();
+        return cleaned;
+      };
+      
+      // Создаем HTML с красивым оформлением, один блок - одна страница
+      const html = `
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Расчёт профиля${clientName ? ' — ' + clientName : ''}</title>
-        <style>
-          @media print {
-      @page { 
-        margin: 15mm;
-        size: A4;
-      }
-            body { margin: 0; }
-      .no-print { display: none !important; }
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm;
     }
-    @media screen {
-      body { background: #f5f5f5; padding: 20px; }
-      .container { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    }
-    * { box-sizing: border-box; }
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      font-size: 14px;
-      line-height: 1.6;
-      color: #333;
+    * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
-    .container {
-      max-width: 210mm;
-      margin: 0 auto;
-      padding: 20mm;
-    }
-    h1 { 
-      font-size: 24px; 
-      margin: 0 0 8px 0;
-      font-weight: 600;
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.7;
       color: #1a1a1a;
+      background: white;
+    }
+    .page {
+      page-break-after: always;
+      min-height: 250mm;
+      padding: 20mm;
+      display: flex;
+      flex-direction: column;
+    }
+    .page:last-child {
+      page-break-after: auto;
+    }
+    .header {
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 3px solid #1f92aa;
+    }
+    .title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1f92aa;
+      margin-bottom: 8px;
     }
     .subtitle {
-      font-size: 12px;
+      font-size: 13px;
       color: #666;
-      margin-bottom: 24px;
     }
-    h2 { 
-      font-size: 18px; 
-      margin: 24px 0 12px 0;
+    .section-title {
+      font-size: 20px;
       font-weight: 600;
       color: #1a1a1a;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
       border-bottom: 2px solid #e0e0e0;
-      padding-bottom: 4px;
     }
-    .digits {
+    .content {
+      flex: 1;
       display: flex;
-      gap: 12px;
-      margin: 20px 0;
-      justify-content: center;
+      flex-direction: column;
+      justify-content: flex-start;
     }
-    .digit-box {
-      width: 50px;
-      height: 50px;
-      background: #1f92aa;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    li {
+      margin: 12px 0;
+      padding-left: 30px;
+      position: relative;
+      line-height: 1.8;
+      font-size: 15px;
+    }
+    li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: #1f92aa;
       font-weight: bold;
-      border-radius: 8px;
+      font-size: 20px;
     }
-    ul { 
-      margin: 0 0 16px 0; 
-      padding-left: 24px; 
+    .checklist-item {
+      padding-left: 35px;
     }
-    li { 
-      margin: 6px 0;
-      line-height: 1.6;
+    .checkmark {
+      position: absolute;
+      left: 0;
+      font-size: 18px;
     }
-    .section {
-      margin-bottom: 24px;
+    .checklist-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 20px 0 12px 0;
+      color: #059669;
     }
-    .personality, .happiness {
-      background: #f9f9f9;
-      padding: 16px;
-      border-radius: 8px;
-      margin: 16px 0;
-      white-space: pre-wrap;
-      line-height: 1.7;
+    .checklist-title.minus {
+      color: #dc2626;
     }
-    .footer { 
-      margin-top: 40px; 
+    .footer {
+      margin-top: auto;
       padding-top: 20px;
       border-top: 1px solid #e0e0e0;
+      font-size: 11px;
       color: #666;
-      font-size: 12px;
       text-align: right;
     }
-    .footer-line {
-      margin: 4px 0;
-    }
-        </style>
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Расчёт профиля${clientName ? ' — ' + clientName : ''}</h1>
-    ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
-    
-    ${strengths.length > 0 ? `
-    <div class="section">
-      <h2>Сильные стороны</h2>
-      <ul>${strengths.map((s: string) => `<li>${String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('')}</ul>
+  ${strengths.length > 0 ? `
+  <div class="page">
+    <div class="header">
+      <div class="title">Расчёт профиля${clientName ? ' — ' + clientName : ''}</div>
+      ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
     </div>
-    ` : ''}
-    
-    ${weaknesses.length > 0 ? `
-    <div class="section">
-      <h2>Слабые стороны</h2>
-      <ul>${weaknesses.map((w: string) => `<li>${String(w).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('')}</ul>
+    <div class="content">
+      <h2 class="section-title">Сильные стороны</h2>
+      <ul>
+        ${strengths.map((s: string) => {
+          const cleaned = cleanText(s);
+          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>` : '';
+        }).filter(Boolean).join('')}
+      </ul>
     </div>
-    ` : ''}
-    
-    ${(resourceSignals.length > 0 || deficitSignals.length > 0) ? `
-    <div class="section">
-      <h2>Чек-лист ресурсов</h2>
+    <div class="footer">
+      ${initials ? `<div>${initials}</div>` : ''}
+      ${contact ? `<div>${contact}</div>` : ''}
+    </div>
+  </div>
+  ` : ''}
+  
+  ${weaknesses.length > 0 ? `
+  <div class="page">
+    <div class="header">
+      <div class="title">Расчёт профиля${clientName ? ' — ' + clientName : ''}</div>
+      ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
+    </div>
+    <div class="content">
+      <h2 class="section-title">Слабые стороны</h2>
+      <ul>
+        ${weaknesses.map((w: string) => {
+          const cleaned = cleanText(w);
+          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>` : '';
+        }).filter(Boolean).join('')}
+      </ul>
+    </div>
+    <div class="footer">
+      ${initials ? `<div>${initials}</div>` : ''}
+      ${contact ? `<div>${contact}</div>` : ''}
+    </div>
+  </div>
+  ` : ''}
+  
+  ${(resourceSignals.length > 0 || deficitSignals.length > 0) ? `
+  <div class="page">
+    <div class="header">
+      <div class="title">Расчёт профиля${clientName ? ' — ' + clientName : ''}</div>
+      ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
+    </div>
+    <div class="content">
+      <h2 class="section-title">Чек-лист ресурсов</h2>
       ${resourceSignals.length > 0 ? `
-      <div style="margin-bottom: 20px;">
-        <h3 style="font-size: 16px; margin-bottom: 8px; color: #059669;">Признаки плюса (ресурс)</h3>
-        <ul style="list-style: none; padding-left: 0;">
+      <div>
+        <div class="checklist-title">Признаки плюса (ресурс)</div>
+        <ul>
           ${resourceSignals.map((r: string, idx: number) => {
-            // Простая проверка по ключам
+            const cleaned = cleanText(r);
+            if (!cleaned) return '';
             const isChecked = Object.keys(checkedResource).some(k => 
               k.includes('resourceSignals') && (k.includes(String(idx)) || k.includes(r.slice(0, 20)))
             );
-            const escaped = String(r).replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const checkmark = isChecked ? '☑' : '☐';
-            return '<li style="margin: 4px 0; padding-left: 24px; position: relative;"><span style="position: absolute; left: 0;">' + checkmark + '</span>' + escaped + '</li>';
-          }).join('')}
+            return `<li class="checklist-item"><span class="checkmark">${checkmark}</span>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`;
+          }).filter(Boolean).join('')}
         </ul>
       </div>
       ` : ''}
       ${deficitSignals.length > 0 ? `
-      <div style="margin-bottom: 20px;">
-        <h3 style="font-size: 16px; margin-bottom: 8px; color: #dc2626;">Признаки минуса (дефицит)</h3>
-        <ul style="list-style: none; padding-left: 0;">
+      <div>
+        <div class="checklist-title minus">Признаки минуса (дефицит)</div>
+        <ul>
           ${deficitSignals.map((d: string, idx: number) => {
-            // Простая проверка по ключам
+            const cleaned = cleanText(d);
+            if (!cleaned) return '';
             const isChecked = Object.keys(checkedDeficit).some(k => 
               k.includes('deficitSignals') && (k.includes(String(idx)) || k.includes(d.slice(0, 20)))
             );
-            const escaped = String(d).replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const checkmark = isChecked ? '☑' : '☐';
-            return '<li style="margin: 4px 0; padding-left: 24px; position: relative;"><span style="position: absolute; left: 0;">' + checkmark + '</span>' + escaped + '</li>';
-          }).join('')}
+            return `<li class="checklist-item"><span class="checkmark">${checkmark}</span>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`;
+          }).filter(Boolean).join('')}
         </ul>
       </div>
       ` : ''}
     </div>
-    ` : ''}
-    
     <div class="footer">
-      ${initials ? `<div class="footer-line">${initials}</div>` : ''}
-      ${contact ? `<div class="footer-line">${contact}</div>` : ''}
+      ${initials ? `<div>${initials}</div>` : ''}
+      ${contact ? `<div>${contact}</div>` : ''}
     </div>
   </div>
+  ` : ''}
 </body>
 </html>`;
       
-      const frame = document.createElement('iframe');
-      frame.style.position = 'fixed';
-      frame.style.right = '0';
-      frame.style.bottom = '0';
-      frame.style.width = '0';
-      frame.style.height = '0';
-      frame.style.border = '0';
-      document.body.appendChild(frame);
-      frame.srcdoc = html;
-      frame.onload = () => {
-        setTimeout(() => {
-        frame.contentWindow?.print();
-          setTimeout(() => document.body.removeChild(frame), 2000);
-        }, 100);
+      // Создаем временный элемент для генерации PDF
+      const element = document.createElement('div');
+      element.innerHTML = html;
+      element.style.position = 'absolute';
+      element.style.left = '-9999px';
+      document.body.appendChild(element);
+      
+      // Настройки для html2pdf
+      const opt = {
+        margin: [20, 20, 20, 20],
+        filename: `Расчет_${clientName || 'профиль'}_${dateStr || new Date().toLocaleDateString('ru-RU')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
+      
+      // Генерируем и скачиваем PDF
+      try {
+        await html2pdf().set(opt).from(element).save();
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Ошибка при генерации PDF');
+      } finally {
+        document.body.removeChild(element);
+      }
     }
     // Показываем PDF только для базовых расчетов
     if (consultationType !== "base") {
