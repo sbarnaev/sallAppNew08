@@ -446,10 +446,15 @@ export default function ProfileDetail() {
       
       // Настройки для html2pdf
       const opt = {
-        margin: [20, 20, 20, 20] as [number, number, number, number],
+        margin: [0, 0, 0, 0] as [number, number, number, number],
         filename: `Расчет_${clientName || 'профиль'}_${dateStr || new Date().toLocaleDateString('ru-RU')}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        },
         jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
@@ -459,9 +464,11 @@ export default function ProfileDetail() {
         await html2pdf().set(opt).from(element).save();
       } catch (error) {
         console.error('Error generating PDF:', error);
-        alert('Ошибка при генерации PDF');
+        alert('Ошибка при генерации PDF: ' + (error instanceof Error ? error.message : String(error)));
       } finally {
-        document.body.removeChild(element);
+        if (element.parentNode) {
+          document.body.removeChild(element);
+        }
       }
     }
     // Показываем PDF только для базовых расчетов
