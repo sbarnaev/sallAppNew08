@@ -1417,7 +1417,7 @@ export default function ProfileDetail() {
                 <div className="space-y-4">
                   {item.objectionHandling.map((obj: any, i: number) => (
                     <div key={i} className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-                      <div className="font-semibold text-gray-800 mb-2">"{obj.objection}"</div>
+                      <div className="font-semibold text-gray-800 mb-2">&ldquo;{obj.objection}&rdquo;</div>
                       <p className="text-sm text-gray-700">{obj.reply}</p>
                     </div>
                   ))}
