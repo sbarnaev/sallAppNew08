@@ -85,6 +85,15 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
 
   let { r, data } = await fetchProfile(token);
 
+  console.log("[DEBUG] After fetchProfile:", {
+    status: r.status,
+    statusText: r.statusText,
+    hasData: !!data,
+    hasErrors: !!(data as any)?.errors,
+    firstError: (data as any)?.errors?.[0],
+    errorMessage: (data as any)?.errors?.[0]?.message
+  });
+
   if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
     // попробуем освежить токен
     const origin = new URL(req.url).origin;
