@@ -498,8 +498,12 @@ export default function ProfileDetail() {
         html2canvas: { 
           scale: 2, 
           useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff'
+          logging: true, // Включаем логирование для отладки
+          backgroundColor: '#ffffff',
+          width: element.scrollWidth,
+          height: element.scrollHeight,
+          windowWidth: element.scrollWidth,
+          windowHeight: element.scrollHeight
         },
         jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
