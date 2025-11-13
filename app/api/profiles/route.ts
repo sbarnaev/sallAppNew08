@@ -13,6 +13,35 @@ export async function GET(req: NextRequest) {
   const incomingParams = req.nextUrl.searchParams;
   const searchTerm = (incomingParams.get("search") || "").toString().trim();
   
+  // Если есть поиск, сначала находим клиентов
+  let clientIds: number[] = [];
+  if (searchTerm) {
+    try {
+      const clientSearchParams = new URLSearchParams();
+      clientSearchParams.set("filter[_or][0][name][_icontains]", searchTerm);
+      clientSearchParams.set("filter[_or][1][birth_date][_icontains]", searchTerm);
+      clientSearchParams.set("fields", "id");
+      clientSearchParams.set("limit", "1000"); // Достаточно большое число
+      
+      const clientsRes = await fetch(`${baseUrl}/items/clients?${clientSearchParams.toString()}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        cache: "no-store",
+      });
+      
+      if (clientsRes.ok) {
+        const clientsData = await clientsRes.json().catch(() => ({ data: [] }));
+        clientIds = (clientsData?.data || []).map((c: any) => c.id).filter((id: any): id is number => !!id);
+      }
+    } catch (error) {
+      console.error("Error searching clients:", error);
+    }
+    
+    // Если клиенты не найдены, возвращаем пустой результат
+    if (clientIds.length === 0) {
+      return NextResponse.json({ data: [], meta: { filter_count: 0 } }, { status: 200 });
+    }
+  }
+  
   const sp = new URLSearchParams();
   // Копируем все параметры кроме search, page, limit, offset, meta
   incomingParams.forEach((value, key) => {
@@ -27,11 +56,16 @@ export async function GET(req: NextRequest) {
   if (!sp.has("meta")) sp.set("meta", "filter_count");
   if (!sp.has("sort")) sp.set("sort", "-created_at");
   
-  // Добавляем поиск по имени клиента и дате рождения
-  if (searchTerm) {
-    // Используем _or для поиска по нескольким полям связанной таблицы
-    sp.set("filter[_or][0][client][name][_icontains]", searchTerm);
-    sp.set("filter[_or][1][client][birth_date][_icontains]", searchTerm);
+  // Если есть найденные client_ids, фильтруем по ним
+  if (clientIds.length > 0) {
+    if (clientIds.length === 1) {
+      sp.set("filter[client_id][_eq]", String(clientIds[0]));
+    } else {
+      // Для нескольких ID используем _in
+      clientIds.forEach((id, idx) => {
+        sp.set(`filter[client_id][_in][${idx}]`, String(id));
+      });
+    }
   }
 
   // Проверяем, что URL валидный
