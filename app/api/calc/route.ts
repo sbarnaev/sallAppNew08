@@ -103,13 +103,16 @@ export async function POST(req: Request) {
       request: request ?? clientRequest ?? query ?? prompt ?? null,
       // Передаем URL Directus для n8n workflow
       directusUrl: directusUrl,
+      // Передаем токен в body для совместимости с n8n webhook
+      token: token,
     };
     
     console.log("Calling n8n workflow:", {
       url: n8nUrl,
       type: type || "base",
       profileId,
-      hasDirectusUrl: !!directusUrl
+      hasDirectusUrl: !!directusUrl,
+      hasToken: !!token
     });
     
     r = await fetch(n8nUrl, {
