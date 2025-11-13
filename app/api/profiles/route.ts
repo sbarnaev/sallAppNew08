@@ -61,10 +61,8 @@ export async function GET(req: NextRequest) {
     if (clientIds.length === 1) {
       sp.set("filter[client_id][_eq]", String(clientIds[0]));
     } else {
-      // Для нескольких ID используем _in
-      clientIds.forEach((id, idx) => {
-        sp.set(`filter[client_id][_in][${idx}]`, String(id));
-      });
+      // Для нескольких ID используем _in (правильный синтаксис для Directus)
+      sp.set("filter[client_id][_in]", clientIds.join(','));
     }
   }
 
