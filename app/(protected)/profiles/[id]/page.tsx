@@ -522,10 +522,14 @@ export default function ProfileDetail() {
         (typeof p.digits === 'string' && p.digits.trim().length > 0)
       ));
       
-      tries += 1;
-      
-      // Останавливаем поллинг если есть данные или достигнут лимит попыток
-      const shouldStop = hasRenderableHtml || hasRaw || hasDigits || tries >= maxTries;
+          tries += 1;
+          
+          // Останавливаем поллинг если:
+          // 1. Есть данные для отображения
+          // 2. Достигнут лимит попыток
+          // 3. Получили 401 и refresh не помог (нужен перелогин)
+          const isUnauthorized = responseStatus === 401 && !p;
+          const shouldStop = hasRenderableHtml || hasRaw || hasDigits || tries >= maxTries || isUnauthorized;
       
       if (shouldStop) {
         setPolling(false);

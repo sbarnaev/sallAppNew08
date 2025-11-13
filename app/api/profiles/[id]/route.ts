@@ -424,6 +424,21 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       url: urlWithFields
     });
     
+    // Для 401 (неавторизован) возвращаем структурированный ответ
+    if (r.status === 401) {
+      const errorMessage = (data as any)?.errors?.[0]?.message || "Требуется авторизация";
+      return NextResponse.json(
+        { 
+          data: null, 
+          errors: [{ 
+            message: errorMessage,
+            extensions: { code: "UNAUTHORIZED", status: 401 }
+          }] 
+        },
+        { status: 401 }
+      );
+    }
+    
     // Для 404 возвращаем структурированный ответ
     if (r.status === 404) {
       return NextResponse.json(
