@@ -1944,7 +1944,8 @@ export default function ProfileDetail() {
               </AccordionSection>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
     );
   }, [profile?.raw_json, checkedMap, saveChecked]);
