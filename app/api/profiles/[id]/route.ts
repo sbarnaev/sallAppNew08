@@ -146,39 +146,70 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
           data = allFieldsData;
           r = allFieldsRes;
         } else {
-          // Пробуем GraphQL запрос для получения images
-          console.log("[DEBUG] Trying GraphQL query for images");
+          // Пробуем server endpoint (может иметь другие права)
+          console.log("[DEBUG] Trying server endpoint for images");
           try {
-            const graphqlUrl = `${baseUrl}/graphql`;
-            const graphqlQuery = {
-              query: `query {
-                profiles_by_id(id: ${id}) {
-                  images
-                }
-              }`
-            };
-            const graphqlRes = await fetch(graphqlUrl, {
-              method: 'POST',
-              headers: { 
-                Authorization: `Bearer ${token}`, 
-                'Content-Type': 'application/json',
-                Accept: "application/json" 
-              },
-              body: JSON.stringify(graphqlQuery),
+            const serverUrl = `${baseUrl}/server/items/profiles/${id}?fields=images`;
+            const serverRes = await fetch(serverUrl, {
+              headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
               cache: "no-store",
             });
-            if (graphqlRes.ok) {
-              const graphqlData = await graphqlRes.json().catch(() => ({}));
-              console.log("[DEBUG] GraphQL response:", graphqlData);
-              if (graphqlData?.data?.profiles_by_id?.images) {
-                imagesFromMainRequest = graphqlData.data.profiles_by_id.images;
-                console.log("[DEBUG] Images received from GraphQL:", imagesFromMainRequest);
+            if (serverRes.ok) {
+              const serverData = await serverRes.json().catch(() => ({}));
+              console.log("[DEBUG] Server endpoint response:", serverData);
+              if (serverData?.data?.images) {
+                imagesFromMainRequest = serverData.data.images;
+                console.log("[DEBUG] Images received from server endpoint:", imagesFromMainRequest);
               }
+            } else {
+              const errorText = await serverRes.text().catch(() => '');
+              console.warn("[DEBUG] Server endpoint failed:", serverRes.status, errorText);
             }
-          } catch (graphqlError) {
-            console.warn("[DEBUG] GraphQL query failed:", graphqlError);
+          } catch (serverError) {
+            console.warn("[DEBUG] Server endpoint error:", serverError);
+          }
+          
+          // Пробуем GraphQL запрос для получения images
+          if (!imagesFromMainRequest) {
+            console.log("[DEBUG] Trying GraphQL query for images");
+            try {
+              const graphqlUrl = `${baseUrl}/graphql`;
+              const graphqlQuery = {
+                query: `query {
+                  profiles_by_id(id: ${id}) {
+                    images
+                  }
+                }`
+              };
+              const graphqlRes = await fetch(graphqlUrl, {
+                method: 'POST',
+                headers: { 
+                  Authorization: `Bearer ${token}`, 
+                  'Content-Type': 'application/json',
+                  Accept: "application/json" 
+                },
+                body: JSON.stringify(graphqlQuery),
+                cache: "no-store",
+              });
+              if (graphqlRes.ok) {
+                const graphqlData = await graphqlRes.json().catch(() => ({}));
+                console.log("[DEBUG] GraphQL response:", graphqlData);
+                if (graphqlData?.data?.profiles_by_id?.images) {
+                  imagesFromMainRequest = graphqlData.data.profiles_by_id.images;
+                  console.log("[DEBUG] Images received from GraphQL:", imagesFromMainRequest);
+                }
+              } else {
+                const errorText = await graphqlRes.text().catch(() => '');
+                console.warn("[DEBUG] GraphQL failed:", graphqlRes.status, errorText);
+              }
+            } catch (graphqlError) {
+              console.warn("[DEBUG] GraphQL query failed:", graphqlError);
+            }
           }
         }
+      } else {
+        const errorText = await allFieldsRes.text().catch(() => '');
+        console.warn("[DEBUG] All-fields request failed:", allFieldsRes.status, errorText);
       }
     } catch (error) {
       console.warn("[DEBUG] Error trying all-fields request:", error);
