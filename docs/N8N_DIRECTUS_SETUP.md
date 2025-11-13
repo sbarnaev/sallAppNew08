@@ -119,11 +119,17 @@ Headers:
    ```
 4. **Headers**:
    - `Content-Type`: `application/json`
+   - `Accept`: `application/json`
+
+**ВАЖНО**: Убедитесь, что:
+- Body отправляется как JSON (не form-data!)
+- В настройках HTTP Request node выбран "JSON" в разделе "Body"
+- `{{ $json.refreshToken }}` содержит значение (не пустое)
 
 ### Шаг 2: Извлеките новый токен
 
 После HTTP Request добавьте **Set** node:
-- **Name**: `newToken`
+- **Name**: `access_token`
 - **Value**: `{{ $json.data.access_token }}`
 
 Или используйте напрямую в следующем HTTP Request:
@@ -132,7 +138,15 @@ Headers:
 ### Шаг 3: Используйте обновленный токен
 
 В следующем HTTP Request node используйте:
-- **Authorization**: `Bearer {{ $json.data.access_token }}`
+- **Authorization**: `Bearer {{ $json.access_token }}`
+
+### Проверка refresh token
+
+Перед HTTP Request для обновления токена добавьте **Set** node для отладки:
+- **Name**: `debug_refresh`
+- **Value**: `{{ $json.refreshToken }}`
+
+Это покажет, передается ли refresh token правильно.
 
 ## Альтернатива: Статический токен Directus
 
