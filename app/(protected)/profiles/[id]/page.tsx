@@ -125,10 +125,10 @@ export default function ProfileDetail() {
         if (uiState?.checked) {
           checkedResource = Object.fromEntries(
             Object.entries(uiState.checked).filter(([key]) => key.includes('resourceSignals'))
-          );
+          ) as Record<string, boolean>;
           checkedDeficit = Object.fromEntries(
             Object.entries(uiState.checked).filter(([key]) => key.includes('deficitSignals'))
-          );
+          ) as Record<string, boolean>;
         }
         
         if (item?.personalitySummary) {
@@ -979,6 +979,7 @@ export default function ProfileDetail() {
                 <div key={i} className="rounded-2xl overflow-hidden border bg-gray-50 h-36 grid place-items-center relative">
                   {imageUrl ? (
                     <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img 
                         src={imageUrl} 
                         alt={`Изображение ${i + 1}`}

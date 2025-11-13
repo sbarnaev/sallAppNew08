@@ -23,9 +23,7 @@ COPY . .
 
 # Собираем Next.js
 ENV NEXT_TELEMETRY_DISABLED=1
-# Устанавливаем переменные окружения для сборки (если нужны)
-ENV SKIP_ENV_VALIDATION=true
-RUN npm run build 2>&1 | tee build.log || (cat build.log && exit 1)
+RUN npm run build
 
 ############################
 # 3) Runtime (small image) #
