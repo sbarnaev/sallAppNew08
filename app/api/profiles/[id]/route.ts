@@ -138,12 +138,46 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       });
       if (allFieldsRes.ok) {
         const allFieldsData = await allFieldsRes.json().catch(() => ({}));
+        console.log("[DEBUG] All fields response keys:", Object.keys(allFieldsData?.data || {}));
         if (allFieldsData?.data?.images) {
           imagesFromMainRequest = allFieldsData.data.images;
           console.log("[DEBUG] Images received from all-fields request:", imagesFromMainRequest);
           // Обновляем data, чтобы использовать его дальше
           data = allFieldsData;
           r = allFieldsRes;
+        } else {
+          // Пробуем GraphQL запрос для получения images
+          console.log("[DEBUG] Trying GraphQL query for images");
+          try {
+            const graphqlUrl = `${baseUrl}/graphql`;
+            const graphqlQuery = {
+              query: `query {
+                profiles_by_id(id: ${id}) {
+                  images
+                }
+              }`
+            };
+            const graphqlRes = await fetch(graphqlUrl, {
+              method: 'POST',
+              headers: { 
+                Authorization: `Bearer ${token}`, 
+                'Content-Type': 'application/json',
+                Accept: "application/json" 
+              },
+              body: JSON.stringify(graphqlQuery),
+              cache: "no-store",
+            });
+            if (graphqlRes.ok) {
+              const graphqlData = await graphqlRes.json().catch(() => ({}));
+              console.log("[DEBUG] GraphQL response:", graphqlData);
+              if (graphqlData?.data?.profiles_by_id?.images) {
+                imagesFromMainRequest = graphqlData.data.profiles_by_id.images;
+                console.log("[DEBUG] Images received from GraphQL:", imagesFromMainRequest);
+              }
+            }
+          } catch (graphqlError) {
+            console.warn("[DEBUG] GraphQL query failed:", graphqlError);
+          }
         }
       }
     } catch (error) {
