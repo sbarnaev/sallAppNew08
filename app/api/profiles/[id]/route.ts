@@ -118,7 +118,54 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
 
   let { r, data } = await fetchProfile(token);
   
-  // Если получили 403 из-за поля images, попробуем запросить без него и затем отдельно загрузить images
+  // Пытаемся загрузить images отдельно (если нужно)
+  let processedImages: any = null;
+  try {
+    const imagesOnlyUrl = `${baseUrl}/items/profiles/${id}?fields=images`;
+    const imagesOnlyRes = await fetch(imagesOnlyUrl, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (imagesOnlyRes.ok) {
+      const imagesOnlyData = await imagesOnlyRes.json().catch(() => ({}));
+      if (imagesOnlyData?.data?.images) {
+        // Обрабатываем images
+        try {
+          let imagesObj: any = imagesOnlyData.data.images;
+          if (typeof imagesObj === 'string') {
+            imagesObj = JSON.parse(imagesObj);
+          }
+          const imageIds = Object.values(imagesObj).filter((id: any) => id != null && id !== '') as number[];
+          if (imageIds.length > 0) {
+            const imagesUrl = `${baseUrl}/items/images?filter[id][_in]=${imageIds.join(',')}&fields=id,code`;
+            const imagesRes = await fetch(imagesUrl, {
+              headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+              cache: "no-store",
+            });
+            if (imagesRes.ok) {
+              const imagesData = await imagesRes.json().catch(() => ({ data: [] }));
+              const imagesMap = new Map((imagesData?.data || []).map((img: any) => [img.id, img.code]));
+              const sortedKeys = Object.keys(imagesObj).sort((a, b) => parseInt(a) - parseInt(b));
+              processedImages = sortedKeys.map((key) => {
+                const id = imagesObj[key];
+                return {
+                  id: id,
+                  code: imagesMap.get(id) || null,
+                  position: key,
+                };
+              }).filter((img) => img.code != null);
+            }
+          }
+        } catch (imagesError) {
+          console.warn("[DEBUG] Error processing images:", imagesError);
+        }
+      }
+    }
+  } catch (imagesError) {
+    // Игнорируем ошибки загрузки images
+  }
+  
+  // Если получили 403 из-за поля images (старая логика, на случай если images был в fields)
   if (r.status === 403 && (data as any)?.errors?.[0]?.message?.includes('images')) {
     console.log("[DEBUG] Got 403 for images field, retrying without images field");
     const fieldsWithoutImages = [

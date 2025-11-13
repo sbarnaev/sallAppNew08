@@ -791,14 +791,32 @@ export default function ProfileDetail() {
   }
 
   const renderedFromJson = useMemo(() => {
-    if (!profile?.raw_json) return null;
+    if (!profile?.raw_json) {
+      console.log("[DEBUG] renderedFromJson: no raw_json");
+      return null;
+    }
     let payload: any = profile.raw_json;
     try {
       if (typeof payload === "string") payload = JSON.parse(payload);
-    } catch {
+    } catch (parseError) {
+      console.warn("[DEBUG] renderedFromJson: failed to parse JSON", parseError);
       return null;
     }
     const items = Array.isArray(payload) ? payload : [payload];
+    console.log("[DEBUG] renderedFromJson: parsed items", {
+      itemsCount: items.length,
+      firstItemKeys: items[0] ? Object.keys(items[0]) : [],
+      hasOpener: items[0]?.opener,
+      hasPersonalitySummary: items[0]?.personalitySummary,
+      hasStrengths: items[0]?.strengths,
+      hasWeaknesses: items[0]?.weaknesses,
+      hasHappinessFormula: items[0]?.happinessFormula,
+      hasCodesExplanation: items[0]?.codesExplanation,
+      hasResourceSignals: items[0]?.resourceSignals,
+      hasDeficitSignals: items[0]?.deficitSignals,
+      hasConflicts: items[0]?.conflicts,
+      hasPractices: items[0]?.practices,
+    });
 
     const makeHashKey = (section: string, text: string): string => `${section}:h:${hashString(normalizeTextForHash(text))}`;
     const makeLegacyKey = (section: string, text: string, index: number): string => {
@@ -844,6 +862,34 @@ export default function ProfileDetail() {
       </div>
     );
 
+    // Проверяем, есть ли хотя бы какие-то данные для отображения
+    const hasAnyData = items.some((item: any) => 
+      item.opener || 
+      item.personalitySummary || 
+      item.strengths || 
+      item.strengths_text || 
+      item.weaknesses || 
+      item.weaknesses_text || 
+      item.happinessFormula || 
+      item.codesExplanation || 
+      item.resourceSignals || 
+      item.resourceSignals_text || 
+      item.deficitSignals || 
+      item.deficitSignals_text || 
+      item.conflicts || 
+      item.practices ||
+      // Для целевых консультаций могут быть другие поля
+      item.request ||
+      item.answer ||
+      item.recommendations ||
+      item.analysis
+    );
+    
+    if (!hasAnyData) {
+      console.warn("[DEBUG] renderedFromJson: no recognizable data fields in items");
+      return null;
+    }
+    
     return (
       <div className="space-y-6">
         {items.map((item, idx) => (
@@ -993,6 +1039,60 @@ export default function ProfileDetail() {
                   ))}
                 </div>
               </AccordionSection>
+            )}
+
+            {/* Поля для целевой консультации */}
+            {(item.request || item.answer || item.recommendations || item.analysis) && (
+              <section className="space-y-6">
+                {item.request && (
+                  <article className="rounded-2xl border border-blue-100 p-6">
+                    <h2 className="m-0 text-sm font-bold uppercase tracking-wide text-gray-600 mb-3">Запрос клиента</h2>
+                    <p className="whitespace-pre-wrap leading-relaxed text-gray-800">{item.request}</p>
+                  </article>
+                )}
+                {item.analysis && (
+                  <article className="rounded-2xl border border-blue-100 p-6">
+                    <h2 className="m-0 text-sm font-bold uppercase tracking-wide text-gray-600 mb-3">Анализ</h2>
+                    {typeof item.analysis === 'string' ? (
+                      <p className="whitespace-pre-wrap leading-relaxed text-gray-800">{item.analysis}</p>
+                    ) : Array.isArray(item.analysis) ? (
+                      <div className="space-y-2">
+                        {item.analysis.map((t: string, i: number) => (
+                          <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800">{t}</p>
+                        ))}
+                      </div>
+                    ) : null}
+                  </article>
+                )}
+                {item.answer && (
+                  <article className="rounded-2xl border border-blue-100 p-6">
+                    <h2 className="m-0 text-sm font-bold uppercase tracking-wide text-gray-600 mb-3">Ответ</h2>
+                    {typeof item.answer === 'string' ? (
+                      <p className="whitespace-pre-wrap leading-relaxed text-gray-800">{item.answer}</p>
+                    ) : Array.isArray(item.answer) ? (
+                      <div className="space-y-2">
+                        {item.answer.map((t: string, i: number) => (
+                          <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800">{t}</p>
+                        ))}
+                      </div>
+                    ) : null}
+                  </article>
+                )}
+                {item.recommendations && (
+                  <article className="rounded-2xl border border-blue-100 p-6">
+                    <h2 className="m-0 text-sm font-bold uppercase tracking-wide text-gray-600 mb-3">Рекомендации</h2>
+                    {Array.isArray(item.recommendations) ? (
+                      <ul className="list-disc list-inside space-y-2">
+                        {item.recommendations.map((r: string, i: number) => (
+                          <li key={i} className="leading-relaxed text-gray-800">{r}</li>
+                        ))}
+                      </ul>
+                    ) : typeof item.recommendations === 'string' ? (
+                      <p className="whitespace-pre-wrap leading-relaxed text-gray-800">{item.recommendations}</p>
+                    ) : null}
+                  </article>
+                )}
+              </section>
             )}
 
             {item.practices && (
