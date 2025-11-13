@@ -2325,14 +2325,14 @@ export default function ProfileDetail() {
               const imageUrl = getImageUrl(img);
               
               return (
-                <div key={i} className="rounded-2xl overflow-hidden border bg-gray-50 h-36 grid place-items-center relative">
+                <div key={i} className="rounded-2xl overflow-hidden border bg-gray-50 relative" style={{ aspectRatio: '2/3' }}>
                   {imageUrl ? (
                     <>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img 
                         src={imageUrl} 
                         alt={`Изображение ${i + 1}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           console.error(`[ERROR] Failed to load image ${i + 1}:`, {
@@ -2357,12 +2357,12 @@ export default function ProfileDetail() {
           </div>
                     </>
                   ) : (
-                    <div className="text-gray-400">Изображение {i + 1}</div>
+                    <div className="absolute inset-0 flex items-center justify-center text-gray-400">Изображение {i + 1}</div>
                   )}
       </div>
               );
             })}
-          </div>
+      </div>
         );
       })()}
 
