@@ -404,6 +404,7 @@ export default function ProfileDetail() {
 
     async function fetchOnce() {
       let data: any = null;
+      let responseStatus: number | null = null;
       try {
         const res = await fetch(`/api/profiles/${id}?_=${Date.now()}`, {
           cache: "no-store",
@@ -411,6 +412,7 @@ export default function ProfileDetail() {
           headers: { Accept: "application/json" },
           mode: "same-origin",
         } as RequestInit);
+        responseStatus = res.status;
         if (!res.ok) {
           // 401/403/5xx — мягко завершаем попытку
           try { data = await res.json(); } catch { data = null; }
@@ -426,6 +428,7 @@ export default function ProfileDetail() {
       
       // Логируем данные для диагностики
       console.log("API response:", {
+        status: responseStatus,
         hasData: !!data,
         hasDataData: !!data?.data,
         profileKeys: p ? Object.keys(p) : [],
@@ -446,7 +449,7 @@ export default function ProfileDetail() {
           digitsValue: p.digits
         });
       } else {
-        console.warn("⚠️ Profile data is null!", { data, response: res });
+        console.warn("⚠️ Profile data is null!", { data, status: responseStatus });
       }
       
       // если идёт локальное сохранение чекбоксов — не перетирать ui_state
