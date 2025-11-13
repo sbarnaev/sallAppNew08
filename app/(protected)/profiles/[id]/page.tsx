@@ -1221,9 +1221,12 @@ export default function ProfileDetail() {
             {Array.isArray(item.goalDecomposition) && item.goalDecomposition.length > 0 && (
               <section id="goal-decomposition" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
                 <h2 className="m-0 text-base font-bold text-gray-800 mb-3">📋 Декомпозиция цели</h2>
-                <ol className="space-y-3 list-decimal list-inside">
+                <ol className="space-y-3 list-none pl-0">
                   {item.goalDecomposition.map((goal: string, i: number) => (
-                    <li key={i} className="text-gray-700 leading-relaxed">{goal}</li>
+                    <li key={i} className="text-gray-700 leading-relaxed flex gap-3">
+                      <span className="font-semibold text-blue-600 flex-shrink-0">{i + 1}.</span>
+                      <span>{goal}</span>
+                    </li>
                   ))}
                 </ol>
               </section>
@@ -1376,11 +1379,17 @@ export default function ProfileDetail() {
                         <div className="mb-4">
                           <div className="text-sm font-semibold text-gray-700 mb-2">Ресурсы:</div>
                           <div className="flex flex-wrap gap-2">
-                            {plan.resources.map((res: any, j: number) => (
-                              <span key={j} className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
-                                {res.resource} {res.code && `(${res.code})`}
-                              </span>
-                            ))}
+                            {plan.resources.map((res: any, j: number) => {
+                              // Убираем дубли цифр: если resource уже содержит код в скобках, не добавляем его снова
+                              const resourceText = res.resource || '';
+                              const hasCodeInText = /\(\d+\)/.test(resourceText);
+                              const codeText = res.code && !hasCodeInText ? `(${res.code})` : '';
+                              return (
+                                <span key={j} className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+                                  {resourceText} {codeText}
+                                </span>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -1824,11 +1833,17 @@ export default function ProfileDetail() {
                         <div className="mb-4">
                           <div className="text-sm font-semibold text-gray-700 mb-2">Ресурсы:</div>
                           <div className="flex flex-wrap gap-2">
-                            {plan.resources.map((res: any, j: number) => (
-                              <span key={j} className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
-                                {res.resource} {res.code && `(${res.code})`}
-                              </span>
-                            ))}
+                            {plan.resources.map((res: any, j: number) => {
+                              // Убираем дубли цифр: если resource уже содержит код в скобках, не добавляем его снова
+                              const resourceText = res.resource || '';
+                              const hasCodeInText = /\(\d+\)/.test(resourceText);
+                              const codeText = res.code && !hasCodeInText ? `(${res.code})` : '';
+                              return (
+                                <span key={j} className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+                                  {resourceText} {codeText}
+                                </span>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
