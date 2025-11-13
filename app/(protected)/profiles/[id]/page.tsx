@@ -406,11 +406,32 @@ export default function ProfileDetail() {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       
+      // Проверяем ошибки парсинга
+      const parserError = doc.querySelector('parsererror');
+      if (parserError) {
+        console.error('HTML parsing error:', parserError.textContent);
+        alert('Ошибка парсинга HTML: ' + parserError.textContent);
+        return;
+      }
+      
       const bodyContent = doc.body;
       const styleElement = doc.querySelector('style');
       
-      if (!bodyContent) {
-        alert('Ошибка: не удалось создать содержимое для PDF');
+      console.log('PDF generation debug:', {
+        hasDoc: !!doc,
+        hasBody: !!bodyContent,
+        bodyChildren: bodyContent?.children.length || 0,
+        hasStyle: !!styleElement,
+        htmlLength: html.length
+      });
+      
+      if (!bodyContent || bodyContent.children.length === 0) {
+        console.error('Body content is empty or missing', {
+          bodyContent,
+          bodyHTML: bodyContent?.innerHTML,
+          docHTML: doc.documentElement?.outerHTML?.substring(0, 500)
+        });
+        alert('Ошибка: не удалось создать содержимое для PDF. Проверьте консоль для деталей.');
         return;
       }
       
@@ -631,33 +652,43 @@ export default function ProfileDetail() {
           const shouldStop = hasRenderableHtml || hasRaw || hasDigits || tries >= maxTries || isUnauthorized;
       
       if (shouldStop) {
-        setPolling(false);
-        pollingRef.current = false;
-        console.log("✅ Polling stopped:", { 
-          hasRenderableHtml, 
-          hasRaw, 
-          hasDigits, 
-          tries,
-          profileId: p?.id,
-          htmlLength: htmlCandidate ? String(htmlCandidate).length : 0
-        });
+        if (pollingRef.current) {
+          setPolling(false);
+          pollingRef.current = false;
+          console.log("✅ Polling stopped:", { 
+            hasRenderableHtml, 
+            hasRaw, 
+            hasDigits, 
+            tries,
+            profileId: p?.id,
+            htmlLength: htmlCandidate ? String(htmlCandidate).length : 0
+          });
+        }
       } else {
-        console.log("⏳ Still polling:", { 
-          hasRenderableHtml, 
-          hasRaw, 
-          hasDigits, 
-          tries, 
-          profileId: p?.id,
-          maxTries,
-          htmlCandidate: htmlCandidate ? String(htmlCandidate).substring(0, 50) : null
-        });
+        if (pollingRef.current) {
+          console.log("⏳ Still polling:", { 
+            hasRenderableHtml, 
+            hasRaw, 
+            hasDigits, 
+            tries, 
+            profileId: p?.id,
+            maxTries,
+            htmlCandidate: htmlCandidate ? String(htmlCandidate).substring(0, 50) : null
+          });
+        }
       }
     }
 
     // моментальный первый запрос
     fetchOnce();
-    // далее поллинг
-    const interval = setInterval(fetchOnce, 1800);
+    // далее поллинг только если еще не остановлен
+    const interval = setInterval(() => {
+      if (pollingRef.current) {
+        fetchOnce();
+      } else {
+        clearInterval(interval);
+      }
+    }, 1800);
 
     return () => {
       mounted = false;
