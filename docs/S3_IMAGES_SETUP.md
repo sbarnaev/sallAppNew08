@@ -11,6 +11,8 @@
 S3_ENDPOINT=https://s3.ru1.storage.beget.cloud
 S3_BUCKET=da0eaeb06b35-sal-app
 S3_IMAGES_PATH=sall_app/photo
+# Формат URL (опционально): "path-style" или "virtual-hosted"
+# S3_URL_FORMAT=path-style
 ```
 
 ### Описание переменных
@@ -48,6 +50,39 @@ S3_IMAGES_PATH=sall_app/photo
 Приложение автоматически формирует прямые ссылки на изображения:
 - `https://s3.ru1.storage.beget.cloud/da0eaeb06b35-sal-app/sall_app/photo/30.jpeg`
 - `https://s3.ru1.storage.beget.cloud/da0eaeb06b35-sal-app/sall_app/photo/80.jpeg`
+
+## Настройка публичного доступа
+
+**ВАЖНО:** Для работы изображений bucket должен быть настроен как **публичный**.
+
+### В S3 Beget:
+
+1. Откройте настройки bucket `da0eaeb06b35-sal-app`
+2. Найдите раздел "Публичный доступ" или "Public Access"
+3. Включите публичный доступ для чтения (Read)
+4. Или настройте CORS для разрешения доступа с вашего домена
+
+### Проверка доступа:
+
+Попробуйте открыть URL напрямую в браузере:
+```
+https://s3.ru1.storage.beget.cloud/da0eaeb06b35-sal-app/sall_app/photo/30.jpeg
+```
+
+Если получаете 403 - bucket не публичный или файл не загружен.
+
+## Альтернативный формат URL
+
+Если стандартный формат не работает, попробуйте виртуальный хостинг:
+
+```env
+S3_URL_FORMAT=virtual-hosted
+```
+
+Это изменит формат URL на:
+```
+https://da0eaeb06b35-sal-app.s3.ru1.storage.beget.cloud/sall_app/photo/30.jpeg
+```
 
 ## Преимущества
 

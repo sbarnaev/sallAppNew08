@@ -45,15 +45,22 @@ export function getS3ImageUrl(imageId: number | string): string {
   const s3Endpoint = process.env.S3_ENDPOINT || "https://s3.ru1.storage.beget.cloud";
   const s3Bucket = process.env.S3_BUCKET || "da0eaeb06b35-sal-app";
   const s3Path = process.env.S3_IMAGES_PATH || "sall_app/photo";
+  const s3UrlFormat = process.env.S3_URL_FORMAT || "path-style"; // "path-style" или "virtual-hosted"
   
   // Убираем слеши в начале и конце пути
   const cleanPath = s3Path.replace(/^\/+|\/+$/g, '');
   
+  let url: string;
+  
   // Для S3 Beget может быть два формата:
-  // 1. https://s3.ru1.storage.beget.cloud/{bucket}/{path}
-  // 2. https://{bucket}.s3.ru1.storage.beget.cloud/{path}
-  // Пробуем первый формат (как указал пользователь)
-  const url = `${s3Endpoint}/${s3Bucket}/${cleanPath}/${imageId}.jpeg`;
+  if (s3UrlFormat === "virtual-hosted") {
+    // Формат: https://{bucket}.s3.ru1.storage.beget.cloud/{path}
+    const hostname = s3Endpoint.replace(/^https?:\/\//, '').replace(/^s3\./, '');
+    url = `https://${s3Bucket}.s3.${hostname}/${cleanPath}/${imageId}.jpeg`;
+  } else {
+    // Формат: https://s3.ru1.storage.beget.cloud/{bucket}/{path} (по умолчанию)
+    url = `${s3Endpoint}/${s3Bucket}/${cleanPath}/${imageId}.jpeg`;
+  }
   
   // Логируем для отладки
   console.log("[DEBUG] S3 Image URL generated:", {
@@ -61,6 +68,7 @@ export function getS3ImageUrl(imageId: number | string): string {
     endpoint: s3Endpoint,
     bucket: s3Bucket,
     path: cleanPath,
+    format: s3UrlFormat,
     fullUrl: url
   });
   
