@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(Math.max(parseInt(incomingParams.get("limit") || "20", 10) || 20, 1), 100);
   const offset = (page - 1) * limit;
 
-  const sp = new URLSearchParams();
+  let sp = new URLSearchParams();
   incomingParams.forEach((value, key) => {
     if (key === "page" || key === "limit" || key === "offset" || key === "meta" || key === "search") {
       return;
