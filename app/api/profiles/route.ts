@@ -16,10 +16,17 @@ export async function GET(req: NextRequest) {
   if (!sp.has("fields")) {
     sp.set("fields", defaultFields);
   }
-  // Добавляем client.name если его нет
+  // Добавляем client.name и client.birth_date если их нет
   const fields = sp.get("fields") || defaultFields;
+  let updatedFields = fields;
   if (!fields.includes("client.name")) {
-    sp.set("fields", fields + ",client.name");
+    updatedFields += ",client.name";
+  }
+  if (!fields.includes("client.birth_date")) {
+    updatedFields += ",client.birth_date";
+  }
+  if (updatedFields !== fields) {
+    sp.set("fields", updatedFields);
   }
   if (!sp.has("limit")) sp.set("limit", "50");
   if (!sp.has("offset")) sp.set("offset", "0");

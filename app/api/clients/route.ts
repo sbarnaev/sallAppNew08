@@ -94,6 +94,8 @@ export async function GET(req: NextRequest) {
       sp.set("filter[_or][0][name][_icontains]", searchTerm);
       sp.set("filter[_or][1][email][_icontains]", searchTerm);
       sp.set("filter[_or][2][phone][_icontains]", searchTerm);
+      // Поиск по дате рождения (формат может быть разный, пробуем несколько вариантов)
+      sp.set("filter[_or][3][birth_date][_icontains]", searchTerm);
     }
   }
 
