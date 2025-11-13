@@ -53,9 +53,16 @@ export async function GET(req: NextRequest) {
     const origin = `${protocol}://${host}`;
     
     try {
+      // Передаем cookies вручную, так как fetch из серверного кода не передает их автоматически
+      const allCookies = cookies().getAll();
+      const cookieHeader = allCookies.map(c => `${c.name}=${c.value}`).join('; ');
+      
       const refreshRes = await fetch(`${origin}/api/refresh`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Cookie": cookieHeader
+        },
       });
       if (refreshRes.ok) {
         const refreshData = await refreshRes.json().catch(() => ({}));

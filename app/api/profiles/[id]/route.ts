@@ -112,9 +112,22 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
     });
     
     try {
+      // Передаем cookies вручную, так как fetch из серверного кода не передает их автоматически
+      const allCookies = cookies().getAll();
+      const cookieHeader = allCookies.map(c => `${c.name}=${c.value}`).join('; ');
+      
+      console.log("[DEBUG] Making refresh request with cookies:", {
+        hasCookies: allCookies.length > 0,
+        cookieNames: allCookies.map(c => c.name),
+        origin
+      });
+      
       const refreshRes = await fetch(`${origin}/api/refresh`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Cookie": cookieHeader
+        },
         // Увеличиваем таймаут для refresh запроса
         signal: AbortSignal.timeout(10000), // 10 секунд
       });
