@@ -23,12 +23,14 @@ export default async function ConsultationDetailPage({ params }: { params: { id:
         <div>
           <h1 className="text-2xl font-semibold">Консультация #{params.id}</h1>
           <div className="text-sm text-gray-500">
-            {c?.scheduled_at ? new Date(c.scheduled_at).toLocaleString() : "Без даты"} · {c?.type || ""} · {c?.status || ""}
+            {c?.scheduled_at ? new Date(c.scheduled_at).toLocaleString() : "Без даты"} · {c?.type === 'partner' ? '👥 Парная' : c?.type || ""} · {c?.status || ""}
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {c?.client_id && <Link href={`/clients/${c.client_id}`} className="px-3 py-2 rounded-lg border">Клиент #{c.client_id}</Link>}
+          {c?.partner_client_id && <Link href={`/clients/${c.partner_client_id}`} className="px-3 py-2 rounded-lg border">Партнёр #{c.partner_client_id}</Link>}
           {c?.profile_id && <Link href={`/profiles/${c.profile_id}`} className="px-3 py-2 rounded-lg border">Профиль #{c.profile_id}</Link>}
+          {c?.partner_profile_id && <Link href={`/profiles/${c.partner_profile_id}`} className="px-3 py-2 rounded-lg border">Профиль партнёра #{c.partner_profile_id}</Link>}
         </div>
       </div>
 

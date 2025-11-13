@@ -41,7 +41,10 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Консультации</h1>
-        <Link href="/profiles/new" className="rounded-2xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700">Новый расчёт</Link>
+        <div className="flex gap-2">
+          <Link href="/consultations/new" className="rounded-2xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700">Новая консультация</Link>
+          <Link href="/profiles/new" className="rounded-2xl border px-4 py-2 hover:bg-gray-50">Новый расчёт</Link>
+        </div>
       </div>
 
       <form className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end" action="/consultations" method="get">
@@ -51,7 +54,13 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
         </div>
         <div>
           <label className="block text-sm mb-1">Тип</label>
-          <input name="type" defaultValue={(searchParams.type as string) || ""} className="rounded-xl border p-3 w-full" placeholder="base" />
+          <select name="type" defaultValue={(searchParams.type as string) || ""} className="rounded-xl border p-3 w-full">
+            <option value="">Все типы</option>
+            <option value="base">Базовая</option>
+            <option value="extended">Расширенная</option>
+            <option value="target">Целевая</option>
+            <option value="partner">Парная</option>
+          </select>
         </div>
         <div>
           <label className="block text-sm mb-1">Статус</label>
@@ -79,8 +88,13 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
                 <div className="font-medium">Консультация #{c.id}</div>
                 <div className="text-sm text-gray-500">{c.scheduled_at ? new Date(c.scheduled_at).toLocaleString() : "Без даты"}</div>
               </div>
-              <div className="text-sm text-gray-500">Клиент #{c.client_id}</div>
-              <div className="text-sm text-gray-500">{c.type || ""} · {c.status || ""}</div>
+              <div className="text-sm text-gray-500">
+                Клиент #{c.client_id}
+                {c.partner_client_id && ` + Партнёр #${c.partner_client_id}`}
+              </div>
+              <div className="text-sm text-gray-500">
+                {c.type === 'partner' ? '👥 Парная' : c.type || ""} · {c.status || ""}
+              </div>
             </div>
           </Link>
         ))}

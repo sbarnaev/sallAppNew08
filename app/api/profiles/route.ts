@@ -58,3 +58,33 @@ export async function GET(req: NextRequest) {
   }
   return NextResponse.json(data, { status: r.status });
 }
+
+export async function POST(req: NextRequest) {
+  const token = cookies().get("directus_access_token")?.value;
+  const baseUrl = getDirectusUrl();
+  if (!token || !baseUrl) {
+    return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
+  }
+
+  const body = await req.json().catch(() => ({}));
+  
+  const payload: any = {};
+  if (body.client_id) payload.client_id = Number(body.client_id);
+  if (body.digits !== undefined) payload.digits = body.digits;
+  if (body.raw_json !== undefined) payload.raw_json = body.raw_json;
+  if (body.html !== undefined) payload.html = body.html;
+  if (body.images !== undefined) payload.images = body.images;
+
+  const url = `${baseUrl}/items/profiles`;
+  const r = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await r.json().catch(() => ({}));
+  return NextResponse.json(data, { status: r.status });
+}

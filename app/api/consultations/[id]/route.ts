@@ -17,6 +17,8 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
     "base_cost",
     "actual_cost",
     "profile_id",
+    "partner_client_id",
+    "partner_profile_id",
     "created_at",
   ].join(",");
   const url = `${baseUrl}/items/consultations/${ctx.params.id}?fields=${encodeURIComponent(fields)}`;

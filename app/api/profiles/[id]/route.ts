@@ -18,6 +18,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
     "notes",
     "chat_history",
     "digits",
+    "images",
   ].join(",");
   const urlWithFields = `${url}?fields=${encodeURIComponent(fields)}`;
 

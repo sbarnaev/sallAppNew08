@@ -23,6 +23,8 @@ export async function GET(req: NextRequest) {
         "base_cost",
         "actual_cost",
         "profile_id",
+        "partner_client_id",
+        "partner_profile_id",
         "created_at",
       ].join(",")
     );
@@ -37,5 +39,48 @@ export async function GET(req: NextRequest) {
     cache: "no-store",
   });
   const data = await r.json().catch(() => ({ data: [], meta: {} }));
+  return NextResponse.json(data, { status: r.status });
+}
+
+export async function POST(req: NextRequest) {
+  const token = cookies().get("directus_access_token")?.value;
+  const baseUrl = getDirectusUrl();
+  if (!token || !baseUrl) {
+    return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
+  }
+
+  const body = await req.json().catch(() => ({}));
+  
+  // Валидация обязательных полей
+  if (!body.client_id) {
+    return NextResponse.json({ message: "client_id is required" }, { status: 400 });
+  }
+
+  const payload: any = {
+    client_id: Number(body.client_id),
+    type: body.type || "base",
+    status: body.status || "scheduled",
+  };
+
+  if (body.scheduled_at) payload.scheduled_at = body.scheduled_at;
+  if (body.duration) payload.duration = Number(body.duration);
+  if (body.base_cost) payload.base_cost = Number(body.base_cost);
+  if (body.actual_cost) payload.actual_cost = Number(body.actual_cost);
+  if (body.profile_id) payload.profile_id = Number(body.profile_id);
+  // Для парных консультаций
+  if (body.partner_client_id) payload.partner_client_id = Number(body.partner_client_id);
+  if (body.partner_profile_id) payload.partner_profile_id = Number(body.partner_profile_id);
+
+  const url = `${baseUrl}/items/consultations`;
+  const r = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await r.json().catch(() => ({}));
   return NextResponse.json(data, { status: r.status });
 } 

@@ -13,6 +13,8 @@ type Profile = {
   ui_state?: any;
   notes?: string | null;
   chat_history?: Array<{ role: "user" | "assistant"; content: string }>;
+  images?: any; // Может быть массивом файлов или строкой
+  digits?: any;
 };
 
 export default function ProfileDetail() {
@@ -52,49 +54,252 @@ export default function ProfileDetail() {
     async function copyLink() {
       try {
         await navigator.clipboard.writeText(window.location.href);
+        alert('Ссылка скопирована!');
       } catch {}
+    }
+    
+    async function duplicateProfile() {
+      if (!profile) return;
+      if (!confirm('Создать копию этого профиля?')) return;
+      
+      try {
+        const res = await fetch(`/api/profiles/${id}`, { cache: 'no-store' });
+        const data = await res.json().catch(()=>({}));
+        const originalProfile = data?.data;
+        
+        if (!originalProfile) {
+          alert('Не удалось загрузить профиль');
+          return;
+        }
+        
+        // Создаём новый профиль с теми же данными
+        const newProfileData: any = {
+          client_id: originalProfile.client_id,
+          digits: originalProfile.digits,
+        };
+        
+        if (originalProfile.raw_json) newProfileData.raw_json = originalProfile.raw_json;
+        if (originalProfile.html) newProfileData.html = originalProfile.html;
+        if (originalProfile.images) newProfileData.images = originalProfile.images;
+        
+        const createRes = await fetch('/api/profiles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newProfileData),
+        });
+        
+        const newData = await createRes.json().catch(()=>({}));
+        if (createRes.ok && newData?.data?.id) {
+          window.location.href = `/profiles/${newData.data.id}`;
+        } else {
+          alert('Не удалось создать копию профиля');
+        }
+      } catch (err) {
+        alert('Ошибка при копировании профиля');
+      }
     }
     async function exportPdf() {
       let strengths: string[] = [];
       let weaknesses: string[] = [];
+      let personalitySummary: string = '';
+      let happinessFormula: string = '';
+      let digits: any[] = [];
+      
       try {
         let payload: any = profile?.raw_json;
         if (typeof payload === 'string') payload = JSON.parse(payload);
         const item = Array.isArray(payload) ? payload[0] : payload;
-        strengths = item?.strengths || (item?.strengths_text ? String(item.strengths_text).split(/\n+/) : []);
-        weaknesses = item?.weaknesses || (item?.weaknesses_text ? String(item.weaknesses_text).split(/\n+/) : []);
+        
+        strengths = item?.strengths || (item?.strengths_text ? String(item.strengths_text).split(/\n+/).filter(Boolean) : []);
+        weaknesses = item?.weaknesses || (item?.weaknesses_text ? String(item.weaknesses_text).split(/\n+/).filter(Boolean) : []);
+        
+        if (item?.personalitySummary) {
+          personalitySummary = Array.isArray(item.personalitySummary) 
+            ? item.personalitySummary.join('\n\n') 
+            : String(item.personalitySummary);
+        }
+        
+        if (item?.happinessFormula) {
+          happinessFormula = Array.isArray(item.happinessFormula)
+            ? item.happinessFormula.join('\n\n')
+            : String(item.happinessFormula);
+        }
+        
+        // Получаем digits
+        const d = (profile as any)?.digits;
+        if (Array.isArray(d)) digits = d;
+        else if (typeof d === 'string') {
+          try {
+            const parsed = JSON.parse(d);
+            digits = Array.isArray(parsed) ? parsed : String(d).split(/[,\s]+/).filter(Boolean);
+          } catch {
+            digits = String(d).split(/[,\s]+/).filter(Boolean);
+          }
+        }
       } catch {}
+      
       let contact = "";
       let initials = "";
       try {
         const meRes = await fetch('/api/me', { cache: 'no-store' });
         const me = await meRes.json().catch(()=>({}));
         const user = me?.data || {};
-        initials = [user.first_name, user.last_name].filter(Boolean).map((n:string)=>n[0]+'.').join('');
+        initials = [user.first_name, user.last_name].filter(Boolean).map((n:string)=>n?.[0]?.toUpperCase() || '').filter(Boolean).join('.');
+        if (initials) initials += '.';
         contact = user.contact || '';
       } catch {}
-      const html = `<!doctype html><html><head><meta charset="utf-8"><title>Профиль</title>
-        <style>
-          @media print {
-            @page { margin: 12mm; }
-            body { margin: 0; }
-          }
-          body { font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
-          h1 { font-size: 22px; margin: 0 0 12px; }
-          h2 { font-size: 18px; margin: 16px 0 8px; }
-          ul { margin: 0; padding-left: 18px; }
-          li { margin: 4px 0; }
-          .footer { margin-top: 32px; color: #444; }
-        </style>
-      </head><body>
-      <div style="padding:20px; max-width:700px;">
-        <h1>Расчёт профиля ${clientName ? '— '+clientName : ''}</h1>
-        <h2>Сильные стороны</h2>
-        <ul>${strengths.map(s=>`<li>${s}</li>`).join('')}</ul>
-        <h2>Слабые стороны</h2>
-        <ul>${weaknesses.map(w=>`<li>${w}</li>`).join('')}</ul>
-        <div class="footer">${initials} ${contact}</div>
-      </div></body></html>`;
+      
+      const dateStr = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('ru-RU') : '';
+      
+      const html = `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Расчёт профиля${clientName ? ' — ' + clientName : ''}</title>
+  <style>
+    @media print {
+      @page { 
+        margin: 15mm;
+        size: A4;
+      }
+      body { margin: 0; }
+      .no-print { display: none !important; }
+    }
+    @media screen {
+      body { background: #f5f5f5; padding: 20px; }
+      .container { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    }
+    * { box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 20mm;
+    }
+    h1 { 
+      font-size: 24px; 
+      margin: 0 0 8px 0;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    .subtitle {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 24px;
+    }
+    h2 { 
+      font-size: 18px; 
+      margin: 24px 0 12px 0;
+      font-weight: 600;
+      color: #1a1a1a;
+      border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 4px;
+    }
+    .digits {
+      display: flex;
+      gap: 12px;
+      margin: 20px 0;
+      justify-content: center;
+    }
+    .digit-box {
+      width: 50px;
+      height: 50px;
+      background: #1f92aa;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      border-radius: 8px;
+    }
+    ul { 
+      margin: 0 0 16px 0; 
+      padding-left: 24px; 
+    }
+    li { 
+      margin: 6px 0;
+      line-height: 1.6;
+    }
+    .section {
+      margin-bottom: 24px;
+    }
+    .personality, .happiness {
+      background: #f9f9f9;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 16px 0;
+      white-space: pre-wrap;
+      line-height: 1.7;
+    }
+    .footer { 
+      margin-top: 40px; 
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+      color: #666;
+      font-size: 12px;
+      text-align: right;
+    }
+    .footer-line {
+      margin: 4px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Расчёт профиля${clientName ? ' — ' + clientName : ''}</h1>
+    ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
+    
+    ${digits.length > 0 ? `
+    <div class="digits">
+      ${digits.slice(0, 5).map((d: any) => `<div class="digit-box">${d || ''}</div>`).join('')}
+    </div>
+    ` : ''}
+    
+    ${personalitySummary ? `
+    <div class="section">
+      <h2>Описание личности</h2>
+      <div class="personality">${personalitySummary.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+    </div>
+    ` : ''}
+    
+    ${strengths.length > 0 ? `
+    <div class="section">
+      <h2>Сильные стороны</h2>
+      <ul>${strengths.map((s: string) => `<li>${String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('')}</ul>
+    </div>
+    ` : ''}
+    
+    ${weaknesses.length > 0 ? `
+    <div class="section">
+      <h2>Слабые стороны</h2>
+      <ul>${weaknesses.map((w: string) => `<li>${String(w).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('')}</ul>
+    </div>
+    ` : ''}
+    
+    ${happinessFormula ? `
+    <div class="section">
+      <h2>Формула счастья</h2>
+      <div class="happiness">${happinessFormula.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+    </div>
+    ` : ''}
+    
+    <div class="footer">
+      ${initials ? `<div class="footer-line">${initials}</div>` : ''}
+      ${contact ? `<div class="footer-line">${contact}</div>` : ''}
+    </div>
+  </div>
+</body>
+</html>`;
+      
       const frame = document.createElement('iframe');
       frame.style.position = 'fixed';
       frame.style.right = '0';
@@ -105,8 +310,10 @@ export default function ProfileDetail() {
       document.body.appendChild(frame);
       frame.srcdoc = html;
       frame.onload = () => {
-        frame.contentWindow?.print();
-        setTimeout(() => document.body.removeChild(frame), 1000);
+        setTimeout(() => {
+          frame.contentWindow?.print();
+          setTimeout(() => document.body.removeChild(frame), 2000);
+        }, 100);
       };
     }
     return (
@@ -114,8 +321,9 @@ export default function ProfileDetail() {
         <button onClick={() => setExpandAll(true)} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Развернуть всё</button>
         <button onClick={() => setExpandAll(false)} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Свернуть всё</button>
         <button onClick={() => window.print()} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Печать</button>
-        <button onClick={copyLink} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Скопировать ссылку</button>
-        <button onClick={exportPdf} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">Выгрузить PDF для клиента</button>
+        <button onClick={copyLink} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">🔗 Ссылка</button>
+        <button onClick={duplicateProfile} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">📋 Копировать</button>
+        <button onClick={exportPdf} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">📄 PDF</button>
       </div>
     );
   }
@@ -652,14 +860,93 @@ export default function ProfileDetail() {
         );
       })()}
 
-      {/* Пять изображений (плейсхолдеры, будут подтягиваться из БД позже) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="rounded-2xl overflow-hidden border bg-gray-50 h-36 grid place-items-center text-gray-400">
-            Изображение {i + 1}
+      {/* Пять изображений */}
+      {(() => {
+        const images = (profile as any)?.images;
+        let imageArray: any[] = [];
+        
+        // Обработка разных форматов: массив файлов, один файл, строка JSON, или массив строк
+        if (Array.isArray(images)) {
+          imageArray = images;
+        } else if (images) {
+          if (typeof images === 'string') {
+            try {
+              const parsed = JSON.parse(images);
+              imageArray = Array.isArray(parsed) ? parsed : [parsed];
+            } catch {
+              imageArray = [images];
+            }
+          } else {
+            imageArray = [images];
+          }
+        }
+        
+        // Если нет изображений, показываем плейсхолдеры
+        const displayImages = imageArray.length > 0 ? imageArray : Array.from({ length: 5 }).map(() => null);
+        
+        // Функция для получения URL изображения
+        const getImageUrl = (img: any): string | null => {
+          if (!img) return null;
+          
+          // Если это объект файла Directus с полным URL
+          if (typeof img === 'object') {
+            if (img.id) {
+              // Используем API прокси для изображений
+              return `/api/files/${img.id}`;
+            }
+            // Если есть прямой URL
+            if (img.url) return img.url;
+            if (img.filename_download) {
+              return img.id ? `/api/files/${img.id}` : null;
+            }
+          }
+          
+          // Если это строка
+          if (typeof img === 'string') {
+            // Если уже полный URL
+            if (img.startsWith('http')) return img;
+            // Если это ID файла
+            if (/^\d+$/.test(img)) return `/api/files/${img}`;
+            // Иначе считаем это URL
+            return img;
+          }
+          
+          return null;
+        };
+        
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {displayImages.slice(0, 5).map((img: any, i: number) => {
+              const imageUrl = getImageUrl(img);
+              
+              return (
+                <div key={i} className="rounded-2xl overflow-hidden border bg-gray-50 h-36 grid place-items-center relative">
+                  {imageUrl ? (
+                    <>
+                      <img 
+                        src={imageUrl} 
+                        alt={`Изображение ${i + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const placeholder = target.nextElementSibling as HTMLElement;
+                          if (placeholder) placeholder.classList.remove('hidden');
+                        }}
+                      />
+                      <div className="hidden absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-50">
+                        Изображение {i + 1}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-gray-400">Изображение {i + 1}</div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
+        );
+      })()}
 
       {polling && (
         <div className="card flex items-center gap-3 text-gray-700">
@@ -718,25 +1005,64 @@ export default function ProfileDetail() {
       {/* Плавающая кнопка «Заметки» */}
       <button
         onClick={() => setNotesOpen(true)}
-        className="fixed right-6 bottom-6 rounded-full shadow-lg bg-brand-600 text-white px-5 py-3 hover:bg-brand-700"
+        className="fixed right-6 bottom-6 rounded-full shadow-lg bg-brand-600 text-white px-5 py-3 hover:bg-brand-700 z-40"
       >
-        Заметки
+        📝 Заметки
       </button>
 
       {notesOpen && (
         <div className="fixed inset-0 bg-black/40 z-50 grid place-items-center p-4" onClick={() => setNotesOpen(false)}>
           <div className="bg-white rounded-2xl w-full max-w-2xl p-4 space-y-3" onClick={(e)=>e.stopPropagation()}>
             <div className="flex items-center justify-between">
-            <div className="font-semibold">Заметки по расчёту</div>
+              <div className="font-semibold">Заметки по расчёту</div>
               <button className="text-gray-500 hover:text-gray-800" onClick={() => setNotesOpen(false)}>✕</button>
             </div>
+            
+            {/* Шаблоны заметок */}
+            <div className="flex flex-wrap gap-2 pb-2 border-b">
+              <span className="text-xs text-gray-500 mr-2">Шаблоны:</span>
+              <button
+                className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const template = `## Встреча ${new Date().toLocaleDateString('ru-RU')}\n\n### Обсудили:\n- \n- \n\n### Действия:\n- \n- \n\n### Следующая встреча:\n`;
+                  setNotesDraft(notesDraft + (notesDraft ? '\n\n' : '') + template);
+                  notesTouchedRef.current = true;
+                }}
+              >
+                📅 Встреча
+              </button>
+              <button
+                className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const template = `## Заметки\n\n### Сильные стороны:\n- \n- \n\n### Области роста:\n- \n- \n\n### Рекомендации:\n- \n- \n`;
+                  setNotesDraft(notesDraft + (notesDraft ? '\n\n' : '') + template);
+                  notesTouchedRef.current = true;
+                }}
+              >
+                💡 Анализ
+              </button>
+              <button
+                className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const template = `## Задачи\n\n- [ ] \n- [ ] \n- [ ] \n`;
+                  setNotesDraft(notesDraft + (notesDraft ? '\n\n' : '') + template);
+                  notesTouchedRef.current = true;
+                }}
+              >
+                ✅ Задачи
+              </button>
+            </div>
+            
             <RichEditor value={notesDraft} onChange={(v)=>{ setNotesDraft(v); notesTouchedRef.current = true; }} />
             {/* Мини-редактор markdown */}
             <div className="flex flex-wrap gap-2">
-              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); wrapSelection('**');}}>B</button>
-              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); wrapSelection('*');}}>I</button>
-              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); prefixLines('## ');}}>H2</button>
-              <button className="rounded border px-2 py-1 text-sm" onClick={(e)=>{e.preventDefault(); prefixLines('- ');}}>• Список</button>
+              <button className="rounded border px-2 py-1 text-sm hover:bg-gray-50" onClick={(e)=>{e.preventDefault(); wrapSelection('**');}}>B</button>
+              <button className="rounded border px-2 py-1 text-sm hover:bg-gray-50" onClick={(e)=>{e.preventDefault(); wrapSelection('*');}}>I</button>
+              <button className="rounded border px-2 py-1 text-sm hover:bg-gray-50" onClick={(e)=>{e.preventDefault(); prefixLines('## ');}}>H2</button>
+              <button className="rounded border px-2 py-1 text-sm hover:bg-gray-50" onClick={(e)=>{e.preventDefault(); prefixLines('- ');}}>• Список</button>
             </div>
             <textarea
               ref={notesTextareaRef}
