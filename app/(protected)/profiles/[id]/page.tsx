@@ -426,7 +426,6 @@ export default function ProfileDetail() {
       
       // Логируем данные для диагностики
       console.log("API response:", {
-        status: res?.status,
         hasData: !!data,
         hasDataData: !!data?.data,
         profileKeys: p ? Object.keys(p) : [],
