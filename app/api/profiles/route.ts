@@ -14,32 +14,49 @@ export async function GET(req: NextRequest) {
   if (!sp.has("meta")) sp.set("meta", "filter_count");
   if (!sp.has("sort")) sp.set("sort", "-created_at");
 
+  // Проверяем, что URL валидный
+  if (!baseUrl || !baseUrl.startsWith('http')) {
+    console.error("Invalid Directus URL:", baseUrl);
+    return NextResponse.json({ data: [], meta: { filter_count: 0 }, message: "Invalid DIRECTUS_URL" }, { status: 500 });
+  }
+
   const url = `${baseUrl}/items/profiles?${sp.toString()}`;
-  // Debug URL (visible в серверных логах)
-  // console.log("Profiles list URL:", url);
+  console.log("Profiles list URL:", url);
 
   async function fetchList(accessToken: string) {
-    const r = await fetch(url, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      cache: "no-store",
-    });
-    const data = await r.json().catch(() => ({ data: [] }));
-    return { r, data } as const;
+    try {
+      const r = await fetch(url, {
+        headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+        cache: "no-store",
+      });
+      const data = await r.json().catch(() => ({ data: [], errors: [] }));
+      return { r, data } as const;
+    } catch (error) {
+      console.error("Error fetching profiles from Directus:", error);
+      return { 
+        r: new Response(null, { status: 500 }), 
+        data: { data: [], meta: { filter_count: 0 }, errors: [{ message: String(error) }] } 
+      } as const;
+    }
   }
 
   let { r, data } = await fetchList(token);
 
   if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
     const origin = req.nextUrl.origin;
-    const refreshRes = await fetch(`${origin}/api/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (refreshRes.ok) {
-      const newToken = cookies().get("directus_access_token")?.value;
-      if (newToken) {
-        ({ r, data } = await fetchList(newToken));
+    try {
+      const refreshRes = await fetch(`${origin}/api/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (refreshRes.ok) {
+        const newToken = cookies().get("directus_access_token")?.value;
+        if (newToken) {
+          ({ r, data } = await fetchList(newToken));
+        }
       }
+    } catch (refreshError) {
+      console.error("Error refreshing token:", refreshError);
     }
   }
 
@@ -53,10 +70,18 @@ export async function GET(req: NextRequest) {
     }
   } catch {}
 
+  // Обработка ошибок
   if (r.status === 404) {
     return NextResponse.json({ data: [], meta: { filter_count: 0 }, upstreamStatus: 404 });
   }
-  return NextResponse.json(data, { status: r.status });
+  
+  // Если ошибка сети или сервера, возвращаем пустой массив
+  if (!r.ok && (!data || !data.data)) {
+    console.error("Directus error response:", data);
+    return NextResponse.json({ data: [], meta: { filter_count: 0 } }, { status: 200 });
+  }
+  
+  return NextResponse.json(data, { status: r.ok ? 200 : r.status });
 }
 
 export async function POST(req: NextRequest) {
@@ -75,16 +100,28 @@ export async function POST(req: NextRequest) {
   if (body.html !== undefined) payload.html = body.html;
   if (body.images !== undefined) payload.images = body.images;
 
-  const url = `${baseUrl}/items/profiles`;
-  const r = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  // Проверяем, что URL валидный
+  if (!baseUrl || !baseUrl.startsWith('http')) {
+    console.error("Invalid Directus URL:", baseUrl);
+    return NextResponse.json({ message: "Invalid DIRECTUS_URL" }, { status: 500 });
+  }
 
-  const data = await r.json().catch(() => ({}));
-  return NextResponse.json(data, { status: r.status });
+  const url = `${baseUrl}/items/profiles`;
+  try {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await r.json().catch(() => ({}));
+    return NextResponse.json(data, { status: r.status });
+  } catch (error) {
+    console.error("Error creating profile in Directus:", error);
+    return NextResponse.json({ message: "Error connecting to Directus", error: String(error) }, { status: 502 });
+  }
 }

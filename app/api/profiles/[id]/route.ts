@@ -6,6 +6,13 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ data: null }, { status: 401 });
+  
+  // Проверяем, что URL валидный
+  if (!baseUrl.startsWith('http')) {
+    console.error("Invalid Directus URL:", baseUrl);
+    return NextResponse.json({ data: null, message: "Invalid DIRECTUS_URL" }, { status: 500 });
+  }
+  
   const { id } = ctx.params;
   const url = `${baseUrl}/items/profiles/${id}`;
   const fields = [
@@ -23,12 +30,20 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   const urlWithFields = `${url}?fields=${encodeURIComponent(fields)}`;
 
   async function fetchProfile(accessToken: string) {
-    const r = await fetch(urlWithFields, {
-      headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
-      cache: "no-store",
-    });
-    const data = await r.json().catch(() => ({ data: null }));
-    return { r, data } as const;
+    try {
+      const r = await fetch(urlWithFields, {
+        headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+        cache: "no-store",
+      });
+      const data = await r.json().catch(() => ({ data: null, errors: [] }));
+      return { r, data } as const;
+    } catch (error) {
+      console.error("Error fetching profile from Directus:", error);
+      return { 
+        r: new Response(null, { status: 500 }), 
+        data: { data: null, errors: [{ message: String(error) }] } 
+      } as const;
+    }
   }
 
   let { r, data } = await fetchProfile(token);
@@ -36,15 +51,19 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
     // попробуем освежить токен
     const origin = new URL(req.url).origin;
-    const refreshRes = await fetch(`${origin}/api/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (refreshRes.ok) {
-      const newToken = cookies().get("directus_access_token")?.value;
-      if (newToken) {
-        ({ r, data } = await fetchProfile(newToken));
+    try {
+      const refreshRes = await fetch(`${origin}/api/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (refreshRes.ok) {
+        const newToken = cookies().get("directus_access_token")?.value;
+        if (newToken) {
+          ({ r, data } = await fetchProfile(newToken));
+        }
       }
+    } catch (refreshError) {
+      console.error("Error refreshing token:", refreshError);
     }
   }
 
@@ -56,7 +75,14 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       (data as any).data = { ...item, client_id: clientId };
     }
   } catch {}
-  return NextResponse.json(data, { status: r.status });
+  
+  // Если ошибка сети, возвращаем null
+  if (!r.ok && !data?.data) {
+    console.error("Directus error response:", data);
+    return NextResponse.json({ data: null }, { status: 200 });
+  }
+  
+  return NextResponse.json(data, { status: r.ok ? 200 : r.status });
 }
 
 export async function PATCH(req: Request, ctx: { params: { id: string }}) {
@@ -67,20 +93,31 @@ export async function PATCH(req: Request, ctx: { params: { id: string }}) {
   const { id } = ctx.params;
   const body = await req.json().catch(()=>({}));
 
+  // Проверяем, что URL валидный
+  if (!baseUrl.startsWith('http')) {
+    console.error("Invalid Directus URL:", baseUrl);
+    return NextResponse.json({ message: "Invalid DIRECTUS_URL" }, { status: 500 });
+  }
+
   const allowed: Record<string, any> = {};
   if (body.ui_state !== undefined) allowed.ui_state = body.ui_state; // JSON в profiles
   if (typeof body.notes === 'string') allowed.notes = body.notes;    // HTML заметок
   if (Array.isArray(body.chat_history)) allowed.chat_history = body.chat_history; // история чата
 
-  const r = await fetch(`${baseUrl}/items/profiles/${id}`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(allowed),
-  });
-  const data = await r.json().catch(()=>({}));
-  return NextResponse.json(data, { status: r.status });
+  try {
+    const r = await fetch(`${baseUrl}/items/profiles/${id}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(allowed),
+    });
+    const data = await r.json().catch(()=>({}));
+    return NextResponse.json(data, { status: r.status });
+  } catch (error) {
+    console.error("Error updating profile in Directus:", error);
+    return NextResponse.json({ message: "Error connecting to Directus", error: String(error) }, { status: 502 });
+  }
 }
