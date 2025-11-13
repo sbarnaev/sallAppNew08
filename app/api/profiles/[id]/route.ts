@@ -266,7 +266,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       
       console.log("[DEBUG] Processed images from S3:", {
         count: processedImages.length,
-        images: processedImages.map(img => ({
+        images: processedImages.map((img: any) => ({
           id: img.id,
           url: img.url,
           position: img.position
