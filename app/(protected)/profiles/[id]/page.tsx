@@ -2424,7 +2424,16 @@ export default function ProfileDetail() {
                     e.preventDefault();
                     const element = document.getElementById(item.id);
                     if (element) {
-                      const offset = 100; // Отступ сверху в пикселях
+                      // Находим меню навигации для расчета offset
+                      const menuElement = e.currentTarget.closest('.bg-white.rounded-2xl.border') as HTMLElement;
+                      let offset = 100; // Дефолтный offset
+                      
+                      if (menuElement) {
+                        const menuHeight = menuElement.offsetHeight;
+                        // Высота меню + 10% от его высоты
+                        offset = menuHeight + (menuHeight * 0.1);
+                      }
+                      
                       const elementPosition = element.getBoundingClientRect().top;
                       const offsetPosition = elementPosition + window.pageYOffset - offset;
                       window.scrollTo({

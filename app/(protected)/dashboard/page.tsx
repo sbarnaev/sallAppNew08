@@ -33,20 +33,33 @@ async function getRecentProfiles() {
   }
 }
 
-async function getRecentConsultations() {
+async function getClientsMap(clientIds: number[]) {
   try {
-    const res = await internalApiFetch("/api/consultations?limit=5&sort=-scheduled_at", { cache: "no-store" });
-    const data = await res.json().catch(() => ({ data: [] }));
-    return data?.data || [];
-  } catch {
-    return [];
+    if (clientIds.length === 0) return {};
+    const ids = clientIds.join(',');
+    const res = await internalApiFetch(`/api/clients?filter[id][_in]=${ids}&fields=id,name,birth_date&limit=1000`, { cache: 'no-store' });
+    const { data } = await res.json().catch(() => ({ data: [] }));
+    if (data?.data) {
+      const map: Record<number, { name: string; birth_date?: string }> = {};
+      (data.data as any[]).forEach((c: any) => {
+        if (c.id) map[c.id] = { name: c.name || '', birth_date: c.birth_date };
+      });
+      return map;
+    }
+  } catch (error) {
+    console.error("Error fetching clients:", error);
   }
+  return {};
 }
+
 
 export default async function DashboardPage() {
   const stats = await getStats();
   const recentProfiles = await getRecentProfiles();
-  const recentConsultations = await getRecentConsultations();
+  
+  // Загружаем данные клиентов для отображения имен и дат рождения
+  const clientIds = recentProfiles.map((p: any) => p.client_id).filter((id): id is number => !!id);
+  const clientsMap = await getClientsMap(clientIds);
 
   return (
     <div className="space-y-6">
@@ -58,9 +71,6 @@ export default async function DashboardPage() {
           </Link>
           <Link href="/profiles/new" className="rounded-xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 text-sm">
             + Расчёт
-          </Link>
-          <Link href="/consultations/new" className="rounded-xl bg-blue-600 text-white px-4 py-2 hover:bg-blue-700 text-sm">
-            + Консультация
           </Link>
         </div>
       </div>
@@ -138,121 +148,73 @@ export default async function DashboardPage() {
             </div>
           </Link>
 
-          <Link href="/consultations/new" className="flex items-center gap-3 p-3 rounded-xl border hover:bg-gray-50 transition">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <div className="text-sm">
-              <div className="font-medium">Новая консультация</div>
-              <div className="text-gray-500">Запланировать</div>
-            </div>
-          </Link>
-
-          <Link href="/consultations?type=partner" className="flex items-center gap-3 p-3 rounded-xl border hover:bg-gray-50 transition">
-            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <div className="text-sm">
-              <div className="font-medium">Парные консультации</div>
-              <div className="text-gray-500">Просмотреть</div>
-            </div>
-          </Link>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Недавние расчёты */}
-        <div className="card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Недавние расчёты</h2>
-            <Link href="/profiles" className="text-sm text-brand-600 hover:text-brand-700">Все →</Link>
-          </div>
-          {recentProfiles.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <p>Нет расчётов</p>
-              <Link href="/profiles/new" className="text-brand-600 hover:text-brand-700 text-sm mt-2 inline-block">
-                Создать первый расчёт
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {recentProfiles.map((p: any) => (
-                <Link
-                  key={p.id}
-                  href={`/profiles/${p.id}`}
-                  className="block p-3 rounded-xl border hover:bg-gray-50 transition"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Расчёт #{p.id}</div>
-                      <div className="text-sm text-gray-500">
-                        {p.created_at ? new Date(p.created_at).toLocaleString("ru-RU") : ""}
-                      </div>
-                    </div>
-                    {p.client_id && (
-                      <div className="text-sm text-gray-500">Клиент #{p.client_id}</div>
-                    )}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
+      {/* Недавние расчёты */}
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Недавние расчёты</h2>
+          <Link href="/profiles" className="text-sm text-brand-600 hover:text-brand-700">Все →</Link>
         </div>
-
-        {/* Ближайшие консультации */}
-        <div className="card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Ближайшие консультации</h2>
-            <Link href="/consultations" className="text-sm text-blue-600 hover:text-blue-700">Все →</Link>
+        {recentProfiles.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <p>Нет расчётов</p>
+            <Link href="/profiles/new" className="text-brand-600 hover:text-brand-700 text-sm mt-2 inline-block">
+              Создать первый расчёт
+            </Link>
           </div>
-          {recentConsultations.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <p>Нет консультаций</p>
-              <Link href="/consultations/new" className="text-blue-600 hover:text-blue-700 text-sm mt-2 inline-block">
-                Запланировать консультацию
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {recentConsultations.map((c: any) => (
-                <Link
-                  key={c.id}
-                  href={`/consultations/${c.id}`}
-                  className="block p-3 rounded-xl border hover:bg-gray-50 transition"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">
-                        Консультация #{c.id}
-                        {c.type === "partner" && " 👥"}
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recentProfiles.map((p: any) => {
+              // Определяем тип расчета из raw_json
+              let consultationType = "Базовый";
+              try {
+                let payload: any = p.raw_json;
+                if (typeof payload === "string") payload = JSON.parse(payload);
+                const item = Array.isArray(payload) ? payload[0] : payload;
+                if (item) {
+                  if (item.compatibility || item.firstParticipantCodes || item.secondParticipantCodes || 
+                      item.partnerCodes || 
+                      (item.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant))) {
+                    consultationType = "Партнерский";
+                  } else if ((item.goalDecomposition || item.warnings || item.plan123 || item.request) && 
+                             !item.opener && !item.personalitySummary) {
+                    consultationType = "Целевой";
+                  }
+                }
+              } catch {}
+              
+              const client = p.client_id ? clientsMap[p.client_id] : null;
+              const clientName = client?.name || (p.client_id ? `Клиент #${p.client_id}` : "Без клиента");
+              const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString("ru-RU") : "";
+              const birthDateStr = client?.birth_date ? new Date(client.birth_date).toLocaleDateString("ru-RU") : null;
+              
+              return (
+                <Link key={p.id} href={`/profiles/${p.id}`} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-all hover:border-blue-300">
+                  <div className="space-y-3">
+                    <div className="font-semibold text-lg text-gray-900 break-words">{clientName}</div>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <div className="flex items-center gap-2">
+                        <span>📅 Дата расчета: {dateStr}</span>
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {c.scheduled_at
-                          ? new Date(c.scheduled_at).toLocaleString("ru-RU")
-                          : "Без даты"}
-                      </div>
+                      {birthDateStr && (
+                        <div className="flex items-center gap-2">
+                          <span>🎂 Дата рождения: {birthDateStr}</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        c.status === "completed"
-                          ? "bg-green-100 text-green-700"
-                          : c.status === "cancelled"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-blue-100 text-blue-700"
-                      }`}>
-                        {c.status || "scheduled"}
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {consultationType}
                       </span>
                     </div>
                   </div>
                 </Link>
-              ))}
-            </div>
-          )}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
