@@ -34,11 +34,23 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
 
   async function fetchProfile(accessToken: string) {
     try {
+      console.log("Fetching profile from Directus:", urlWithFields);
       const r = await fetch(urlWithFields, {
         headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
         cache: "no-store",
       });
-      const data = await r.json().catch(() => ({ data: null, errors: [] }));
+      const rawData = await r.text();
+      console.log("Directus raw response status:", r.status);
+      console.log("Directus raw response (first 500 chars):", rawData.substring(0, 500));
+      
+      let data;
+      try {
+        data = JSON.parse(rawData);
+      } catch (parseError) {
+        console.error("Failed to parse Directus response:", parseError, "Raw data:", rawData);
+        data = { data: null, errors: [] };
+      }
+      
       return { r, data } as const;
     } catch (error) {
       console.error("Error fetching profile from Directus:", error);
