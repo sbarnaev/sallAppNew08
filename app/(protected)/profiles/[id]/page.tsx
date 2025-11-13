@@ -1157,6 +1157,7 @@ export default function ProfileDetail() {
     }
 
     return null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.raw_json, checkedMap, saveChecked]);
 
   // Функция рендеринга базового расчета
