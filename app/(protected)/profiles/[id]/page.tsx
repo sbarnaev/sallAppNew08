@@ -522,16 +522,19 @@ export default function ProfileDetail() {
         }
       }
     }
+    // TODO: Доработать функционал экспорта PDF позже
     // Показываем PDF только для базовых расчетов
-    if (consultationType !== "base") {
-      return null;
-    }
+    // if (consultationType !== "base") {
+    //   return null;
+    // }
     
-    return (
-      <div className="flex items-center gap-2 text-sm flex-shrink-0">
-        <button onClick={exportPdf} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">📄 PDF</button>
-      </div>
-    );
+    // return (
+    //   <div className="flex items-center gap-2 text-sm flex-shrink-0">
+    //     <button onClick={exportPdf} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">📄 PDF</button>
+    //   </div>
+    // );
+    
+    return null;
   }
 
   function AccordionSection({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {
