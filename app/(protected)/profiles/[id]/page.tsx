@@ -886,7 +886,16 @@ export default function ProfileDetail() {
       item.request ||
       item.answer ||
       item.recommendations ||
-      item.analysis
+      item.analysis ||
+      item.warnings ||
+      item.goalDecomposition ||
+      item.resourcesForStages ||
+      item.currentDiagnostics ||
+      item.plan123 ||
+      item.progressMetrics ||
+      item.whatIf ||
+      item.objectionHandling ||
+      item.finalStrategy
     );
     
     if (!hasAnyData) {
@@ -1097,6 +1106,301 @@ export default function ProfileDetail() {
                   </article>
                 )}
               </section>
+            )}
+
+            {/* Предупреждения */}
+            {Array.isArray(item.warnings) && item.warnings.length > 0 && (
+              <article className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6">
+                <h2 className="m-0 text-base font-bold text-amber-900 mb-3">⚠️ Предупреждения</h2>
+                <ul className="space-y-2">
+                  {item.warnings.map((w: string, i: number) => (
+                    <li key={i} className="text-amber-800 leading-relaxed">• {w}</li>
+                  ))}
+                </ul>
+              </article>
+            )}
+
+            {/* Декомпозиция целей */}
+            {Array.isArray(item.goalDecomposition) && item.goalDecomposition.length > 0 && (
+              <article className="rounded-2xl border border-blue-100 p-6">
+                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">🎯 Декомпозиция целей</h2>
+                <ol className="space-y-3 list-decimal list-inside">
+                  {item.goalDecomposition.map((goal: string, i: number) => (
+                    <li key={i} className="text-gray-700 leading-relaxed">{goal}</li>
+                  ))}
+                </ol>
+              </article>
+            )}
+
+            {/* Ресурсы по этапам */}
+            {Array.isArray(item.resourcesForStages) && item.resourcesForStages.length > 0 && (
+              <AccordionSection title="Ресурсы по этапам">
+                <div className="space-y-6">
+                  {item.resourcesForStages.map((stage: any, stageIdx: number) => (
+                    <div key={stageIdx} className="rounded-xl border border-blue-100 p-5">
+                      <h3 className="text-lg font-semibold mb-4">Этап {stage.stage}</h3>
+                      <div className="space-y-4">
+                        {Array.isArray(stage.resources) && stage.resources.map((res: any, resIdx: number) => (
+                          <div key={resIdx} className="bg-gray-50 rounded-lg p-4">
+                            <div className="font-semibold text-gray-800 mb-2">{res.resource}</div>
+                            {res.why && <p className="text-sm text-gray-600 mb-2">{res.why}</p>}
+                            {Array.isArray(res.successSignals) && res.successSignals.length > 0 && (
+                              <div className="mt-2">
+                                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Признаки успеха:</div>
+                                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                                  {res.successSignals.map((signal: string, sigIdx: number) => (
+                                    <li key={sigIdx}>{signal}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </AccordionSection>
+            )}
+
+            {/* Текущая диагностика */}
+            {item.currentDiagnostics && (
+              <AccordionSection title="Текущая диагностика">
+                <div className="space-y-6">
+                  {Array.isArray(item.currentDiagnostics.resourceStates) && item.currentDiagnostics.resourceStates.length > 0 && (
+                    <div>
+                      <h3 className="text-base font-semibold mb-3">Состояние ресурсов</h3>
+                      <div className="space-y-3">
+                        {item.currentDiagnostics.resourceStates.map((state: any, i: number) => (
+                          <div key={i} className={`rounded-lg p-4 border-2 ${
+                            state.state === 'plus' ? 'border-green-200 bg-green-50' :
+                            state.state === 'minus' ? 'border-red-200 bg-red-50' :
+                            'border-gray-200 bg-gray-50'
+                          }`}>
+                            <div className="font-semibold mb-2">{state.resource}</div>
+                            {Array.isArray(state.evidence) && state.evidence.length > 0 && (
+                              <div className="mb-2">
+                                <div className="text-xs font-semibold text-gray-600 mb-1">Доказательства:</div>
+                                <ul className="list-disc list-inside text-sm text-gray-700">
+                                  {state.evidence.map((e: string, j: number) => (
+                                    <li key={j}>{e}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {Array.isArray(state.correction) && state.correction.length > 0 && (
+                              <div>
+                                <div className="text-xs font-semibold text-gray-600 mb-1">Коррекция:</div>
+                                <ul className="list-disc list-inside text-sm text-gray-700">
+                                  {state.correction.map((c: string, j: number) => (
+                                    <li key={j}>{c}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {item.currentDiagnostics.readiness && (
+                    <div className="rounded-lg border border-blue-100 p-4">
+                      <h3 className="text-base font-semibold mb-2">Готовность</h3>
+                      <div className="mb-2">
+                        <span className="text-sm text-gray-600">Желание: </span>
+                        <span className="font-semibold">{item.currentDiagnostics.readiness.willingness}/10</span>
+                      </div>
+                      {Array.isArray(item.currentDiagnostics.readiness.blockers) && item.currentDiagnostics.readiness.blockers.length > 0 && (
+                        <div className="mb-2">
+                          <div className="text-xs font-semibold text-gray-600 mb-1">Блокеры:</div>
+                          <ul className="list-disc list-inside text-sm text-gray-700">
+                            {item.currentDiagnostics.readiness.blockers.map((b: string, i: number) => (
+                              <li key={i}>{b}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {item.currentDiagnostics.readiness.comment && (
+                        <p className="text-sm text-gray-700 mt-2">{item.currentDiagnostics.readiness.comment}</p>
+                      )}
+                    </div>
+                  )}
+                  {Array.isArray(item.currentDiagnostics.questions) && item.currentDiagnostics.questions.length > 0 && (
+                    <div>
+                      <h3 className="text-base font-semibold mb-3">Вопросы для уточнения</h3>
+                      <div className="space-y-3">
+                        {item.currentDiagnostics.questions.map((q: any, i: number) => (
+                          <div key={i} className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                            <p className="text-gray-800 mb-1">{q.question}</p>
+                            {q.salResource && (
+                              <span className="text-xs text-gray-500">Ресурс: {q.salResource}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </AccordionSection>
+            )}
+
+            {/* План по этапам */}
+            {Array.isArray(item.plan123) && item.plan123.length > 0 && (
+              <AccordionSection title="План действий">
+                <div className="space-y-6">
+                  {item.plan123.map((plan: any, i: number) => (
+                    <div key={i} className="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-5">
+                      <h3 className="text-lg font-semibold mb-4">{plan.stageTitle}</h3>
+                      {Array.isArray(plan.actions) && plan.actions.length > 0 && (
+                        <div className="mb-4">
+                          <div className="text-sm font-semibold text-gray-700 mb-2">Действия:</div>
+                          <ul className="list-disc list-inside space-y-1 text-gray-700">
+                            {plan.actions.map((action: string, j: number) => (
+                              <li key={j}>{action}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {Array.isArray(plan.resources) && plan.resources.length > 0 && (
+                        <div className="mb-4">
+                          <div className="text-sm font-semibold text-gray-700 mb-2">Ресурсы:</div>
+                          <div className="flex flex-wrap gap-2">
+                            {plan.resources.map((res: any, j: number) => (
+                              <span key={j} className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+                                {res.resource}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {plan.successCriteria && (
+                        <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                          <div className="text-sm font-semibold text-green-800 mb-1">Критерий успеха:</div>
+                          <p className="text-sm text-green-700">{plan.successCriteria}</p>
+                        </div>
+                      )}
+                      {plan.riskNotes && (
+                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                          <div className="text-sm font-semibold text-amber-800 mb-1">⚠️ Риски:</div>
+                          <p className="text-sm text-amber-700">{plan.riskNotes}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </AccordionSection>
+            )}
+
+            {/* Метрики прогресса */}
+            {item.progressMetrics && (
+              <AccordionSection title="Метрики прогресса">
+                <div className="space-y-4">
+                  {Array.isArray(item.progressMetrics.earlySignals) && item.progressMetrics.earlySignals.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Ранние сигналы</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
+                        {item.progressMetrics.earlySignals.map((s: string, i: number) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(item.progressMetrics.midSignals) && item.progressMetrics.midSignals.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Средние сигналы</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
+                        {item.progressMetrics.midSignals.map((s: string, i: number) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(item.progressMetrics.resultSignals) && item.progressMetrics.resultSignals.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Итоговые сигналы</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
+                        {item.progressMetrics.resultSignals.map((s: string, i: number) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </AccordionSection>
+            )}
+
+            {/* Что делать в разных ситуациях */}
+            {item.whatIf && (
+              <AccordionSection title="Что делать в разных ситуациях">
+                <div className="space-y-4">
+                  {Array.isArray(item.whatIf.fatigue) && item.whatIf.fatigue.length > 0 && (
+                    <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+                      <h3 className="text-sm font-semibold text-orange-900 mb-2">Усталость</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-orange-800">
+                        {item.whatIf.fatigue.map((f: string, i: number) => (
+                          <li key={i}>{f}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(item.whatIf.overwhelm) && item.whatIf.overwhelm.length > 0 && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                      <h3 className="text-sm font-semibold text-red-900 mb-2">Перегрузка</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-red-800">
+                        {item.whatIf.overwhelm.map((o: string, i: number) => (
+                          <li key={i}>{o}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(item.whatIf.relapse) && item.whatIf.relapse.length > 0 && (
+                    <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
+                      <h3 className="text-sm font-semibold text-purple-900 mb-2">Рецидив</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-purple-800">
+                        {item.whatIf.relapse.map((r: string, i: number) => (
+                          <li key={i}>{r}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(item.whatIf.pitfalls) && item.whatIf.pitfalls.length > 0 && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                      <h3 className="text-sm font-semibold text-amber-900 mb-2">Ловушки</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-amber-800">
+                        {item.whatIf.pitfalls.map((p: string, i: number) => (
+                          <li key={i}>{p}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </AccordionSection>
+            )}
+
+            {/* Обработка возражений */}
+            {Array.isArray(item.objectionHandling) && item.objectionHandling.length > 0 && (
+              <AccordionSection title="Обработка возражений">
+                <div className="space-y-4">
+                  {item.objectionHandling.map((obj: any, i: number) => (
+                    <div key={i} className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+                      <div className="font-semibold text-gray-800 mb-2">"{obj.objection}"</div>
+                      <p className="text-sm text-gray-700">{obj.reply}</p>
+                    </div>
+                  ))}
+                </div>
+              </AccordionSection>
+            )}
+
+            {/* Финальная стратегия */}
+            {Array.isArray(item.finalStrategy) && item.finalStrategy.length > 0 && (
+              <article className="rounded-2xl border-2 border-green-200 bg-green-50 p-6">
+                <h2 className="m-0 text-base font-bold text-green-900 mb-3">✅ Финальная стратегия</h2>
+                <div className="space-y-3">
+                  {item.finalStrategy.map((strategy: string, i: number) => (
+                    <p key={i} className="text-green-800 leading-relaxed">{strategy}</p>
+                  ))}
+                </div>
+              </article>
             )}
 
             {item.practices && (
