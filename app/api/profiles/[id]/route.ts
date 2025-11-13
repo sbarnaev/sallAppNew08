@@ -364,15 +364,42 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
     console.error("[DEBUG] Error normalizing profile data:", normalizeError);
   }
   
-  // Если ошибка сети, возвращаем null
+  // Если ошибка сети или профиль не найден, возвращаем правильный статус
   if (!r.ok && !data?.data) {
     console.error("[DEBUG] Directus error response:", {
       status: r.status,
       statusText: r.statusText,
       data: data,
-      errors: (data as any)?.errors
+      errors: (data as any)?.errors,
+      profileId: id,
+      url: urlWithFields
     });
-    return NextResponse.json({ data: null }, { status: 200 });
+    
+    // Для 404 возвращаем структурированный ответ
+    if (r.status === 404) {
+      return NextResponse.json(
+        { 
+          data: null, 
+          errors: [{ 
+            message: `Профиль с ID ${id} не найден`,
+            extensions: { code: "NOT_FOUND", profileId: id }
+          }] 
+        },
+        { status: 404 }
+      );
+    }
+    
+    // Для других ошибок возвращаем структурированный ответ
+    return NextResponse.json(
+      { 
+        data: null, 
+        errors: (data as any)?.errors || [{ 
+          message: `Ошибка при получении профиля: ${r.statusText}`,
+          extensions: { code: "FETCH_ERROR", status: r.status }
+        }] 
+      },
+      { status: r.status || 500 }
+    );
   }
   
   // Логируем финальный ответ
