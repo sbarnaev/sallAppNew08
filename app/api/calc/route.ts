@@ -93,6 +93,9 @@ export async function POST(req: Request) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
     
+    // Убеждаемся, что directusUrl правильный и без слеша в конце
+    const cleanDirectusUrl = directusUrl ? directusUrl.replace(/\/+$/, '') : null;
+    
     const payload = {
       name,
       birthday,
@@ -102,20 +105,34 @@ export async function POST(req: Request) {
       public_code: publicCode,
       // Дополнительный запрос пользователя (для целевого расчёта)
       request: request ?? clientRequest ?? query ?? prompt ?? null,
-      // Передаем URL Directus для n8n workflow
-      directusUrl: directusUrl,
+      // Передаем URL Directus для n8n workflow (без слеша в конце)
+      directusUrl: cleanDirectusUrl,
       // Передаем токены в body для n8n workflow
       token: token, // access token (может истечь)
       refreshToken: refreshToken, // refresh token для обновления access token в n8n
     };
     
+    console.log("Payload to n8n:", {
+      directusUrl: payload.directusUrl,
+      hasToken: !!payload.token,
+      hasRefreshToken: !!payload.refreshToken,
+      type: payload.type
+    });
+    
     console.log("Calling n8n workflow:", {
       url: n8nUrl,
       type: type || "base",
       profileId,
+      directusUrl: directusUrl, // Логируем полный URL для диагностики
       hasDirectusUrl: !!directusUrl,
-      hasToken: !!token
+      hasToken: !!token,
+      hasRefreshToken: !!refreshToken
     });
+    
+    // Проверяем, что directusUrl правильный
+    if (directusUrl && !directusUrl.includes('sposobniymaster.online')) {
+      console.warn("WARNING: Directus URL might be incorrect:", directusUrl);
+    }
     
     r = await fetch(n8nUrl, {
       method: "POST",
