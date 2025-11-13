@@ -28,6 +28,8 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   console.log("[DEBUG] Profile request URL:", url);
   // Не включаем images в основной запрос, так как может быть 403
   // Загружаем images отдельно после успешного получения профиля
+  // Пробуем включить images в основной запрос
+  // Если будет 403, обработаем это отдельно
   const fields = [
     "id",
     "client_id",
@@ -38,7 +40,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
     "notes",
     "chat_history",
     "digits",
-    // "images" - загружаем отдельно
+    "images", // Пробуем включить images
   ].join(",");
   const urlWithFields = `${url}?fields=${encodeURIComponent(fields)}`;
 
