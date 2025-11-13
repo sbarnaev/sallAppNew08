@@ -402,10 +402,12 @@ export default function ProfileDetail() {
 </html>`;
       
       // Создаем временный элемент для генерации PDF
-      // Извлекаем только body содержимое из HTML
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = html;
-      const bodyContent = tempDiv.querySelector('body');
+      // Используем DOMParser для правильного парсинга HTML
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      const bodyContent = doc.body;
+      const styleElement = doc.querySelector('style');
       
       if (!bodyContent) {
         alert('Ошибка: не удалось создать содержимое для PDF');
@@ -426,17 +428,17 @@ export default function ProfileDetail() {
       element.style.opacity = '0';
       element.style.pointerEvents = 'none';
       
-      // Копируем стили и содержимое
-      const styleElement = tempDiv.querySelector('style');
+      // Копируем стили
       if (styleElement) {
         const style = document.createElement('style');
-        style.textContent = styleElement.textContent;
+        style.textContent = styleElement.textContent || '';
         element.appendChild(style);
       }
       
       // Копируем содержимое body
-      while (bodyContent.firstChild) {
-        element.appendChild(bodyContent.firstChild);
+      const bodyClone = bodyContent.cloneNode(true) as HTMLElement;
+      while (bodyClone.firstChild) {
+        element.appendChild(bodyClone.firstChild);
       }
       
       document.body.appendChild(element);
