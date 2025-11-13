@@ -17,6 +17,7 @@ function generatePublicCode(): string {
 
 export async function POST(req: Request) {
   const token = cookies().get("directus_access_token")?.value;
+  const refreshToken = cookies().get("directus_refresh_token")?.value;
   const directusUrl = getDirectusUrl();
   const n8nUrl = process.env.N8N_CALC_URL;
   if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -103,8 +104,9 @@ export async function POST(req: Request) {
       request: request ?? clientRequest ?? query ?? prompt ?? null,
       // Передаем URL Directus для n8n workflow
       directusUrl: directusUrl,
-      // Передаем токен в body для совместимости с n8n webhook
-      token: token,
+      // Передаем токены в body для n8n workflow
+      token: token, // access token (может истечь)
+      refreshToken: refreshToken, // refresh token для обновления access token в n8n
     };
     
     console.log("Calling n8n workflow:", {

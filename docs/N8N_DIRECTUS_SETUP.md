@@ -103,11 +103,52 @@ Headers:
     Value: application/json
 ```
 
+## Обновление токена в n8n (если токен истек)
+
+Если получаете ошибку "Token expired", добавьте шаг обновления токена перед HTTP Request:
+
+### Шаг 1: HTTP Request для обновления токена
+
+1. **URL**: `{{ $json.directusUrl }}/auth/refresh`
+2. **Method**: `POST`
+3. **Body** (JSON):
+   ```json
+   {
+     "refresh_token": "{{ $json.refreshToken }}"
+   }
+   ```
+4. **Headers**:
+   - `Content-Type`: `application/json`
+
+### Шаг 2: Извлеките новый токен
+
+После HTTP Request добавьте **Set** node:
+- **Name**: `newToken`
+- **Value**: `{{ $json.data.access_token }}`
+
+Или используйте напрямую в следующем HTTP Request:
+- **Authorization Header**: `Bearer {{ $json.data.access_token }}`
+
+### Шаг 3: Используйте обновленный токен
+
+В следующем HTTP Request node используйте:
+- **Authorization**: `Bearer {{ $json.data.access_token }}`
+
+## Альтернатива: Статический токен Directus
+
+Если токены постоянно истекают, используйте статический токен:
+
+1. В Directus: Settings → Access Tokens → Create Token
+2. Установите нужные права доступа
+3. Скопируйте токен
+4. В n8n используйте этот токен напрямую (не из webhook)
+
 ## Отладка
 
 1. Добавьте **Set** node перед HTTP Request для проверки:
    ```
    Token: {{ $json.token }}
+   Refresh Token: {{ $json.refreshToken }}
    Directus URL: {{ $json.directusUrl }}
    Full URL: {{ $json.directusUrl }}/users/me?fields=id,email,role.name
    ```
