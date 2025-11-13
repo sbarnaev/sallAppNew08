@@ -17,17 +17,46 @@ export async function POST() {
   }
 
   console.log("Refreshing token, Directus URL:", baseUrl);
+  console.log("Refresh token present:", !!refreshToken, "Length:", refreshToken?.length);
+
+  // Проверяем, что URL действительно валидный для HTTPS
+  if (baseUrl.startsWith('https://')) {
+    // Убираем порт если он указан неправильно (например, :443 для HTTPS)
+    const urlObj = new URL(baseUrl);
+    if (urlObj.port === '443') {
+      urlObj.port = '';
+      baseUrl = urlObj.toString();
+      console.log("Removed port 443 from HTTPS URL, new URL:", baseUrl);
+    }
+  }
 
   try {
-    const res = await fetch(`${baseUrl}/auth/refresh`, {
+    const refreshUrl = `${baseUrl}/auth/refresh`;
+    console.log("Making refresh request to:", refreshUrl);
+    
+    const res = await fetch(refreshUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
       body: JSON.stringify({ refresh_token: refreshToken }),
       // Увеличиваем таймаут
       signal: AbortSignal.timeout(10000), // 10 секунд
     });
+    
+    console.log("Refresh response status:", res.status, res.statusText);
 
-    const data = await res.json();
+    const responseText = await res.text();
+    console.log("Refresh response body (first 200 chars):", responseText.substring(0, 200));
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error("Failed to parse refresh response:", parseError, "Response:", responseText);
+      throw new Error(`Invalid JSON response from Directus: ${responseText.substring(0, 100)}`);
+    }
 
     if (!res.ok) {
       return NextResponse.json(data || { message: "Token refresh failed" }, { status: res.status });
