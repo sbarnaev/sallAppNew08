@@ -15,11 +15,6 @@ RUN npm ci --no-audit --prefer-offline --cache=/tmp/.npm && \
     rm -rf /tmp/.npm && \
     npm cache clean --force
 
-# Устанавливаем только production зависимости для runtime
-RUN npm ci --omit=dev --no-audit --prefer-offline --cache=/tmp/.npm && \
-    rm -rf /tmp/.npm && \
-    npm cache clean --force || true
-
 ############################
 # 2) Build Next.js         #
 ############################
