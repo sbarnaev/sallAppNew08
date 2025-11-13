@@ -129,6 +129,10 @@ export async function GET(req: NextRequest) {
     nameSearchParams.delete("search"); // Убираем общий search параметр
     nameSearchParams.set("limit", "1000"); // Получаем все результаты для объединения
     nameSearchParams.set("offset", "0");
+    // Сохраняем фильтр owner_user если был
+    if (currentUserId && !hasExplicitFilter) {
+      nameSearchParams.set("filter[owner_user][_eq]", currentUserId);
+    }
     
     const nameUrl = `${baseUrl}/items/clients?${nameSearchParams.toString()}`;
     try {
@@ -157,6 +161,10 @@ export async function GET(req: NextRequest) {
         dateSearchParams.delete("filter[_or][2][phone][_icontains]");
         dateSearchParams.set("limit", "1000");
         dateSearchParams.set("offset", "0");
+        // Сохраняем фильтр owner_user если был
+        if (currentUserId && !hasExplicitFilter) {
+          dateSearchParams.set("filter[owner_user][_eq]", currentUserId);
+        }
         
         const dateUrl = `${baseUrl}/items/clients?${dateSearchParams.toString()}`;
         try {
@@ -187,6 +195,10 @@ export async function GET(req: NextRequest) {
       yearSearchParams.delete("filter[_or][2][phone][_icontains]");
       yearSearchParams.set("limit", "1000");
       yearSearchParams.set("offset", "0");
+      // Сохраняем фильтр owner_user если был
+      if (currentUserId && !hasExplicitFilter) {
+        yearSearchParams.set("filter[owner_user][_eq]", currentUserId);
+      }
       
       const yearUrl = `${baseUrl}/items/clients?${yearSearchParams.toString()}`;
       try {
