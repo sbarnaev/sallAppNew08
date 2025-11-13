@@ -26,16 +26,17 @@ https://api.openai.com/v1/responses
           "properties": {
             "warnings": {
               "type": "array",
-              "description": "Предупреждения для пары",
+              "description": "Предупреждения — какие сложности и проблемы могут быть по профилям САЛ пары в разрезе достижения цели. Пиши коротко, ясно, по делу, простым языком.",
               "items": { "type": "string" }
             },
             "goalDecomposition": {
               "type": "array",
-              "description": "Из чего состоит цель пары",
+              "description": "Декомпозиция цели пары — из чего состоит большая цель и что нужно для её достижения. Разложи цель на понятные шаги простым языком.",
               "items": { "type": "string" }
             },
             "resourcesForStages": {
               "type": "array",
+              "description": "Ресурсы для этапов — какой ресурс САЛ какого участника нужен на каком этапе и зачем. Указывай ресурс с цифрой и участника, объясняй простым языком.",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
@@ -62,6 +63,7 @@ https://api.openai.com/v1/responses
             },
             "compatibility": {
               "type": "object",
+              "description": "Совместимость ресурсов — какие ресурсы дополняют друг друга, какие конфликтуют, и как это решить простым языком.",
               "additionalProperties": false,
               "properties": {
                 "complementary": {
@@ -96,6 +98,7 @@ https://api.openai.com/v1/responses
             },
             "currentDiagnostics": {
               "type": "object",
+              "description": "Диагностика пары сейчас — что в плюсе/минусе у каждого участника, реальная готовность пары, зоны конфликтов. Добавь диагностические вопросы простым языком.",
               "additionalProperties": false,
               "properties": {
                 "firstParticipant": {
@@ -185,6 +188,7 @@ https://api.openai.com/v1/responses
             },
             "plan123": {
               "type": "array",
+              "description": "План достижения — что делать сначала, потом, затем, с указанием кто из участников что делает. Три этапа с конкретными действиями простым языком.",
               "minItems": 3,
               "maxItems": 3,
               "items": {
@@ -214,6 +218,7 @@ https://api.openai.com/v1/responses
             },
             "progressMetrics": {
               "type": "object",
+              "description": "Метрики прогресса — как понять, что пара идёт к цели и что получается. Ранние, средние и итоговые сигналы простым языком.",
               "additionalProperties": false,
               "properties": {
                 "earlySignals": { "type": "array", "items": { "type": "string" } },
@@ -224,6 +229,7 @@ https://api.openai.com/v1/responses
             },
             "whatIf": {
               "type": "object",
+              "description": "Что делать при негативе — усталость, перегруз, конфликты, откаты. Конкретные советы простым языком.",
               "additionalProperties": false,
               "properties": {
                 "fatigue": { "type": "array", "items": { "type": "string" } },
@@ -236,6 +242,7 @@ https://api.openai.com/v1/responses
             },
             "objectionHandling": {
               "type": "array",
+              "description": "Работа с возражениями — что может возразить пара и как помочь/ответить простым языком.",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
@@ -248,6 +255,7 @@ https://api.openai.com/v1/responses
             },
             "finalStrategy": {
               "type": "array",
+              "description": "Итоговое резюме — как идём к цели, ровно в 3 абзацах простым языком.",
               "minItems": 3,
               "maxItems": 3,
               "items": { "type": "string" }

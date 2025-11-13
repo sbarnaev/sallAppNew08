@@ -29,8 +29,9 @@ https://api.openai.com/v1/responses
           "additionalProperties": false,
           "properties": {
             "opener": { 
-            "type": "string"
-              },
+              "type": "string",
+              "description": "Вводная фраза, которую консультант прочитает клиенту для установления доверия. Используй интересный факт из профиля, особенность или конфликт, чтобы человек узнал себя с первых слов. Простым, понятным языком."
+            },
             "personalitySummary": {
               "type": "array",
               "description": "Ровно 3 абзаца описания личности простым, понятным языком. В тексте указываются ресурсы с цифрами. Используй бытовые примеры и ситуации из жизни.",
@@ -87,6 +88,7 @@ https://api.openai.com/v1/responses
   
             "conflicts": {
               "type": "array",
+              "description": "Конфликты и проблемы — внутренние противоречия в профиле клиента. Описывай простым языком с примерами.",
               "minItems": 5,
               "maxItems": 5,
               "items": {
@@ -104,6 +106,7 @@ https://api.openai.com/v1/responses
   
             "practices": {
               "type": "object",
+              "description": "Практики для развития каждого ресурса. Для каждого ресурса (personality, connector, realization, generator, mission) — ровно 3 практики. Каждая практика содержит title, p1, p2. Описывай простым языком.",
               "additionalProperties": false,
               "properties": {
                 "personality": { "$ref": "#/$defs/practiceTriplet" },

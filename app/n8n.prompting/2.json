@@ -24,17 +24,17 @@ https://api.openai.com/v1/responses
           "properties": {
             "warnings": {
               "type": "array",
-              "description": "Предупреждения",
+              "description": "Предупреждения — какие сложности и проблемы могут быть по профилю САЛ в разрезе достижения цели. Пиши коротко, ясно, по делу, простым языком.",
               "items": { "type": "string" }
             },
             "goalDecomposition": {
               "type": "array",
-              "description": "Из чего состоит цель: путь от текущей точки к результату, разложенный на части.",
+              "description": "Декомпозиция цели — из чего состоит большая цель и что нужно для её достижения. Разложи цель на понятные шаги простым языком.",
               "items": { "type": "string" }
             },
             "resourcesForStages": {
               "type": "array",
-              "description": "Какие ресурсы САЛ (с цифрами клиента) нужны на каждом этапе и зачем.",
+              "description": "Ресурсы для этапов — какой ресурс САЛ нужен на каком этапе и зачем. Указывай ресурс с цифрой и объясняй простым языком.",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
@@ -60,7 +60,7 @@ https://api.openai.com/v1/responses
             },
             "currentDiagnostics": {
               "type": "object",
-              "description": "Диагностика на сейчас: состояние ресурсов, готовность, вопросы для уточнения.",
+              "description": "Диагностика сейчас — что в плюсе/минусе, реальная готовность клиента. Добавь диагностические вопросы простым языком.",
               "additionalProperties": false,
               "properties": {
                 "resourceStates": {
@@ -107,7 +107,7 @@ https://api.openai.com/v1/responses
             },
             "plan123": {
               "type": "array",
-              "description": "План достижения: сначала → потом → затем. Без минут/сложностей/impact/зависимостей.",
+              "description": "План достижения — что делать сначала, потом, затем. Три этапа с конкретными действиями простым языком.",
               "minItems": 3,
               "maxItems": 3,
               "items": {
@@ -137,7 +137,7 @@ https://api.openai.com/v1/responses
             },
             "progressMetrics": {
               "type": "object",
-              "description": "Как отслеживать прогресс.",
+              "description": "Метрики прогресса — как понять, что человек идёт к цели и что получается. Ранние, средние и итоговые сигналы простым языком.",
               "additionalProperties": false,
               "properties": {
                 "earlySignals": { "type": "array", "items": { "type": "string" }, "description": "Ранние признаки, что идём верно." },
@@ -148,7 +148,7 @@ https://api.openai.com/v1/responses
             },
             "whatIf": {
               "type": "object",
-              "description": "Что делать при сложностях.",
+              "description": "Что делать при негативе — усталость, перегруз, откаты. Конкретные советы простым языком.",
               "additionalProperties": false,
               "properties": {
                 "fatigue": { "type": "array", "items": { "type": "string" } },
@@ -160,7 +160,7 @@ https://api.openai.com/v1/responses
             },
             "objectionHandling": {
               "type": "array",
-              "description": "Что может возразить клиент и как ответить/помочь.",
+              "description": "Работа с возражениями — что может возразить клиент и как помочь/ответить простым языком.",
               "items": {
                 "type": "object",
                 "additionalProperties": false,
@@ -173,7 +173,7 @@ https://api.openai.com/v1/responses
             },
             "finalStrategy": {
               "type": "array",
-              "description": "Итоговое резюме ровно в 3 абзацах.",
+              "description": "Итоговое резюме — как идём к цели, ровно в 3 абзацах простым языком.",
               "minItems": 3,
               "maxItems": 3,
               "items": { "type": "string" }
