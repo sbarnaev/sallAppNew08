@@ -4,50 +4,47 @@
 # 1) Base deps for install #
 ############################
 FROM node:20-alpine AS deps
-ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
-# Ускоряем сборку: только файлы для зависимостей
-# Устанавливаем все зависимости включая dev (нужны для сборки)
+# Устанавливаем все зависимости (включая dev для сборки)
 COPY package.json package-lock.json* ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci
+RUN npm ci
 
 ############################
 # 2) Build Next.js         #
 ############################
 FROM node:20-alpine AS builder
-ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
+# Копируем зависимости
 COPY --from=deps /app/node_modules ./node_modules
+# Копируем весь код
 COPY . .
 
-# Next.js standalone билд для продакшна
+# Собираем Next.js
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 ############################
 # 3) Runtime (small image) #
 ############################
 FROM node:20-alpine AS runner
+WORKDIR /app
+
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
     HOSTNAME=0.0.0.0
-WORKDIR /app
 
-# Нужны только артефакты standalone
+# Копируем только необходимые файлы из сборки
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
 EXPOSE 3000
 
-# Healthcheck: проверка, что сервер отвечает
+# Healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD node -e "require('http').get('http://127.0.0.1:3000', (r) => { process.exit(r.statusCode === 200 ? 0 : 1) })" || exit 1
 
 CMD ["node", "server.js"]
-
-
