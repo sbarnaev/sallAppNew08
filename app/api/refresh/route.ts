@@ -72,6 +72,12 @@ export async function POST() {
     }
 
     if (!res.ok) {
+      console.error("[DEBUG] Directus refresh failed:", {
+        status: res.status,
+        statusText: res.statusText,
+        data: data,
+        errors: (data as any)?.errors
+      });
       return NextResponse.json(data || { message: "Token refresh failed" }, { status: res.status });
     }
 
