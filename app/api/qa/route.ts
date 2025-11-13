@@ -29,6 +29,13 @@ export async function POST(req: Request) {
   if (!question || typeof question !== "string" || !question.trim()) {
     return NextResponse.json({ message: "Вопрос пустой" }, { status: 400 });
   }
+  
+  console.log("QA request:", {
+    hasOpenAIKey: !!openaiKey,
+    wantStream,
+    profileId,
+    questionLength: question?.length
+  });
 
   // If OpenAI key provided, answer via OpenAI. Otherwise fallback to n8n as раньше
   if (openaiKey) {
@@ -62,6 +69,7 @@ export async function POST(req: Request) {
 
       // Streaming branch
       if (wantStream) {
+        console.log("Starting OpenAI streaming request");
         const r = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -76,6 +84,15 @@ export async function POST(req: Request) {
             stream: true,
           }),
         });
+        
+        if (!r.ok) {
+          const errorData = await r.json().catch(() => ({}));
+          console.error("OpenAI API error:", r.status, errorData);
+          return NextResponse.json({ 
+            message: "OpenAI API error", 
+            error: errorData?.error?.message || String(r.status) 
+          }, { status: r.status });
+        }
 
         const encoder = new TextEncoder();
         const stream = new ReadableStream<Uint8Array>({
@@ -92,20 +109,52 @@ export async function POST(req: Request) {
                 const { done, value } = await reader.read();
                 if (done) break;
                 buffer += decoder.decode(value, { stream: true });
-                const parts = buffer.split("\n\n");
-                buffer = parts.pop() || "";
-                for (const part of parts) {
-                  const line = part.trim();
-                  if (!line) continue;
-                  const payload = line.replace(/^data:\s*/, "");
-                  if (payload === "[DONE]") continue;
+                // Обрабатываем строки по отдельности
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || ""; // Оставляем неполную строку в буфере
+                
+                for (const line of lines) {
+                  if (!line.trim()) continue;
+                  // OpenAI SSE формат: "data: {...}" или "data: [DONE]"
+                  if (!line.startsWith("data:")) continue;
+                  
+                  const payload = line.slice(5).trim(); // Убираем "data:"
+                  if (payload === "[DONE]") {
+                    controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                    continue;
+                  }
+                  
                   try {
                     const json = JSON.parse(payload);
                     const delta = json?.choices?.[0]?.delta?.content || "";
-                    if (delta) controller.enqueue(encoder.encode(`data: ${delta}\n\n`));
-                  } catch {}
+                    if (delta) {
+                      // Отправляем как SSE: "data: текст\n\n"
+                      controller.enqueue(encoder.encode(`data: ${delta}\n\n`));
+                    }
+                  } catch (e) {
+                    // Игнорируем ошибки парсинга
+                  }
                 }
               }
+              // Обрабатываем остаток буфера
+              if (buffer.trim()) {
+                const line = buffer.trim();
+                if (line.startsWith("data:")) {
+                  const payload = line.slice(5).trim();
+                  if (payload !== "[DONE]") {
+                    try {
+                      const json = JSON.parse(payload);
+                      const delta = json?.choices?.[0]?.delta?.content || "";
+                      if (delta) {
+                        controller.enqueue(encoder.encode(`data: ${delta}\n\n`));
+                      }
+                    } catch {}
+                  }
+                }
+              }
+            } catch (error) {
+              console.error("Stream error:", error);
+              controller.enqueue(encoder.encode(`data: Ошибка стриминга: ${String(error)}\n\n`));
             } finally {
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();

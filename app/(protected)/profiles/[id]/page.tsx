@@ -516,35 +516,66 @@ export default function ProfileDetail() {
       let acc = "";
       // добавим пустое сообщение ассистента, будем дописывать
       setChat((prev)=>[...prev, { role: "assistant", content: "" }]);
-      let assistantIndex = -1;
-      setChat((prev)=>{ assistantIndex = prev.length; return prev; });
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        // SSE: строки вида "data: ...\n\n"
-        const lines = chunk.split("\n\n");
-        for (const raw of lines) {
-          if (!raw.startsWith("data:")) continue;
-          const payload = raw.slice(5);
-          if (payload.trim() === "[DONE]") continue;
-          acc += payload;
-          setAnswer(acc);
-          setChat((prev)=>{
-            const next = prev.slice();
-            // найдём последний ассистентский блок и обновим
-            for (let i = next.length - 1; i >= 0; i--) {
-              if (next[i].role === "assistant") { next[i] = { role: "assistant", content: acc }; break; }
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value, { stream: true });
+          // SSE формат: каждая строка "data: текст\n\n"
+          const lines = chunk.split("\n");
+          
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            
+            // Пропускаем не-SSE строки
+            if (!line.startsWith("data:")) continue;
+            
+            const payload = line.slice(5).trim(); // Убираем "data:"
+            
+            if (payload === "[DONE]") {
+              break;
             }
-            return next;
-          });
+            
+            // Добавляем текст к аккумулятору
+            acc += payload;
+            setAnswer(acc);
+            
+            // Обновляем последнее сообщение ассистента
+            setChat((prev)=>{
+              const next = [...prev];
+              for (let i = next.length - 1; i >= 0; i--) {
+                if (next[i].role === "assistant") {
+                  next[i] = { role: "assistant", content: acc };
+                  break;
+                }
+              }
+              return next;
+            });
+            
+            // Автопрокрутка чата
+            if (chatBoxRef.current) {
+              chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+            }
+          }
+        }
+      } catch (streamError) {
+        console.error("Stream reading error:", streamError);
+        if (acc) {
+          // Если уже есть текст, сохраняем его
+          const finalHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: acc }];
+          setChat(finalHistory);
+          await saveChatHistory(finalHistory);
         }
       }
       const finalHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: acc }];
       await saveChatHistory(finalHistory);
-    } catch (err) {
-      const errorHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: "Ошибка чата" }];
-      setAnswer("Ошибка чата");
+    } catch (err: any) {
+      console.error("Chat error:", err);
+      const errorMsg = err?.message || "Ошибка чата";
+      const errorHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: `Ошибка: ${errorMsg}` }];
+      setAnswer(`Ошибка: ${errorMsg}`);
       setChat(errorHistory);
       await saveChatHistory(errorHistory);
     } finally {
