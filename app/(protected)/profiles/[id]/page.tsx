@@ -402,11 +402,47 @@ export default function ProfileDetail() {
 </html>`;
       
       // Создаем временный элемент для генерации PDF
+      // Извлекаем только body содержимое из HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      const bodyContent = tempDiv.querySelector('body');
+      
+      if (!bodyContent) {
+        alert('Ошибка: не удалось создать содержимое для PDF');
+        return;
+      }
+      
+      // Создаем контейнер для PDF
       const element = document.createElement('div');
-      element.innerHTML = html;
-      element.style.position = 'absolute';
-      element.style.left = '-9999px';
+      element.style.width = '210mm';
+      element.style.minHeight = '297mm';
+      element.style.padding = '0';
+      element.style.margin = '0';
+      element.style.backgroundColor = 'white';
+      element.style.position = 'fixed';
+      element.style.top = '0';
+      element.style.left = '0';
+      element.style.zIndex = '-9999';
+      element.style.opacity = '0';
+      element.style.pointerEvents = 'none';
+      
+      // Копируем стили и содержимое
+      const styleElement = tempDiv.querySelector('style');
+      if (styleElement) {
+        const style = document.createElement('style');
+        style.textContent = styleElement.textContent;
+        element.appendChild(style);
+      }
+      
+      // Копируем содержимое body
+      while (bodyContent.firstChild) {
+        element.appendChild(bodyContent.firstChild);
+      }
+      
       document.body.appendChild(element);
+      
+      // Ждем, чтобы стили применились и контент отрендерился
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       // Настройки для html2pdf
       const opt = {
