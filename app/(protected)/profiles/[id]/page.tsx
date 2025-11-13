@@ -2017,8 +2017,8 @@ export default function ProfileDetail() {
         </div>
       </div>
 
-      {/* Пять кубиков (как в шаблоне) */}
-      {(() => {
+      {/* Пять кубиков (только для базового расчета) */}
+      {consultationType === "base" && (() => {
         // digits: или массив, или строка JSON/CSV; возьмём как есть порядок
         let arr: any[] = [];
         const d = (profile as any)?.digits;
@@ -2043,8 +2043,8 @@ export default function ProfileDetail() {
         );
       })()}
 
-      {/* Пять изображений */}
-      {(() => {
+      {/* Пять изображений (только для базового расчета) */}
+      {consultationType === "base" && (() => {
         const images = (profile as any)?.images;
         let imageArray: any[] = [];
         
@@ -2152,6 +2152,74 @@ export default function ProfileDetail() {
           Данные рассчитываются... ещё немного
         </div>
       )}
+
+      {/* Меню-навигация по блокам */}
+      {!polling && renderedFromJson && consultationType && (() => {
+        const menuItems: Array<{ id: string; label: string; icon?: string }> = [];
+        
+        if (consultationType === "base") {
+          menuItems.push(
+            { id: "opener", label: "Скажите клиенту", icon: "❗" },
+            { id: "personality", label: "Описание личности", icon: "👤" },
+            { id: "strengths-weaknesses", label: "Сильные и слабые стороны", icon: "⚖️" },
+            { id: "happiness", label: "Формула счастья", icon: "☺️" },
+            { id: "codes", label: "Пояснение кодов", icon: "🔢" },
+            { id: "diagnostics", label: "Диагностика ресурсов", icon: "🔍" },
+            { id: "conflicts", label: "Конфликты и проблемы", icon: "⚠️" },
+            { id: "practices", label: "Практики", icon: "💡" }
+          );
+        } else if (consultationType === "target") {
+          menuItems.push(
+            { id: "goal", label: "Цель клиента", icon: "🎯" },
+            { id: "goal-decomposition", label: "Декомпозиция цели", icon: "📋" },
+            { id: "warnings", label: "Предупреждения", icon: "⚠️" },
+            { id: "questions", label: "Вопросы для уточнения", icon: "❓" },
+            { id: "diagnostics", label: "Диагностика", icon: "🔍" },
+            { id: "resources-stages", label: "Ресурсы по этапам", icon: "📊" },
+            { id: "plan", label: "План действий", icon: "📝" },
+            { id: "metrics", label: "Метрики прогресса", icon: "📈" },
+            { id: "what-if", label: "Что делать в разных ситуациях", icon: "🔄" },
+            { id: "objections", label: "Обработка возражений", icon: "💬" },
+            { id: "strategy", label: "Финальная стратегия", icon: "✅" }
+          );
+        } else if (consultationType === "partner") {
+          menuItems.push(
+            { id: "goal", label: "Цель консультации", icon: "🎯" },
+            { id: "warnings", label: "Предупреждения", icon: "⚠️" },
+            { id: "compatibility", label: "Совместимость ресурсов", icon: "🤝" },
+            { id: "conflict-zones", label: "Зоны конфликтов", icon: "⚔️" },
+            { id: "diagnostics", label: "Диагностика", icon: "🔍" },
+            { id: "participants-diagnostics", label: "Диагностика участников", icon: "👥" },
+            { id: "questions", label: "Вопросы для уточнения", icon: "❓" },
+            { id: "plan", label: "План действий", icon: "📝" },
+            { id: "resources-stages", label: "Ресурсы по этапам", icon: "📊" },
+            { id: "metrics", label: "Метрики прогресса", icon: "📈" },
+            { id: "what-if", label: "Что делать в разных ситуациях", icon: "🔄" },
+            { id: "objections", label: "Обработка возражений", icon: "💬" },
+            { id: "strategy", label: "Финальная стратегия", icon: "✅" }
+          );
+        }
+
+        if (menuItems.length === 0) return null;
+
+        return (
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm sticky top-4 z-10">
+            <div className="text-sm font-semibold text-gray-700 mb-3">Навигация по блокам:</div>
+            <div className="flex flex-wrap gap-2">
+              {menuItems.map((item) => (
+                <a
+                  key={item.id}
+                  href={`#${item.id}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                >
+                  {item.icon && <span>{item.icon}</span>}
+                  <span>{item.label}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Сообщение о необходимости перелогиниться */}
       {!polling && !profile && (
