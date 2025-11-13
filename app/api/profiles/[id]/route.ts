@@ -17,7 +17,15 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   }
   
   const { id } = ctx.params;
+  
+  // Проверяем, что ID валидный
+  if (!id || isNaN(Number(id))) {
+    console.error("[DEBUG] Invalid profile ID:", id);
+    return NextResponse.json({ data: null, errors: [{ message: "Invalid profile ID" }] }, { status: 400 });
+  }
+  
   const url = `${baseUrl}/items/profiles/${id}`;
+  console.log("[DEBUG] Profile request URL:", url);
   const fields = [
     "id",
     "client_id",
@@ -58,14 +66,39 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       // Если статус не 200, логируем полный ответ
       if (!r.ok) {
         console.error("[DEBUG] Directus error - full response:", rawData);
+        console.error("[DEBUG] Directus error - URL was:", finalUrl);
       }
       
       let data;
       try {
-        data = JSON.parse(rawData);
+        // Если ответ не JSON (например, "404 page not found"), создаем структурированный ответ
+        if (r.status === 404 && !rawData.trim().startsWith('{') && !rawData.trim().startsWith('[')) {
+          console.warn("[DEBUG] Directus returned non-JSON 404, treating as profile not found");
+          data = { 
+            data: null, 
+            errors: [{ 
+              message: "Profile not found", 
+              extensions: { code: "NOT_FOUND" } 
+            }] 
+          };
+        } else {
+          data = JSON.parse(rawData);
+        }
       } catch (parseError) {
-        console.error("Failed to parse Directus response:", parseError, "Raw data:", rawData);
-        data = { data: null, errors: [] };
+        console.error("[DEBUG] Failed to parse Directus response:", {
+          error: parseError,
+          rawData: rawData.substring(0, 200),
+          status: r.status,
+          url: finalUrl
+        });
+        // Создаем структурированный ответ для ошибки парсинга
+        data = { 
+          data: null, 
+          errors: [{ 
+            message: rawData.includes("404") ? "Profile not found" : "Invalid response from Directus",
+            extensions: { code: r.status === 404 ? "NOT_FOUND" : "PARSE_ERROR" }
+          }] 
+        };
       }
       
       return { r, data } as const;
