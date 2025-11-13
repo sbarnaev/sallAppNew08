@@ -1174,6 +1174,7 @@ export default function ProfileDetail() {
       )}
 
       {(() => {
+        // Сначала проверяем HTML
         const html = (profile as any)?.html || (profile as any)?.raw_html || (profile as any)?.content || (profile as any)?.html_content;
         if (html && String(html).trim().length > 0) {
           return (
@@ -1182,7 +1183,35 @@ export default function ProfileDetail() {
             </AccordionSection>
           );
         }
-        if (renderedFromJson) return renderedFromJson;
+        
+        // Затем проверяем raw_json
+        if (renderedFromJson) {
+          return renderedFromJson;
+        }
+        
+        // Если есть raw_json, но renderedFromJson вернул null, показываем отладочную информацию
+        if (profile?.raw_json && !polling) {
+          console.warn("[DEBUG] raw_json exists but renderedFromJson is null:", {
+            rawJsonType: typeof profile.raw_json,
+            rawJsonKeys: typeof profile.raw_json === 'object' && profile.raw_json !== null ? Object.keys(profile.raw_json) : [],
+            rawJsonPreview: typeof profile.raw_json === 'string' 
+              ? profile.raw_json.substring(0, 200) 
+              : JSON.stringify(profile.raw_json).substring(0, 200)
+          });
+          
+          // Пытаемся отобразить raw_json в сыром виде для отладки
+          return (
+            <div className="card">
+              <div className="text-sm font-semibold mb-2">Данные из raw_json (отладка):</div>
+              <pre className="text-xs bg-gray-100 p-3 rounded overflow-auto max-h-96">
+                {typeof profile.raw_json === 'string' 
+                  ? profile.raw_json 
+                  : JSON.stringify(profile.raw_json, null, 2)}
+              </pre>
+            </div>
+          );
+        }
+        
         return !polling ? (
           <div className="card text-sm text-gray-600">Нет данных для отображения.</div>
         ) : null;
@@ -1191,7 +1220,7 @@ export default function ProfileDetail() {
       <div className="card space-y-4">
         <div className="font-medium">Задать вопрос по профилю</div>
         <div className="space-y-3">
-          <div ref={chatBoxRef} className="rounded-xl border p-3 bg-white max-h-80 overflow-y-auto break-words">
+          <div ref={chatBoxRef} className="rounded-xl border p-3 bg-white max-h-96 overflow-y-auto break-words">
             {chat.length === 0 && <div className="text-sm text-gray-500">Начните диалог — задайте вопрос ниже</div>}
             {chat.map((m, i) => (
               <div key={i} className={`mb-3 ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
