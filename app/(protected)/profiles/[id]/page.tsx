@@ -806,7 +806,19 @@ export default function ProfileDetail() {
       console.warn("[DEBUG] renderedFromJson: failed to parse JSON", parseError);
       return null;
     }
-    const items = Array.isArray(payload) ? payload : [payload];
+    // Если payload - это объект (не массив), оборачиваем в массив
+    // Но если это объект с полями целевой консультации напрямую, тоже обрабатываем
+    let items: any[];
+    if (Array.isArray(payload)) {
+      items = payload;
+    } else if (payload && typeof payload === 'object') {
+      // Если это объект, проверяем - это один элемент или объект с полями целевой консультации
+      // Если есть поля целевой консультации напрямую, используем как один элемент
+      items = [payload];
+    } else {
+      items = [];
+    }
+    
     console.log("[DEBUG] renderedFromJson: parsed items", {
       itemsCount: items.length,
       firstItemKeys: items[0] ? Object.keys(items[0]) : [],
@@ -820,6 +832,16 @@ export default function ProfileDetail() {
       hasDeficitSignals: items[0]?.deficitSignals,
       hasConflicts: items[0]?.conflicts,
       hasPractices: items[0]?.practices,
+      // Поля целевой консультации
+      hasWarnings: Array.isArray(items[0]?.warnings),
+      hasGoalDecomposition: Array.isArray(items[0]?.goalDecomposition),
+      hasResourcesForStages: Array.isArray(items[0]?.resourcesForStages),
+      hasCurrentDiagnostics: !!items[0]?.currentDiagnostics,
+      hasPlan123: Array.isArray(items[0]?.plan123),
+      hasProgressMetrics: !!items[0]?.progressMetrics,
+      hasWhatIf: !!items[0]?.whatIf,
+      hasObjectionHandling: Array.isArray(items[0]?.objectionHandling),
+      hasFinalStrategy: Array.isArray(items[0]?.finalStrategy),
     });
 
     const makeHashKey = (section: string, text: string): string => `${section}:h:${hashString(normalizeTextForHash(text))}`;
@@ -867,39 +889,51 @@ export default function ProfileDetail() {
     );
 
     // Проверяем, есть ли хотя бы какие-то данные для отображения
-    const hasAnyData = items.some((item: any) => 
-      item.opener || 
-      item.personalitySummary || 
-      item.strengths || 
-      item.strengths_text || 
-      item.weaknesses || 
-      item.weaknesses_text || 
-      item.happinessFormula || 
-      item.codesExplanation || 
-      item.resourceSignals || 
-      item.resourceSignals_text || 
-      item.deficitSignals || 
-      item.deficitSignals_text || 
-      item.conflicts || 
-      item.practices ||
-      // Для целевых консультаций могут быть другие поля
-      item.request ||
-      item.answer ||
-      item.recommendations ||
-      item.analysis ||
-      item.warnings ||
-      item.goalDecomposition ||
-      item.resourcesForStages ||
-      item.currentDiagnostics ||
-      item.plan123 ||
-      item.progressMetrics ||
-      item.whatIf ||
-      item.objectionHandling ||
-      item.finalStrategy
-    );
+    const hasAnyData = items.some((item: any) => {
+      if (!item || typeof item !== 'object') return false;
+      return !!(
+        item.opener || 
+        item.personalitySummary || 
+        item.strengths || 
+        item.strengths_text || 
+        item.weaknesses || 
+        item.weaknesses_text || 
+        item.happinessFormula || 
+        item.codesExplanation || 
+        item.resourceSignals || 
+        item.resourceSignals_text || 
+        item.deficitSignals || 
+        item.deficitSignals_text || 
+        item.conflicts || 
+        item.practices ||
+        // Для целевых консультаций могут быть другие поля
+        item.request ||
+        item.answer ||
+        item.recommendations ||
+        item.analysis ||
+        (Array.isArray(item.warnings) && item.warnings.length > 0) ||
+        (Array.isArray(item.goalDecomposition) && item.goalDecomposition.length > 0) ||
+        (Array.isArray(item.resourcesForStages) && item.resourcesForStages.length > 0) ||
+        item.currentDiagnostics ||
+        (Array.isArray(item.plan123) && item.plan123.length > 0) ||
+        item.progressMetrics ||
+        item.whatIf ||
+        (Array.isArray(item.objectionHandling) && item.objectionHandling.length > 0) ||
+        (Array.isArray(item.finalStrategy) && item.finalStrategy.length > 0)
+      );
+    });
+    
+    console.log("[DEBUG] renderedFromJson: hasAnyData check", {
+      hasAnyData,
+      itemsLength: items.length,
+      firstItemType: items[0] ? typeof items[0] : 'none'
+    });
     
     if (!hasAnyData) {
-      console.warn("[DEBUG] renderedFromJson: no recognizable data fields in items");
+      console.warn("[DEBUG] renderedFromJson: no recognizable data fields in items", {
+        items,
+        firstItemKeys: items[0] ? Object.keys(items[0]) : []
+      });
       return null;
     }
     
