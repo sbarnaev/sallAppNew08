@@ -58,7 +58,7 @@ export default async function DashboardPage() {
   const recentProfiles = await getRecentProfiles();
   
   // Загружаем данные клиентов для отображения имен и дат рождения
-  const clientIds = recentProfiles.map((p: any) => p.client_id).filter((id): id is number => !!id);
+  const clientIds = recentProfiles.map((p: any) => p.client_id).filter((id: any): id is number => !!id);
   const clientsMap = await getClientsMap(clientIds);
 
   return (
