@@ -1063,6 +1063,17 @@ export default function ProfileDetail() {
         const getImageUrl = (img: any): string | null => {
           if (!img) return null;
           
+          // Если это обработанное изображение из коллекции images (с полями id и code)
+          if (typeof img === 'object' && img.code) {
+            // Используем code для получения изображения
+            // Если code - это ID файла, используем /api/files/{code}
+            if (/^\d+$/.test(String(img.code))) {
+              return `/api/files/${img.code}`;
+            }
+            // Иначе code может быть URL или другим идентификатором
+            return img.code;
+          }
+          
           // Если это объект файла Directus с полным URL
           if (typeof img === 'object') {
             if (img.id) {

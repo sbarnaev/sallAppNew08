@@ -84,7 +84,64 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   }
 
   let { r, data } = await fetchProfile(token);
-
+  
+  // Если получили 403 из-за поля images, попробуем запросить без него и затем отдельно загрузить images
+  if (r.status === 403 && (data as any)?.errors?.[0]?.message?.includes('images')) {
+    console.log("[DEBUG] Got 403 for images field, retrying without images field");
+    const fieldsWithoutImages = [
+      "id",
+      "client_id",
+      "created_at",
+      "html",
+      "raw_json",
+      "ui_state",
+      "notes",
+      "chat_history",
+      "digits",
+    ].join(",");
+    const urlWithoutImages = `${baseUrl}/items/profiles/${id}?fields=${encodeURIComponent(fieldsWithoutImages)}`;
+    
+    try {
+      const retryRes = await fetch(urlWithoutImages, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        cache: "no-store",
+      });
+      const retryDataText = await retryRes.text();
+      let retryParsed: any;
+      try {
+        retryParsed = JSON.parse(retryDataText);
+      } catch {
+        retryParsed = { data: null, errors: [] };
+      }
+      
+      if (retryRes.ok && retryParsed?.data) {
+        r = retryRes;
+        data = retryParsed;
+        console.log("[DEBUG] Successfully fetched profile without images field");
+        
+        // Теперь попробуем загрузить images отдельно
+        try {
+          const imagesOnlyUrl = `${baseUrl}/items/profiles/${id}?fields=images`;
+          const imagesOnlyRes = await fetch(imagesOnlyUrl, {
+            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+            cache: "no-store",
+          });
+          if (imagesOnlyRes.ok) {
+            const imagesOnlyData = await imagesOnlyRes.json().catch(() => ({}));
+            if (imagesOnlyData?.data?.images) {
+              (retryParsed as any).data.images = imagesOnlyData.data.images;
+              console.log("[DEBUG] Successfully loaded images field separately");
+            }
+          }
+        } catch (imagesError) {
+          console.warn("[DEBUG] Could not load images separately:", imagesError);
+        }
+      }
+    } catch (retryError) {
+      console.error("[DEBUG] Error retrying without images:", retryError);
+    }
+  }
+  
   console.log("[DEBUG] After fetchProfile:", {
     status: r.status,
     statusText: r.statusText,
