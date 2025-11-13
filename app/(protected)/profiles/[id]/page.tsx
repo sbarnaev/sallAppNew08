@@ -423,6 +423,21 @@ export default function ProfileDetail() {
       }
       if (!mounted) return;
       const p = data?.data || null;
+      
+      // Логируем данные для диагностики
+      if (p) {
+        console.log("Profile data received:", {
+          id: p.id,
+          hasHtml: !!(p.html || p.raw_html || p.content || p.html_content),
+          hasRawJson: !!p.raw_json,
+          rawJsonType: typeof p.raw_json,
+          rawJsonLength: p.raw_json ? (typeof p.raw_json === 'string' ? p.raw_json.length : JSON.stringify(p.raw_json).length) : 0,
+          hasDigits: !!p.digits,
+          digitsType: typeof p.digits,
+          digitsValue: p.digits
+        });
+      }
+      
       // если идёт локальное сохранение чекбоксов — не перетирать ui_state
       setProfile(prev => {
         if (!prev) return p;
@@ -453,11 +468,50 @@ export default function ProfileDetail() {
       }
       const htmlCandidate = p?.html || p?.raw_html || p?.content || p?.html_content;
       const hasRenderableHtml = Boolean(htmlCandidate && String(htmlCandidate).trim().length > 0);
-      const hasRaw = Boolean(p?.raw_json && String(JSON.stringify(p.raw_json)).length > 2);
+      
+      // Проверяем raw_json более тщательно
+      let hasRaw = false;
+      if (p?.raw_json) {
+        try {
+          const rawStr = typeof p.raw_json === 'string' ? p.raw_json : JSON.stringify(p.raw_json);
+          hasRaw = rawStr.length > 2 && rawStr !== '{}' && rawStr !== '[]' && rawStr !== 'null';
+        } catch {
+          hasRaw = false;
+        }
+      }
+      
+      // Также проверяем наличие digits (могут быть данные даже без html)
+      const hasDigits = Boolean(p?.digits && (
+        (Array.isArray(p.digits) && p.digits.length > 0) ||
+        (typeof p.digits === 'string' && p.digits.trim().length > 0)
+      ));
+      
       tries += 1;
-      if (hasRenderableHtml || hasRaw || tries >= maxTries) {
+      
+      // Останавливаем поллинг если есть данные или достигнут лимит попыток
+      const shouldStop = hasRenderableHtml || hasRaw || hasDigits || tries >= maxTries;
+      
+      if (shouldStop) {
         setPolling(false);
         pollingRef.current = false;
+        console.log("✅ Polling stopped:", { 
+          hasRenderableHtml, 
+          hasRaw, 
+          hasDigits, 
+          tries,
+          profileId: p?.id,
+          htmlLength: htmlCandidate ? String(htmlCandidate).length : 0
+        });
+      } else {
+        console.log("⏳ Still polling:", { 
+          hasRenderableHtml, 
+          hasRaw, 
+          hasDigits, 
+          tries, 
+          profileId: p?.id,
+          maxTries,
+          htmlCandidate: htmlCandidate ? String(htmlCandidate).substring(0, 50) : null
+        });
       }
     }
 
