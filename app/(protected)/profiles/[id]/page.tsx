@@ -2334,9 +2334,21 @@ export default function ProfileDetail() {
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
+                          console.error(`[ERROR] Failed to load image ${i + 1}:`, {
+                            url: imageUrl,
+                            imageData: img,
+                            error: '403 Forbidden - возможно файл не загружен в S3 или bucket не публичный',
+                            suggestion: 'Проверьте: 1) Файл загружен в S3 по пути sall_app/photo/{ID}.jpeg, 2) Bucket настроен как публичный'
+                          });
                           target.style.display = 'none';
                           const placeholder = target.nextElementSibling as HTMLElement;
-                          if (placeholder) placeholder.classList.remove('hidden');
+                          if (placeholder) {
+                            placeholder.classList.remove('hidden');
+                            placeholder.innerHTML = `<div class="text-red-400 text-xs text-center p-2">Ошибка 403<br/>Проверьте S3</div>`;
+                          }
+                        }}
+                        onLoad={() => {
+                          console.log(`[SUCCESS] Image ${i + 1} loaded successfully:`, imageUrl);
                         }}
                       />
                       <div className="hidden absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-50">
