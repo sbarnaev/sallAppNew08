@@ -643,9 +643,19 @@ export default function ProfileDetail() {
               break;
             }
             
-            // Payload - это уже текст, добавляем напрямую
-            // (ранее мы отправляли JSON.stringify, но теперь отправляем текст напрямую)
-            acc += payload;
+            // Payload может быть JSON строкой или обычным текстом
+            // Пытаемся распарсить как JSON, если не получается - используем как есть
+            let textChunk = payload;
+            try {
+              const parsed = JSON.parse(payload);
+              if (typeof parsed === 'string') {
+                textChunk = parsed;
+              }
+            } catch {
+              // Если не JSON, используем как есть (для обратной совместимости)
+              textChunk = payload;
+            }
+            acc += textChunk;
             setAnswer(acc);
             
             // Обновляем последнее сообщение ассистента

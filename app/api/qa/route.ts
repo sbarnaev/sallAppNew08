@@ -182,11 +182,12 @@ export async function POST(req: Request) {
                     const json = JSON.parse(payload);
                     const delta = json?.choices?.[0]?.delta?.content;
                     if (delta && typeof delta === 'string') {
-                      // Отправляем delta напрямую как текст
-                      // SSE формат: "data: текст\n\n"
-                      // Заменяем переносы строк на \n для правильной передачи
-                      const text = delta;
-                      controller.enqueue(encoder.encode(`data: ${text}\n\n`));
+                      // Отправляем delta в правильном SSE формате
+                      // SSE требует, чтобы данные были в одной строке после "data: "
+                      // Многострочные данные нужно экранировать или отправлять как JSON
+                      // Используем JSON.stringify для безопасной передачи
+                      const sseData = JSON.stringify(delta);
+                      controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
                     }
                   } catch (e) {
                     // Игнорируем ошибки парсинга
@@ -204,7 +205,8 @@ export async function POST(req: Request) {
                       const json = JSON.parse(payload);
                       const delta = json?.choices?.[0]?.delta?.content;
                       if (delta && typeof delta === 'string') {
-                        controller.enqueue(encoder.encode(`data: ${delta}\n\n`));
+                        const sseData = JSON.stringify(delta);
+                        controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
                       }
                     } catch (e) {
                       console.warn("[DEBUG] Failed to parse remaining buffer:", e);
