@@ -148,9 +148,13 @@ export default function NewCalculationPage() {
             </div>
           </div>
 
-          <button disabled className="card text-left opacity-60 cursor-not-allowed">
+          <button
+            disabled={loading || !canStart}
+            onClick={() => startCalc("partner")}
+            className="card text-left hover:shadow-md transition disabled:opacity-60"
+          >
             <div className="text-lg font-semibold mb-1">Партнёрский</div>
-            <div className="text-sm text-gray-600">Скоро</div>
+            <div className="text-sm text-gray-600">Расчёт для пары (два клиента)</div>
           </button>
         </div>
 

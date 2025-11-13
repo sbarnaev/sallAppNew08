@@ -97,75 +97,73 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
         )}
         
                 {data.map((c: any) => (
-          <div key={c.id} className="card p-4 hover:shadow-md transition cursor-pointer relative">
-            <Link href={`/clients/${c.id}`} className="absolute inset-0 z-10" aria-label="Открыть клиента" />
-            <div className="relative z-20 flex flex-col gap-3 pointer-events-none">
-              {/* Заголовок с аватаром и именем */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full flex items-center justify-center text-white font-semibold text-base shrink-0">
-                  {c.name ? c.name.charAt(0).toUpperCase() : '?'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-semibold text-gray-900 truncate">
+          <div key={c.id} className="card p-4 hover:shadow-md transition">
+            {/* Заголовок с аватаром и именем */}
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full flex items-center justify-center text-white font-semibold text-base shrink-0">
+                {c.name ? c.name.charAt(0).toUpperCase() : '?'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <Link href={`/clients/${c.id}`} className="block">
+                  <h3 className="text-base font-semibold text-gray-900 truncate hover:text-brand-600">
                     {c.name || 'Без имени'}
                   </h3>
-                  {c.birth_date && (
-                    <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
-                      {new Date(c.birth_date).toLocaleDateString('ru-RU')}
-                    </span>
-                  )}
+                </Link>
+                {c.birth_date && (
+                  <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
+                    {new Date(c.birth_date).toLocaleDateString('ru-RU')}
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            {/* Контакты */}
+            <div className="flex flex-wrap gap-3 text-xs text-gray-600 mb-3">
+              {c.email && (
+                <div className="flex items-center gap-1 min-w-0">
+                  <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <a href={`mailto:${c.email}`} className="hover:text-brand-600 truncate" onClick={(e) => e.stopPropagation()}>{c.email}</a>
                 </div>
-              </div>
-              
-              {/* Контакты */}
-              <div className="flex flex-wrap gap-3 text-xs text-gray-600">
-                {c.email && (
-                  <div className="flex items-center gap-1 min-w-0">
-                    <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    <a href={`mailto:${c.email}`} className="hover:text-brand-600 truncate">{c.email}</a>
-                  </div>
-                )}
-                {c.phone && (
-                  <div className="flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
-                    <a href={`tel:${c.phone}`} className="hover:text-brand-600">{c.phone}</a>
-                  </div>
-                )}
-                {c.source && (
-                  <div className="flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                    </svg>
-                    {getSourceLabel(c.source)}
-                  </div>
-                )}
-                {c.communication_method && (
-                  <div className="flex items-center gap-1">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                    {getCommunicationLabel(c.communication_method)}
-                  </div>
-                )}
-
-              </div>
-              
-              {/* Действия */}
-              <div className="flex items-center gap-2 pointer-events-auto shrink-0">
-                <Link href={`/clients/${c.id}`} className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors whitespace-nowrap">
-                  Открыть
-                </Link>
-                <Link href={`/profiles?filter[client_id][_eq]=${c.id}`} className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors whitespace-nowrap">
-                  Расчёты
-                </Link>
-                <Link href={`/profiles/new?clientId=${c.id}`} className="px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 text-sm font-medium transition-colors whitespace-nowrap">
-                  Новый расчёт
-                </Link>
-              </div>
+              )}
+              {c.phone && (
+                <div className="flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  <a href={`tel:${c.phone}`} className="hover:text-brand-600" onClick={(e) => e.stopPropagation()}>{c.phone}</a>
+                </div>
+              )}
+              {c.source && (
+                <div className="flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  {getSourceLabel(c.source)}
+                </div>
+              )}
+              {c.communication_method && (
+                <div className="flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  {getCommunicationLabel(c.communication_method)}
+                </div>
+              )}
+            </div>
+            
+            {/* Действия */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Link href={`/clients/${c.id}`} className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors whitespace-nowrap">
+                Открыть
+              </Link>
+              <Link href={`/profiles?filter[client_id][_eq]=${c.id}`} className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors whitespace-nowrap">
+                Расчёты
+              </Link>
+              <Link href={`/profiles/new?clientId=${c.id}`} className="px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 text-sm font-medium transition-colors whitespace-nowrap">
+                Новый расчёт
+              </Link>
             </div>
           </div>
         ))}

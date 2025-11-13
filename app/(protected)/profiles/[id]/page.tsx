@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
-import RichEditor from "@/components/RichEditor";
 
 type Profile = {
   id: number;
@@ -104,6 +103,10 @@ export default function ProfileDetail() {
       let personalitySummary: string = '';
       let happinessFormula: string = '';
       let digits: any[] = [];
+      let resourceSignals: string[] = [];
+      let deficitSignals: string[] = [];
+      let checkedResource: Record<string, boolean> = {};
+      let checkedDeficit: Record<string, boolean> = {};
       
       try {
         let payload: any = profile?.raw_json;
@@ -112,6 +115,21 @@ export default function ProfileDetail() {
         
         strengths = item?.strengths || (item?.strengths_text ? String(item.strengths_text).split(/\n+/).filter(Boolean) : []);
         weaknesses = item?.weaknesses || (item?.weaknesses_text ? String(item.weaknesses_text).split(/\n+/).filter(Boolean) : []);
+        
+        // Чеклисты ресурсов
+        resourceSignals = Array.isArray(item?.resourceSignals) ? item.resourceSignals : (item?.resourceSignals_text ? String(item.resourceSignals_text).split(/\n+/).filter(Boolean) : []);
+        deficitSignals = Array.isArray(item?.deficitSignals) ? item.deficitSignals : (item?.deficitSignals_text ? String(item.deficitSignals_text).split(/\n+/).filter(Boolean) : []);
+        
+        // Получаем состояние чекбоксов из ui_state
+        const uiState = (profile as any)?.ui_state;
+        if (uiState?.checked) {
+          checkedResource = Object.fromEntries(
+            Object.entries(uiState.checked).filter(([key]) => key.includes('resourceSignals'))
+          );
+          checkedDeficit = Object.fromEntries(
+            Object.entries(uiState.checked).filter(([key]) => key.includes('deficitSignals'))
+          );
+        }
         
         if (item?.personalitySummary) {
           personalitySummary = Array.isArray(item.personalitySummary) 
@@ -282,6 +300,46 @@ export default function ProfileDetail() {
     <div class="section">
       <h2>Слабые стороны</h2>
       <ul>${weaknesses.map((w: string) => `<li>${String(w).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('')}</ul>
+    </div>
+    ` : ''}
+    
+    ${(resourceSignals.length > 0 || deficitSignals.length > 0) ? `
+    <div class="section">
+      <h2>Диагностика ресурсов</h2>
+      ${resourceSignals.length > 0 ? `
+      <div style="margin-bottom: 20px;">
+        <h3 style="font-size: 16px; margin-bottom: 8px; color: #059669;">Признаки плюса (ресурс)</h3>
+        <ul style="list-style: none; padding-left: 0;">
+          ${resourceSignals.map((r: string, idx: number) => {
+            // Простая проверка по ключам
+            const isChecked = Object.keys(checkedResource).some(k => 
+              k.includes('resourceSignals') && (k.includes(String(idx)) || k.includes(r.slice(0, 20)))
+            );
+            return \`<li style="margin: 4px 0; padding-left: 24px; position: relative;">
+              <span style="position: absolute; left: 0;">${isChecked ? '☑' : '☐'}</span>
+              \${String(r).replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+            </li>\`;
+          }).join('')}
+        </ul>
+      </div>
+      ` : ''}
+      ${deficitSignals.length > 0 ? `
+      <div style="margin-bottom: 20px;">
+        <h3 style="font-size: 16px; margin-bottom: 8px; color: #dc2626;">Признаки минуса (дефицит)</h3>
+        <ul style="list-style: none; padding-left: 0;">
+          ${deficitSignals.map((d: string, idx: number) => {
+            // Простая проверка по ключам
+            const isChecked = Object.keys(checkedDeficit).some(k => 
+              k.includes('deficitSignals') && (k.includes(String(idx)) || k.includes(d.slice(0, 20)))
+            );
+            return \`<li style="margin: 4px 0; padding-left: 24px; position: relative;">
+              <span style="position: absolute; left: 0;">${isChecked ? '☑' : '☐'}</span>
+              \${String(d).replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+            </li>\`;
+          }).join('')}
+        </ul>
+      </div>
+      ` : ''}
     </div>
     ` : ''}
     
@@ -1056,7 +1114,6 @@ export default function ProfileDetail() {
               </button>
             </div>
             
-            <RichEditor value={notesDraft} onChange={(v)=>{ setNotesDraft(v); notesTouchedRef.current = true; }} />
             {/* Мини-редактор markdown */}
             <div className="flex flex-wrap gap-2">
               <button className="rounded border px-2 py-1 text-sm hover:bg-gray-50" onClick={(e)=>{e.preventDefault(); wrapSelection('**');}}>B</button>
@@ -1066,10 +1123,10 @@ export default function ProfileDetail() {
             </div>
             <textarea
               ref={notesTextareaRef}
-              className="w-full h-64 rounded-xl border p-3"
+              className="w-full h-64 rounded-xl border p-3 font-mono text-sm"
               value={notesDraft}
               onChange={(e)=>{ setNotesDraft(e.target.value); notesTouchedRef.current = true; }}
-              placeholder="Markdown поддерживается"
+              placeholder="Markdown поддерживается. Используйте **жирный**, *курсив*, ## заголовки, - списки"
             />
             <div className="flex gap-2 justify-end">
               <button className="rounded-xl border px-4 py-2" onClick={()=>setNotesOpen(false)}>Отмена</button>

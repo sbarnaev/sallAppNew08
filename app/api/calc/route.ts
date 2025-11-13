@@ -113,7 +113,19 @@ export async function POST(req: Request) {
   }
 
   if (!r.ok) {
-    const msg = data?.message || data?.error || "Calculation failed";
+    let msg = data?.message || data?.error || "Calculation failed";
+    // Улучшенная обработка ошибок n8n
+    if (data?.error?.message) {
+      msg = data.error.message;
+    } else if (typeof data === 'string') {
+      msg = data;
+    } else if (data?.errors && Array.isArray(data.errors)) {
+      msg = data.errors.map((e: any) => e.message || String(e)).join('; ');
+    }
+    // Специальная обработка ошибки с directus node
+    if (msg.includes('directus') || msg.includes('n8n-nodes-directus')) {
+      msg = "Ошибка подключения к Directus. Проверьте настройки n8n workflow.";
+    }
     return NextResponse.json({ ...data, message: msg }, { status: r.status });
   }
 
