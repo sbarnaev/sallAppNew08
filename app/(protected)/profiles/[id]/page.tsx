@@ -437,7 +437,7 @@ export default function ProfileDetail() {
       
       // Создаем контейнер для PDF
       const element = document.createElement('div');
-      // Делаем элемент видимым для html2canvas, но вне экрана
+      // Делаем элемент видимым для html2canvas, но очень маленьким в углу экрана
       element.style.width = '210mm';
       element.style.minHeight = '297mm';
       element.style.padding = '0';
@@ -446,11 +446,14 @@ export default function ProfileDetail() {
       element.style.position = 'fixed';
       element.style.top = '0';
       element.style.left = '0';
-      element.style.transform = 'translateX(-100%)'; // Сдвигаем влево за экран, но видим для canvas
       element.style.visibility = 'visible';
-      element.style.opacity = '1'; // Делаем полностью видимым для canvas
+      element.style.opacity = '1';
       element.style.pointerEvents = 'none';
       element.style.overflow = 'visible';
+      element.style.zIndex = '999999';
+      // Используем scale для уменьшения видимого размера, но сохраняем реальный размер для canvas
+      element.style.transform = 'scale(0.1)';
+      element.style.transformOrigin = 'top left';
       
       // Копируем стили
       if (styleElement) {
