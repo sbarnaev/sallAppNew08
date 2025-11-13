@@ -643,7 +643,8 @@ export default function ProfileDetail() {
               break;
             }
             
-            // Добавляем текст к аккумулятору
+            // Payload - это уже текст, добавляем напрямую
+            // (ранее мы отправляли JSON.stringify, но теперь отправляем текст напрямую)
             acc += payload;
             setAnswer(acc);
             

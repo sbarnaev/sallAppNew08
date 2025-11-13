@@ -45,7 +45,10 @@ export async function POST(req: Request) {
       const system: ChatMessage = {
         role: "system",
         content:
-          "Ты консультант. Отвечай кратко и по делу, по-русски. Используй контекст профиля, если он есть. Если данных нет — отвечай общими рекомендациями и уточняющими вопросами.",
+          "Ты профессиональный консультант. Отвечай по-русски, четко и структурированно. " +
+          "Используй Markdown для форматирования: **жирный текст**, *курсив*, списки (- или 1.), заголовки (##), разделители (---). " +
+          "Всегда ставь пробелы после знаков препинания. Разбивай длинные предложения на абзацы. " +
+          "Используй контекст профиля, если он есть. Если данных нет — отвечай общими рекомендациями и уточняющими вопросами.",
       };
 
       // Сжимаем контекст
@@ -88,9 +91,12 @@ export async function POST(req: Request) {
             body: JSON.stringify({
               model: "gpt-4o-mini",
               messages,
-              temperature: 0.4,
-              max_tokens: 600,
+              temperature: 0.7,
+              max_tokens: 1500,
               stream: true,
+              // Убеждаемся, что модель возвращает правильно отформатированный текст
+              presence_penalty: 0.1,
+              frequency_penalty: 0.1,
             }),
           });
         } catch (fetchError: any) {
@@ -174,13 +180,17 @@ export async function POST(req: Request) {
                   
                   try {
                     const json = JSON.parse(payload);
-                    const delta = json?.choices?.[0]?.delta?.content || "";
-                    if (delta) {
-                      // Отправляем как SSE: "data: текст\n\n"
-                      controller.enqueue(encoder.encode(`data: ${delta}\n\n`));
+                    const delta = json?.choices?.[0]?.delta?.content;
+                    if (delta && typeof delta === 'string') {
+                      // Отправляем delta напрямую как текст
+                      // SSE формат: "data: текст\n\n"
+                      // Заменяем переносы строк на \n для правильной передачи
+                      const text = delta;
+                      controller.enqueue(encoder.encode(`data: ${text}\n\n`));
                     }
                   } catch (e) {
                     // Игнорируем ошибки парсинга
+                    console.warn("[DEBUG] Failed to parse SSE chunk:", e);
                   }
                 }
               }
@@ -228,12 +238,14 @@ export async function POST(req: Request) {
             "Content-Type": "application/json",
             Authorization: `Bearer ${openaiKey}`,
           },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            messages,
-            temperature: 0.4,
-            max_tokens: 600,
-          }),
+            body: JSON.stringify({
+              model: "gpt-4o-mini",
+              messages,
+              temperature: 0.7,
+              max_tokens: 1500,
+              presence_penalty: 0.1,
+              frequency_penalty: 0.1,
+            }),
         });
       } catch (fetchError: any) {
         console.error("[DEBUG] OpenAI fetch error (non-streaming):", fetchError);
