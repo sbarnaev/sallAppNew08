@@ -10,7 +10,17 @@ export async function GET(req: NextRequest) {
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ data: [] }, { status: 401 });
 
-  const sp = new URLSearchParams(req.nextUrl.searchParams as any);
+  const incomingParams = req.nextUrl.searchParams;
+  const searchTerm = (incomingParams.get("search") || "").toString().trim();
+  
+  const sp = new URLSearchParams();
+  incomingParams.forEach((value, key) => {
+    if (key === "page" || key === "limit" || key === "offset" || key === "meta" || key === "search") {
+      return;
+    }
+    sp.append(key, value);
+  });
+  
   // Добавляем расширение для получения имени клиента
   const defaultFields = "id,client_id,created_at,html,raw_json,digits";
   if (!sp.has("fields")) {
@@ -32,6 +42,18 @@ export async function GET(req: NextRequest) {
   if (!sp.has("offset")) sp.set("offset", "0");
   if (!sp.has("meta")) sp.set("meta", "filter_count");
   if (!sp.has("sort")) sp.set("sort", "-created_at");
+  
+  // Добавляем поиск по имени клиента и дате рождения
+  if (searchTerm) {
+    sp.set("search", searchTerm);
+    const hasCustomOrFilter = Array.from(sp.keys()).some((k) => k.startsWith("filter[_or]"));
+    if (!hasCustomOrFilter) {
+      // Поиск по имени клиента
+      sp.set("filter[_or][0][client][name][_icontains]", searchTerm);
+      // Поиск по дате рождения клиента
+      sp.set("filter[_or][1][client][birth_date][_icontains]", searchTerm);
+    }
+  }
 
   // Проверяем, что URL валидный
   if (!baseUrl || !baseUrl.startsWith('http')) {
