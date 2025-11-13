@@ -192,19 +192,12 @@ export default function NewCalculationPage() {
               
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Цель расчета</label>
-                <select
-                  className="w-full rounded-xl border p-2 text-sm"
+                <textarea
+                  className="w-full rounded-xl border p-2 text-sm h-20 resize-none"
+                  placeholder="Например: улучшить отношения в семье; найти подход к ребенку; наладить работу с бизнес-партнером"
                   value={partnerGoal}
                   onChange={(e) => setPartnerGoal(e.target.value)}
-                >
-                  <option value="">Выберите цель</option>
-                  <option value="family">Семья (супруги/партнеры)</option>
-                  <option value="parent-child">Родитель и ребенок</option>
-                  <option value="business">Бизнес-партнеры</option>
-                  <option value="friends">Друзья</option>
-                  <option value="colleagues">Коллеги</option>
-                  <option value="other">Другое</option>
-                </select>
+                />
               </div>
               
               <div className="mt-3 flex justify-end">

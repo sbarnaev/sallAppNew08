@@ -941,6 +941,87 @@ export default function ProfileDetail() {
       <div className="space-y-6">
         {items.map((item, idx) => (
           <div key={idx} className="space-y-6">
+            {/* Коды партнеров в двух колонках (для партнерской консультации) */}
+            {item.partnerCodes && (
+              <section className="rounded-2xl border border-blue-100 p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
+                <h2 className="m-0 text-base font-bold text-gray-800 mb-4">Коды САЛ партнеров</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                  {/* Первый партнер */}
+                  <div className="bg-white rounded-xl p-4 border-2 border-blue-200">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Первый партнер</h3>
+                    <div className="grid grid-cols-5 gap-2">
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500 mb-1">Личность</div>
+                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
+                          {item.partnerCodes.first?.personality || '—'}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500 mb-1">Коннектор</div>
+                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
+                          {item.partnerCodes.first?.connector || '—'}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500 mb-1">Реализация</div>
+                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
+                          {item.partnerCodes.first?.realization || '—'}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500 mb-1">Генератор</div>
+                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
+                          {item.partnerCodes.first?.generator || '—'}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500 mb-1">Миссия</div>
+                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
+                          {item.partnerCodes.first?.mission || '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Второй партнер */}
+                  <div className="bg-white rounded-xl p-4 border-2 border-indigo-200">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Второй партнер</h3>
+                    <div className="grid grid-cols-5 gap-2">
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500 mb-1">Личность</div>
+                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
+                          {item.partnerCodes.second?.personality || '—'}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500 mb-1">Коннектор</div>
+                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
+                          {item.partnerCodes.second?.connector || '—'}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500 mb-1">Реализация</div>
+                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
+                          {item.partnerCodes.second?.realization || '—'}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500 mb-1">Генератор</div>
+                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
+                          {item.partnerCodes.second?.generator || '—'}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500 mb-1">Миссия</div>
+                        <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
+                          {item.partnerCodes.second?.mission || '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
             {(item.opener || item.personalitySummary) && (
               <section className="space-y-6">
                 {item.opener && (
@@ -1211,7 +1292,14 @@ export default function ProfileDetail() {
                             state.state === 'minus' ? 'border-red-200 bg-red-50' :
                             'border-gray-200 bg-gray-50'
                           }`}>
-                            <div className="font-semibold mb-2">{state.resource}</div>
+                            <div className="font-semibold mb-2">
+                              {state.resource}
+                              {state.partner && (
+                                <span className="ml-2 text-xs font-normal text-gray-500">
+                                  ({state.partner === 'first' ? 'Первый партнер' : 'Второй партнер'})
+                                </span>
+                              )}
+                            </div>
                             {Array.isArray(state.evidence) && state.evidence.length > 0 && (
                               <div className="mb-2">
                                 <div className="text-xs font-semibold text-gray-600 mb-1">Доказательства:</div>
@@ -1299,11 +1387,14 @@ export default function ProfileDetail() {
                         <div className="mb-4">
                           <div className="text-sm font-semibold text-gray-700 mb-2">Ресурсы:</div>
                           <div className="flex flex-wrap gap-2">
-                            {plan.resources.map((res: any, j: number) => (
-                              <span key={j} className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
-                                {res.resource}
-                              </span>
-                            ))}
+                            {plan.resources.map((res: any, j: number) => {
+                              const partnerLabel = res.partner === 'first' ? ' (1-й)' : res.partner === 'second' ? ' (2-й)' : '';
+                              return (
+                                <span key={j} className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+                                  {res.resource} {res.code}{partnerLabel}
+                                </span>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -1383,6 +1474,17 @@ export default function ProfileDetail() {
                       <ul className="list-disc list-inside space-y-1 text-sm text-red-800">
                         {item.whatIf.overwhelm.map((o: string, i: number) => (
                           <li key={i}>{o}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {/* Конфликты (для партнерской консультации) */}
+                  {Array.isArray(item.whatIf.conflicts) && item.whatIf.conflicts.length > 0 && (
+                    <div className="rounded-lg border border-pink-200 bg-pink-50 p-4">
+                      <h3 className="text-sm font-semibold text-pink-900 mb-2">Конфликты</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-pink-800">
+                        {item.whatIf.conflicts.map((c: string, i: number) => (
+                          <li key={i}>{c}</li>
                         ))}
                       </ul>
                     </div>
