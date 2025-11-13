@@ -437,6 +437,7 @@ export default function ProfileDetail() {
       
       // Создаем контейнер для PDF
       const element = document.createElement('div');
+      // Делаем элемент видимым для html2canvas, но вне экрана
       element.style.width = '210mm';
       element.style.minHeight = '297mm';
       element.style.padding = '0';
@@ -445,9 +446,11 @@ export default function ProfileDetail() {
       element.style.position = 'fixed';
       element.style.top = '0';
       element.style.left = '0';
-      element.style.zIndex = '-9999';
-      element.style.opacity = '0';
+      element.style.transform = 'translateX(-100%)'; // Сдвигаем влево за экран, но видим для canvas
+      element.style.visibility = 'visible';
+      element.style.opacity = '1'; // Делаем полностью видимым для canvas
       element.style.pointerEvents = 'none';
+      element.style.overflow = 'visible';
       
       // Копируем стили
       if (styleElement) {
@@ -465,7 +468,23 @@ export default function ProfileDetail() {
       document.body.appendChild(element);
       
       // Ждем, чтобы стили применились и контент отрендерился
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Увеличиваем задержку для полного рендеринга
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Дополнительная проверка - убеждаемся, что контент отрендерился
+      const hasContent = element.children.length > 0 || element.textContent?.trim().length > 0;
+      console.log('PDF element ready:', {
+        childrenCount: element.children.length,
+        hasText: element.textContent?.trim().length > 0,
+        computedStyle: window.getComputedStyle(element).display
+      });
+      
+      if (!hasContent) {
+        console.error('PDF element has no content after rendering');
+        document.body.removeChild(element);
+        alert('Ошибка: контент не отрендерился для PDF');
+        return;
+      }
       
       // Настройки для html2pdf
       const opt = {
