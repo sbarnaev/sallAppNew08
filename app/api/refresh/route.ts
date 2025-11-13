@@ -44,8 +44,13 @@ export async function POST() {
 
   try {
     const refreshUrl = `${finalBaseUrl}/auth/refresh`;
+    const requestBody = { refresh_token: refreshToken };
+    
     console.log("[DEBUG] Making refresh request to:", refreshUrl);
+    console.log("[DEBUG] Refresh token present:", !!refreshToken);
     console.log("[DEBUG] Refresh token length:", refreshToken?.length);
+    console.log("[DEBUG] Refresh token preview:", refreshToken ? `${refreshToken.substring(0, 20)}...${refreshToken.substring(refreshToken.length - 20)}` : 'null');
+    console.log("[DEBUG] Request body (without token):", JSON.stringify({ refresh_token: '[REDACTED]' }));
     
     const res = await fetch(refreshUrl, {
       method: "POST",
@@ -53,15 +58,15 @@ export async function POST() {
         "Content-Type": "application/json",
         "Accept": "application/json"
       },
-      body: JSON.stringify({ refresh_token: refreshToken }),
+      body: JSON.stringify(requestBody),
       // Увеличиваем таймаут
       signal: AbortSignal.timeout(10000), // 10 секунд
     });
     
-    console.log("Refresh response status:", res.status, res.statusText);
+    console.log("[DEBUG] Refresh response status:", res.status, res.statusText);
 
     const responseText = await res.text();
-    console.log("Refresh response body (first 200 chars):", responseText.substring(0, 200));
+    console.log("[DEBUG] Refresh response body (full):", responseText);
     
     let data;
     try {
