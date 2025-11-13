@@ -5,27 +5,49 @@ import Link from "next/link";
 import { internalApiFetch } from "@/lib/fetchers";
 
 async function getClients(searchParams: Record<string, string | string[] | undefined>) {
-  const params = new URLSearchParams();
-  const page = Math.max(parseInt(getSingleValue(searchParams.page) || "1", 10) || 1, 1);
-  const limit = Math.min(Math.max(parseInt(getSingleValue(searchParams.limit) || "20", 10) || 20, 1), 100);
-  const offset = (page - 1) * limit;
+  try {
+    const params = new URLSearchParams();
+    const page = Math.max(parseInt(getSingleValue(searchParams.page) || "1", 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(getSingleValue(searchParams.limit) || "20", 10) || 20, 1), 100);
+    const offset = (page - 1) * limit;
 
-  params.set("limit", String(limit));
-  params.set("offset", String(offset));
-  params.set("meta", "filter_count");
+    params.set("limit", String(limit));
+    params.set("offset", String(offset));
+    params.set("meta", "filter_count");
 
-  const searchTerm = getSingleValue(searchParams.search).trim();
-  if (searchTerm) {
-    params.set("search", searchTerm);
+    const searchTerm = getSingleValue(searchParams.search).trim();
+    if (searchTerm) {
+      params.set("search", searchTerm);
+    }
+
+    const res = await internalApiFetch(`/api/clients?${params.toString()}`, { cache: "no-store" });
+    
+    if (!res.ok) {
+      console.error("API error:", res.status, res.statusText);
+      return { data: [], meta: { filter_count: 0 } };
+    }
+    
+    const json = await res.json().catch(() => ({ data: [], meta: { filter_count: 0 } }));
+    return json;
+  } catch (error) {
+    console.error("Error in getClients:", error);
+    return { data: [], meta: { filter_count: 0 } };
   }
-
-  const res = await internalApiFetch(`/api/clients?${params.toString()}`, { cache: "no-store" });
-  const json = await res.json();
-  return json;
 }
 
 export default async function ClientsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined>}) {
-  const { data = [], meta = {} } = await getClients(searchParams);
+  let data: any[] = [];
+  let meta: any = {};
+  
+  try {
+    const result = await getClients(searchParams);
+    data = result?.data || [];
+    meta = result?.meta || {};
+  } catch (error) {
+    console.error("Error fetching clients:", error);
+    // Продолжаем с пустыми данными
+  }
+  
   const page = Math.max(parseInt(getSingleValue(searchParams.page) || "1", 10) || 1, 1);
   const limit = Math.min(Math.max(parseInt(getSingleValue(searchParams.limit) || "20", 10) || 20, 1), 100);
   const searchTerm = getSingleValue(searchParams.search).trim();

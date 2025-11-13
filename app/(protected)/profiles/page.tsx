@@ -2,27 +2,46 @@ import Link from "next/link";
 import { fetchJson } from "@/lib/fetchers";
 
 async function getProfiles(searchParams: Record<string, string | string[] | undefined>) {
-  const params = new URLSearchParams();
-  const q = (searchParams.search as string) || "";
-  const type = (searchParams.type as string) || "";
-  const clientId = (searchParams["filter[client_id][_eq]"] as string) || (searchParams.clientId as string) || "";
-  const page = Number(searchParams.page || 1);
-  const limit = Number(searchParams.limit || 20);
-  const offset = (page - 1) * limit;
-  if (q) params.set("search", q);
-  if (type) params.set("filter[type][_eq]", type);
-  if (clientId) params.set("filter[client_id][_eq]", clientId);
-  params.set("limit", String(limit));
-  params.set("offset", String(offset));
-  params.set("meta", "filter_count");
+  try {
+    const params = new URLSearchParams();
+    const q = (searchParams.search as string) || "";
+    const type = (searchParams.type as string) || "";
+    const clientId = (searchParams["filter[client_id][_eq]"] as string) || (searchParams.clientId as string) || "";
+    const page = Number(searchParams.page || 1);
+    const limit = Number(searchParams.limit || 20);
+    const offset = (page - 1) * limit;
+    if (q) params.set("search", q);
+    if (type) params.set("filter[type][_eq]", type);
+    if (clientId) params.set("filter[client_id][_eq]", clientId);
+    params.set("limit", String(limit));
+    params.set("offset", String(offset));
+    params.set("meta", "filter_count");
 
-  const { status, data } = await fetchJson(`/api/profiles?${params.toString()}`, { cache: 'no-store' });
-  if (status === 401 || status === 404 || !data) return { data: [], meta: { filter_count: 0 } };
-  return data as any;
+    const { status, data } = await fetchJson(`/api/profiles?${params.toString()}`, { cache: 'no-store' });
+    if (status === 401 || status === 404 || !data) {
+      console.error("API error:", status);
+      return { data: [], meta: { filter_count: 0 } };
+    }
+    return data as any;
+  } catch (error) {
+    console.error("Error in getProfiles:", error);
+    return { data: [], meta: { filter_count: 0 } };
+  }
 }
 
 export default async function ProfilesPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined>}) {
-  const { data: profiles = [], meta = {} } = await getProfiles(searchParams);
+  let profiles: any[] = [];
+  let meta: any = {};
+  
+  try {
+    const result = await getProfiles(searchParams);
+    profiles = result?.data || [];
+    meta = result?.meta || {};
+  } catch (error) {
+    console.error("Error fetching profiles:", error);
+    // Продолжаем с пустыми данными
+  }
+  
   const page = Number(searchParams.page || 1);
   const limit = Number(searchParams.limit || 20);
   const total = (meta as any)?.filter_count ?? 0;
