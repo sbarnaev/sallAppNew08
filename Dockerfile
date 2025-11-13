@@ -11,7 +11,7 @@ WORKDIR /app
 # Ускоряем сборку: только файлы для зависимостей
 COPY package.json package-lock.json* ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --include=dev
+    npm ci
 
 ############################
 # 2) Build Next.js         #

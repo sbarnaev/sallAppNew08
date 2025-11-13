@@ -315,10 +315,9 @@ export default function ProfileDetail() {
             const isChecked = Object.keys(checkedResource).some(k => 
               k.includes('resourceSignals') && (k.includes(String(idx)) || k.includes(r.slice(0, 20)))
             );
-            return \`<li style="margin: 4px 0; padding-left: 24px; position: relative;">
-              <span style="position: absolute; left: 0;">${isChecked ? '☑' : '☐'}</span>
-              \${String(r).replace(/</g, '&lt;').replace(/>/g, '&gt;')}
-            </li>\`;
+            const escaped = String(r).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const checkmark = isChecked ? '☑' : '☐';
+            return '<li style="margin: 4px 0; padding-left: 24px; position: relative;"><span style="position: absolute; left: 0;">' + checkmark + '</span>' + escaped + '</li>';
           }).join('')}
         </ul>
       </div>
@@ -332,10 +331,9 @@ export default function ProfileDetail() {
             const isChecked = Object.keys(checkedDeficit).some(k => 
               k.includes('deficitSignals') && (k.includes(String(idx)) || k.includes(d.slice(0, 20)))
             );
-            return \`<li style="margin: 4px 0; padding-left: 24px; position: relative;">
-              <span style="position: absolute; left: 0;">${isChecked ? '☑' : '☐'}</span>
-              \${String(d).replace(/</g, '&lt;').replace(/>/g, '&gt;')}
-            </li>\`;
+            const escaped = String(d).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const checkmark = isChecked ? '☑' : '☐';
+            return '<li style="margin: 4px 0; padding-left: 24px; position: relative;"><span style="position: absolute; left: 0;">' + checkmark + '</span>' + escaped + '</li>';
           }).join('')}
         </ul>
       </div>
@@ -1034,11 +1032,16 @@ export default function ProfileDetail() {
       <div className="card space-y-4">
         <div className="font-medium">Задать вопрос по профилю</div>
         <div className="space-y-3">
-          <div className="rounded-xl border p-3 bg-white max-h-80 overflow-y-auto break-words">
+          <div ref={chatBoxRef} className="rounded-xl border p-3 bg-white max-h-80 overflow-y-auto break-words">
             {chat.length === 0 && <div className="text-sm text-gray-500">Начните диалог — задайте вопрос ниже</div>}
             {chat.map((m, i) => (
               <div key={i} className={`mb-3 ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
-                <div className={`inline-block rounded-2xl px-3 py-2 whitespace-pre-wrap break-words ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}>{m.content}</div>
+                <div className={`inline-block rounded-2xl px-3 py-2 whitespace-pre-wrap break-words ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
+                  {m.content}
+                  {loading && i === chat.length - 1 && m.role === 'assistant' && (
+                    <span className="inline-block w-2 h-4 ml-1 bg-gray-400 animate-pulse">▋</span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
