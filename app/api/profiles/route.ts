@@ -18,8 +18,8 @@ export async function GET(req: NextRequest) {
   if (searchTerm) {
     try {
       const clientSearchParams = new URLSearchParams();
-      clientSearchParams.set("filter[_or][0][name][_icontains]", searchTerm);
-      clientSearchParams.set("filter[_or][1][birth_date][_icontains]", searchTerm);
+      // Поиск только по имени (birth_date имеет тип date и не поддерживает _icontains)
+      clientSearchParams.set("filter[name][_icontains]", searchTerm);
       clientSearchParams.set("fields", "id");
       clientSearchParams.set("limit", "1000"); // Достаточно большое число
       
@@ -31,6 +31,9 @@ export async function GET(req: NextRequest) {
       if (clientsRes.ok) {
         const clientsData = await clientsRes.json().catch(() => ({ data: [] }));
         clientIds = (clientsData?.data || []).map((c: any) => c.id).filter((id: any): id is number => !!id);
+      } else {
+        const errorData = await clientsRes.json().catch(() => ({}));
+        console.error("Error searching clients:", errorData);
       }
     } catch (error) {
       console.error("Error searching clients:", error);

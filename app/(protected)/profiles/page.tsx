@@ -76,12 +76,12 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
 
       <form className="flex gap-3 items-end" action="/profiles" method="get">
         <div className="flex-1">
-          <label className="block text-sm mb-1">Поиск по имени или дате рождения</label>
+          <label className="block text-sm mb-1">Поиск по имени клиента</label>
           <input 
             name="search" 
             defaultValue={(searchParams.search as string) || ""} 
             className="rounded-xl border p-3 w-full" 
-            placeholder="Имя, фамилия или дата рождения клиента..." 
+            placeholder="Имя или фамилия клиента..." 
           />
         </div>
         <button type="submit" className="rounded-2xl bg-gray-900 text-white px-4 py-2 h-[42px]">Искать</button>
