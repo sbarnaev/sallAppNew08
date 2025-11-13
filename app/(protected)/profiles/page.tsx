@@ -75,16 +75,7 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
       </div>
 
       <form className="flex gap-3 items-end" action="/profiles" method="get">
-        <div className="flex-1">
-          <label className="block text-sm mb-1">Поиск</label>
-          <input 
-            name="search" 
-            defaultValue={(searchParams.search as string) || ""} 
-            className="rounded-xl border p-3 w-full" 
-            placeholder="Поиск..." 
-          />
-        </div>
-        <div className="w-36">
+        <div className="w-48">
           <label className="block text-sm mb-1">ID клиента</label>
           <input 
             name="filter[client_id][_eq]" 
@@ -93,7 +84,12 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
             placeholder="123" 
           />
         </div>
-        <button type="submit" className="rounded-2xl bg-gray-900 text-white px-4 py-2 h-[42px]">Искать</button>
+        <button type="submit" className="rounded-2xl bg-gray-900 text-white px-4 py-2 h-[42px]">Фильтровать</button>
+        {(searchParams["filter[client_id][_eq]"] as string) && (
+          <Link href="/profiles" className="rounded-2xl border border-gray-300 px-4 py-2 h-[42px] flex items-center hover:bg-gray-50">
+            Сбросить
+          </Link>
+        )}
       </form>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

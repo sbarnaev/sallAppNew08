@@ -10,12 +10,29 @@ export async function GET(req: NextRequest) {
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ data: [] }, { status: 401 });
 
-  const sp = new URLSearchParams(req.nextUrl.searchParams as any);
+  const incomingParams = req.nextUrl.searchParams;
+  const searchTerm = (incomingParams.get("search") || "").toString().trim();
+  
+  const sp = new URLSearchParams();
+  // Копируем все параметры кроме search, page, limit, offset, meta
+  incomingParams.forEach((value, key) => {
+    if (key !== "search" && key !== "page" && key !== "limit" && key !== "offset" && key !== "meta") {
+      sp.append(key, value);
+    }
+  });
+  
   if (!sp.has("fields")) sp.set("fields", "id,client_id,created_at,html,raw_json,digits");
   if (!sp.has("limit")) sp.set("limit", "50");
   if (!sp.has("offset")) sp.set("offset", "0");
   if (!sp.has("meta")) sp.set("meta", "filter_count");
   if (!sp.has("sort")) sp.set("sort", "-created_at");
+  
+  // Добавляем поиск по имени клиента и дате рождения
+  if (searchTerm) {
+    // Используем _or для поиска по нескольким полям связанной таблицы
+    sp.set("filter[_or][0][client][name][_icontains]", searchTerm);
+    sp.set("filter[_or][1][client][birth_date][_icontains]", searchTerm);
+  }
 
   // Проверяем, что URL валидный
   if (!baseUrl || !baseUrl.startsWith('http')) {
