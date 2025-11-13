@@ -113,7 +113,12 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         }
       } else {
         const refreshErrorText = await refreshRes.text().catch(() => '');
-        const refreshErrorData = JSON.parse(refreshErrorText).catch(() => ({}));
+        let refreshErrorData: any = {};
+        try {
+          refreshErrorData = JSON.parse(refreshErrorText);
+        } catch {
+          refreshErrorData = { raw: refreshErrorText.substring(0, 200) };
+        }
         console.error("[DEBUG] Token refresh failed:", {
           status: refreshRes.status,
           statusText: refreshRes.statusText,
