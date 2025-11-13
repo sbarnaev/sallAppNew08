@@ -42,7 +42,8 @@ WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
-    HOSTNAME=0.0.0.0
+    HOSTNAME=0.0.0.0 \
+    NODE_OPTIONS="--max-old-space-size=512"
 
 # Копируем только необходимые файлы из сборки
 COPY --from=builder /app/.next/standalone ./
