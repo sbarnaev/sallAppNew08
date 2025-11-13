@@ -32,6 +32,8 @@ export async function POST() {
       refresh_token: refresh 
     });
     const secure = process.env.NODE_ENV === "production";
+    // Устанавливаем очень долгое время жизни для cookies (10 лет)
+    const maxAge = 60 * 60 * 24 * 365 * 10; // 10 лет в секундах
     
     if (access) {
       response.cookies.set("directus_access_token", access, { 
@@ -39,7 +41,7 @@ export async function POST() {
         secure, 
         sameSite: "lax", 
         path: "/",
-        maxAge: 60 * 60 * 24 * 7 // 7 дней
+        maxAge: maxAge
       });
     }
     
@@ -49,7 +51,7 @@ export async function POST() {
         secure, 
         sameSite: "lax", 
         path: "/",
-        maxAge: 60 * 60 * 24 * 30 // 30 дней
+        maxAge: maxAge
       });
     }
 

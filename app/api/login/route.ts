@@ -30,7 +30,26 @@ export async function POST(req: NextRequest) {
 
   const response = NextResponse.json({ ok: true });
   const secure = process.env.NODE_ENV === "production";
-  if (access) response.cookies.set("directus_access_token", access, { httpOnly: true, secure, sameSite: "lax", path: "/" });
-  if (refresh) response.cookies.set("directus_refresh_token", refresh, { httpOnly: true, secure, sameSite: "lax", path: "/" });
+  // Устанавливаем очень долгое время жизни для cookies (10 лет)
+  const maxAge = 60 * 60 * 24 * 365 * 10; // 10 лет в секундах
+  
+  if (access) {
+    response.cookies.set("directus_access_token", access, { 
+      httpOnly: true, 
+      secure, 
+      sameSite: "lax", 
+      path: "/",
+      maxAge: maxAge
+    });
+  }
+  if (refresh) {
+    response.cookies.set("directus_refresh_token", refresh, { 
+      httpOnly: true, 
+      secure, 
+      sameSite: "lax", 
+      path: "/",
+      maxAge: maxAge
+    });
+  }
   return response;
 }
