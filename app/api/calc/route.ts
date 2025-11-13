@@ -91,28 +91,48 @@ export async function POST(req: Request) {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
+    
+    const payload = {
+      name,
+      birthday,
+      clientId,
+      type: type || "base",
+      profileId, // важно для последующего обновления профиля n8n
+      public_code: publicCode,
+      // Дополнительный запрос пользователя (для целевого расчёта)
+      request: request ?? clientRequest ?? query ?? prompt ?? null,
+      // Передаем URL Directus для n8n workflow
+      directusUrl: directusUrl,
+    };
+    
+    console.log("Calling n8n workflow:", {
+      url: n8nUrl,
+      type: type || "base",
+      profileId,
+      hasDirectusUrl: !!directusUrl
+    });
+    
     r = await fetch(n8nUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        name,
-        birthday,
-        clientId,
-        type: type || "base",
-        profileId, // важно для последующего обновления профиля n8n
-        public_code: publicCode,
-        // Дополнительный запрос пользователя (для целевого расчёта)
-        request: request ?? clientRequest ?? query ?? prompt ?? null,
-      }),
+      body: JSON.stringify(payload),
       signal: controller.signal,
     });
     clearTimeout(timeout);
     data = await r.json().catch(() => ({}));
+    
+    console.log("n8n response:", {
+      status: r.status,
+      statusText: r.statusText,
+      hasData: !!data,
+      error: data?.error || data?.message
+    });
   } catch (error) {
-    return NextResponse.json({ message: "Cannot connect to n8n", error: String(error) }, { status: 502 });
+    console.error("Error calling n8n:", error);
+    return NextResponse.json({ message: "Cannot connect to n8n", error: String(error), n8nUrl }, { status: 502 });
   }
 
   if (!r.ok) {
@@ -120,16 +140,33 @@ export async function POST(req: Request) {
     // Улучшенная обработка ошибок n8n
     if (data?.error?.message) {
       msg = data.error.message;
+    } else if (data?.error?.name) {
+      msg = `${data.error.name}: ${data.error.message || msg}`;
     } else if (typeof data === 'string') {
       msg = data;
     } else if (data?.errors && Array.isArray(data.errors)) {
       msg = data.errors.map((e: any) => e.message || String(e)).join('; ');
     }
-    // Специальная обработка ошибки с directus node
-    if (msg.includes('directus') || msg.includes('n8n-nodes-directus')) {
-      msg = "Ошибка подключения к Directus. Проверьте настройки n8n workflow.";
+    
+    // Логируем полную ошибку для диагностики
+    console.error("n8n calculation error:", {
+      status: r.status,
+      statusText: r.statusText,
+      data: data,
+      message: msg
+    });
+    
+    // Специальная обработка ошибки с directus node - показываем детали
+    if (msg.includes('directus') || msg.includes('n8n-nodes-directus') || msg.includes('Unrecognized node type')) {
+      const detailMsg = data?.error?.message || data?.message || msg;
+      msg = `Ошибка в n8n workflow: ${detailMsg}. Проверьте настройки Directus node в n8n workflow (URL: ${directusUrl || 'не указан'}).`;
     }
-    return NextResponse.json({ ...data, message: msg }, { status: r.status });
+    
+    return NextResponse.json({ 
+      ...data, 
+      message: msg,
+      errorDetails: data?.error || data?.errors || null
+    }, { status: r.status });
   }
 
   // 3) Гарантируем возврат profileId + publicCode для мгновенного редиректа и отображения
