@@ -919,7 +919,13 @@ export default function ProfileDetail() {
         item.progressMetrics ||
         item.whatIf ||
         (Array.isArray(item.objectionHandling) && item.objectionHandling.length > 0) ||
-        (Array.isArray(item.finalStrategy) && item.finalStrategy.length > 0)
+        (Array.isArray(item.finalStrategy) && item.finalStrategy.length > 0) ||
+        // Поля партнерской консультации
+        item.compatibility ||
+        item.firstParticipantCodes ||
+        item.secondParticipantCodes ||
+        item.partnerCodes ||
+        (item.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant || item.currentDiagnostics.conflictZones))
       );
     });
     
@@ -939,8 +945,50 @@ export default function ProfileDetail() {
     
     return (
       <div className="space-y-6">
-        {items.map((item, idx) => (
+        {items.map((item, idx) => {
+          // Проверяем, это партнерская консультация (есть compatibility или firstParticipantCodes/secondParticipantCodes)
+          const isPartnerConsultation = !!(item.compatibility || item.firstParticipantCodes || item.secondParticipantCodes || 
+            (item.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant)));
+          
+          return (
           <div key={idx} className="space-y-6">
+            {/* Отображение кодов для партнерской консультации (массив кодов) */}
+            {(item.firstParticipantCodes || item.secondParticipantCodes) && (
+              <section className="rounded-2xl border border-blue-100 p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
+                <h2 className="m-0 text-base font-bold text-gray-800 mb-4">Коды участников</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                  {/* Первый участник */}
+                  <div className="bg-white rounded-xl p-4 border-2 border-blue-200">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Первый участник</h3>
+                    <div className="grid grid-cols-5 gap-2">
+                      {['Личность', 'Коннектор', 'Реализация', 'Генератор', 'Миссия'].map((label, i) => (
+                        <div key={i} className="text-center">
+                          <div className="text-xs text-gray-500 mb-1">{label}</div>
+                          <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
+                            {Array.isArray(item.firstParticipantCodes) && item.firstParticipantCodes[i] != null ? item.firstParticipantCodes[i] : '—'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Второй участник */}
+                  <div className="bg-white rounded-xl p-4 border-2 border-indigo-200">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Второй участник</h3>
+                    <div className="grid grid-cols-5 gap-2">
+                      {['Личность', 'Коннектор', 'Реализация', 'Генератор', 'Миссия'].map((label, i) => (
+                        <div key={i} className="text-center">
+                          <div className="text-xs text-gray-500 mb-1">{label}</div>
+                          <div className="w-full h-12 rounded-lg bg-[#1f92aa] text-white font-bold text-lg flex items-center justify-center">
+                            {Array.isArray(item.secondParticipantCodes) && item.secondParticipantCodes[i] != null ? item.secondParticipantCodes[i] : '—'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
             {/* Коды партнеров в двух колонках (для партнерской консультации) */}
             {item.partnerCodes && (
               <section className="rounded-2xl border border-blue-100 p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -1537,6 +1585,338 @@ export default function ProfileDetail() {
                   ))}
                 </div>
               </article>
+            )}
+
+            {/* Совместимость ресурсов (для партнерской консультации) */}
+            {item.compatibility && (
+              <AccordionSection title="Совместимость ресурсов">
+                <div className="space-y-6">
+                  {Array.isArray(item.compatibility.complementary) && item.compatibility.complementary.length > 0 && (
+                    <div>
+                      <h3 className="text-base font-semibold text-green-800 mb-3">✅ Дополняющие ресурсы</h3>
+                      <div className="space-y-3">
+                        {item.compatibility.complementary.map((comp: any, i: number) => (
+                          <div key={i} className="rounded-lg border border-green-200 bg-green-50 p-4">
+                            <div className="font-semibold text-gray-800 mb-2">
+                              {comp.firstResource} ↔ {comp.secondResource}
+                            </div>
+                            <p className="text-sm text-gray-700">{comp.why}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {Array.isArray(item.compatibility.conflicts) && item.compatibility.conflicts.length > 0 && (
+                    <div>
+                      <h3 className="text-base font-semibold text-red-800 mb-3">⚠️ Конфликтующие ресурсы</h3>
+                      <div className="space-y-3">
+                        {item.compatibility.conflicts.map((conf: any, i: number) => (
+                          <div key={i} className="rounded-lg border border-red-200 bg-red-50 p-4">
+                            <div className="font-semibold text-gray-800 mb-2">
+                              {conf.firstResource} ↔ {conf.secondResource}
+                            </div>
+                            <p className="text-sm text-gray-700 mb-2">{conf.why}</p>
+                            {conf.solution && (
+                              <div className="mt-2 pt-2 border-t border-red-300">
+                                <div className="text-xs font-semibold text-red-800 mb-1">Решение:</div>
+                                <p className="text-sm text-red-700">{conf.solution}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </AccordionSection>
+            )}
+
+            {/* Зоны конфликтов (для партнерской консультации) */}
+            {Array.isArray(item.currentDiagnostics?.conflictZones) && item.currentDiagnostics.conflictZones.length > 0 && (
+              <AccordionSection title="Зоны конфликтов">
+                <div className="space-y-4">
+                  {item.currentDiagnostics.conflictZones.map((zone: any, i: number) => (
+                    <div key={i} className="rounded-lg border-2 border-amber-200 bg-amber-50 p-4">
+                      <h3 className="text-base font-semibold text-amber-900 mb-3">{zone.zone}</h3>
+                      <p className="text-sm text-gray-700 mb-3">{zone.description}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                        <div className="bg-white rounded p-3 border border-amber-200">
+                          <div className="text-xs font-semibold text-gray-600 mb-1">Первый участник:</div>
+                          <p className="text-sm text-gray-800">{zone.firstParticipantRole}</p>
+                        </div>
+                        <div className="bg-white rounded p-3 border border-amber-200">
+                          <div className="text-xs font-semibold text-gray-600 mb-1">Второй участник:</div>
+                          <p className="text-sm text-gray-800">{zone.secondParticipantRole}</p>
+                        </div>
+                      </div>
+                      {zone.solution && (
+                        <div className="mt-3 pt-3 border-t border-amber-300">
+                          <div className="text-xs font-semibold text-amber-800 mb-1">Решение:</div>
+                          <p className="text-sm text-amber-700">{zone.solution}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </AccordionSection>
+            )}
+
+            {/* Диагностика для партнерской консультации (с разделением по участникам) */}
+            {isPartnerConsultation && item.currentDiagnostics && (
+              <AccordionSection title="Диагностика участников">
+                <div className="space-y-6">
+                  {/* Первый участник */}
+                  {item.currentDiagnostics.firstParticipant && Array.isArray(item.currentDiagnostics.firstParticipant.resourceStates) && (
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-800 mb-3">Первый участник</h3>
+                      <div className="space-y-3">
+                        {item.currentDiagnostics.firstParticipant.resourceStates.map((state: any, i: number) => (
+                          <div key={i} className={`rounded-lg p-4 border-2 ${
+                            state.state === 'plus' ? 'border-green-200 bg-green-50' :
+                            state.state === 'minus' ? 'border-red-200 bg-red-50' :
+                            'border-gray-200 bg-gray-50'
+                          }`}>
+                            <div className="font-semibold mb-2">{state.resource}</div>
+                            {Array.isArray(state.evidence) && state.evidence.length > 0 && (
+                              <div className="mb-2">
+                                <div className="text-xs font-semibold text-gray-600 mb-1">Доказательства:</div>
+                                <ul className="list-disc list-inside text-sm text-gray-700">
+                                  {state.evidence.map((e: string, j: number) => (
+                                    <li key={j}>{e}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {Array.isArray(state.correction) && state.correction.length > 0 && (
+                              <div>
+                                <div className="text-xs font-semibold text-gray-600 mb-1">Коррекция:</div>
+                                <ul className="list-disc list-inside text-sm text-gray-700">
+                                  {state.correction.map((c: string, j: number) => (
+                                    <li key={j}>{c}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Второй участник */}
+                  {item.currentDiagnostics.secondParticipant && Array.isArray(item.currentDiagnostics.secondParticipant.resourceStates) && (
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-800 mb-3">Второй участник</h3>
+                      <div className="space-y-3">
+                        {item.currentDiagnostics.secondParticipant.resourceStates.map((state: any, i: number) => (
+                          <div key={i} className={`rounded-lg p-4 border-2 ${
+                            state.state === 'plus' ? 'border-green-200 bg-green-50' :
+                            state.state === 'minus' ? 'border-red-200 bg-red-50' :
+                            'border-gray-200 bg-gray-50'
+                          }`}>
+                            <div className="font-semibold mb-2">{state.resource}</div>
+                            {Array.isArray(state.evidence) && state.evidence.length > 0 && (
+                              <div className="mb-2">
+                                <div className="text-xs font-semibold text-gray-600 mb-1">Доказательства:</div>
+                                <ul className="list-disc list-inside text-sm text-gray-700">
+                                  {state.evidence.map((e: string, j: number) => (
+                                    <li key={j}>{e}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {Array.isArray(state.correction) && state.correction.length > 0 && (
+                              <div>
+                                <div className="text-xs font-semibold text-gray-600 mb-1">Коррекция:</div>
+                                <ul className="list-disc list-inside text-sm text-gray-700">
+                                  {state.correction.map((c: string, j: number) => (
+                                    <li key={j}>{c}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </AccordionSection>
+            )}
+
+            {/* Обновленная диагностика для партнерской консультации (если есть вопросы с указанием участника) */}
+            {isPartnerConsultation && Array.isArray(item.currentDiagnostics?.questions) && item.currentDiagnostics.questions.length > 0 && (
+              <div>
+                <h3 className="text-base font-semibold mb-3">Вопросы для уточнения</h3>
+                <div className="space-y-3">
+                  {item.currentDiagnostics.questions.map((q: any, i: number) => (
+                    <div key={i} className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                      <p className="text-gray-800 mb-1">{q.question}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        {q.salResource && (
+                          <span className="text-xs text-gray-500">Ресурс: {q.salResource}</span>
+                        )}
+                        {q.participant && (
+                          <span className="text-xs text-gray-500">
+                            {q.participant === 'first' ? 'Первый участник' : 
+                             q.participant === 'second' ? 'Второй участник' : 
+                             'Оба участника'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Обновленные ресурсы по этапам для партнерской консультации (с указанием участника) */}
+            {isPartnerConsultation && Array.isArray(item.resourcesForStages) && item.resourcesForStages.length > 0 && (
+              <AccordionSection title="Ресурсы по этапам">
+                <div className="space-y-6">
+                  {item.resourcesForStages.map((stage: any, stageIdx: number) => (
+                    <div key={stageIdx} className="rounded-xl border border-blue-100 p-5">
+                      <h3 className="text-lg font-semibold mb-4">Этап {stage.stage}</h3>
+                      <div className="space-y-4">
+                        {Array.isArray(stage.resources) && stage.resources.map((res: any, resIdx: number) => (
+                          <div key={resIdx} className="bg-gray-50 rounded-lg p-4">
+                            <div className="font-semibold text-gray-800 mb-2">
+                              {res.resource} 
+                              {res.participant && (
+                                <span className="text-sm font-normal text-gray-600 ml-2">
+                                  ({res.participant === 'first' ? 'Первый участник' : 'Второй участник'})
+                                </span>
+                              )}
+                            </div>
+                            {res.why && <p className="text-sm text-gray-600 mb-2">{res.why}</p>}
+                            {Array.isArray(res.successSignals) && res.successSignals.length > 0 && (
+                              <div className="mt-2">
+                                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Признаки успеха:</div>
+                                <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                                  {res.successSignals.map((signal: string, sigIdx: number) => (
+                                    <li key={sigIdx}>{signal}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </AccordionSection>
+            )}
+
+            {/* Обновленный план для партнерской консультации (с указанием участника) */}
+            {isPartnerConsultation && Array.isArray(item.plan123) && item.plan123.length > 0 && (
+              <AccordionSection title="План действий">
+                <div className="space-y-6">
+                  {item.plan123.map((plan: any, i: number) => (
+                    <div key={i} className="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-5">
+                      <h3 className="text-lg font-semibold mb-4">{plan.stageTitle}</h3>
+                      {Array.isArray(plan.actions) && plan.actions.length > 0 && (
+                        <div className="mb-4">
+                          <div className="text-sm font-semibold text-gray-700 mb-2">Действия:</div>
+                          <ul className="list-disc list-inside space-y-1 text-gray-700">
+                            {plan.actions.map((action: string, j: number) => (
+                              <li key={j}>{action}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {Array.isArray(plan.resources) && plan.resources.length > 0 && (
+                        <div className="mb-4">
+                          <div className="text-sm font-semibold text-gray-700 mb-2">Ресурсы:</div>
+                          <div className="flex flex-wrap gap-2">
+                            {plan.resources.map((res: any, j: number) => (
+                              <span key={j} className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+                                {res.resource}
+                                {res.participant && (
+                                  <span className="ml-1 text-xs">
+                                    ({res.participant === 'first' ? '1' : '2'})
+                                  </span>
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {plan.successCriteria && (
+                        <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                          <div className="text-sm font-semibold text-green-800 mb-1">Критерий успеха:</div>
+                          <p className="text-sm text-green-700">{plan.successCriteria}</p>
+                        </div>
+                      )}
+                      {plan.riskNotes && (
+                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                          <div className="text-sm font-semibold text-amber-800 mb-1">⚠️ Риски:</div>
+                          <p className="text-sm text-amber-700">{plan.riskNotes}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </AccordionSection>
+            )}
+
+            {/* Обновленный whatIf для партнерской консультации (с полем conflicts) */}
+            {isPartnerConsultation && item.whatIf && (
+              <AccordionSection title="Что делать в разных ситуациях">
+                <div className="space-y-4">
+                  {Array.isArray(item.whatIf.fatigue) && item.whatIf.fatigue.length > 0 && (
+                    <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+                      <h3 className="text-sm font-semibold text-orange-900 mb-2">Усталость</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-orange-800">
+                        {item.whatIf.fatigue.map((f: string, i: number) => (
+                          <li key={i}>{f}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(item.whatIf.overwhelm) && item.whatIf.overwhelm.length > 0 && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                      <h3 className="text-sm font-semibold text-red-900 mb-2">Перегрузка</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-red-800">
+                        {item.whatIf.overwhelm.map((o: string, i: number) => (
+                          <li key={i}>{o}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(item.whatIf.conflicts) && item.whatIf.conflicts.length > 0 && (
+                    <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
+                      <h3 className="text-sm font-semibold text-purple-900 mb-2">Конфликты</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-purple-800">
+                        {item.whatIf.conflicts.map((c: string, i: number) => (
+                          <li key={i}>{c}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(item.whatIf.relapse) && item.whatIf.relapse.length > 0 && (
+                    <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
+                      <h3 className="text-sm font-semibold text-purple-900 mb-2">Рецидив</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-purple-800">
+                        {item.whatIf.relapse.map((r: string, i: number) => (
+                          <li key={i}>{r}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(item.whatIf.pitfalls) && item.whatIf.pitfalls.length > 0 && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                      <h3 className="text-sm font-semibold text-amber-900 mb-2">Ловушки</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-amber-800">
+                        {item.whatIf.pitfalls.map((p: string, i: number) => (
+                          <li key={i}>{p}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </AccordionSection>
             )}
 
             {item.practices && (

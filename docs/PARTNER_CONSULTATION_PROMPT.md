@@ -237,7 +237,7 @@
               "midSignals": { "type": "array", "items": { "type": "string" }, "description": "Сигналы на середине пути." },
               "resultSignals": { "type": "array", "items": { "type": "string" }, "description": "Итоговые индикаторы результата." }
             },
-            "required": ["earlySignals","midSignSignals","resultSignals"]
+            "required": ["earlySignals","midSignals","resultSignals"]
           },
           "whatIf": {
             "type": "object",
