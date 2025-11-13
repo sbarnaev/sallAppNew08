@@ -16,8 +16,15 @@ export async function POST() {
     return NextResponse.json({ message: "Invalid DIRECTUS_URL" }, { status: 500 });
   }
 
-  console.log("Refreshing token, Directus URL:", baseUrl);
-  console.log("Refresh token present:", !!refreshToken, "Length:", refreshToken?.length);
+  console.log("🔍 ===== TOKEN REFRESH DEBUG =====");
+  console.log("🔍 Refreshing token, Directus URL:", baseUrl);
+  console.log("🔍 Refresh token present:", !!refreshToken, "Length:", refreshToken?.length);
+  console.log("🔍 URL type check:", {
+    startsWithHttps: baseUrl.startsWith('https://'),
+    startsWithHttp: baseUrl.startsWith('http://'),
+    containsPort: baseUrl.includes(':'),
+    rawUrl: baseUrl
+  });
 
   // Проверяем, что URL действительно валидный для HTTPS
   if (baseUrl.startsWith('https://')) {

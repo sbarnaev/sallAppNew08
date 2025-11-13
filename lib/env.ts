@@ -13,9 +13,24 @@ export function getDirectusUrl(): string {
     url = `https://${url}`;
   }
   
-  // Логируем URL для диагностики (без чувствительных данных)
-  if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_DIRECTUS_URL === 'true') {
-    console.log("Directus URL:", url.replace(/\/\/.*@/, '//***@')); // Скрываем credentials если есть
+  // ВРЕМЕННО: Всегда логируем URL для диагностики SSL ошибки
+  console.log("🔍 Directus URL (from env):", raw);
+  console.log("🔍 Directus URL (processed):", url);
+  console.log("🔍 URL starts with https:", url.startsWith('https://'));
+  console.log("🔍 URL starts with http:", url.startsWith('http://'));
+  
+  // Парсим URL для детальной диагностики
+  try {
+    const urlObj = new URL(url);
+    console.log("🔍 URL parsed:", {
+      protocol: urlObj.protocol,
+      hostname: urlObj.hostname,
+      port: urlObj.port || '(default)',
+      pathname: urlObj.pathname,
+      full: urlObj.toString()
+    });
+  } catch (e) {
+    console.error("🔍 Failed to parse URL:", e);
   }
   
   return url;
