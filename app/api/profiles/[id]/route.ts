@@ -67,20 +67,36 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
     // попробуем освежить токен
     const origin = new URL(req.url).origin;
     try {
+      console.log("Attempting to refresh token, origin:", origin);
       const refreshRes = await fetch(`${origin}/api/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // Увеличиваем таймаут для refresh запроса
+        signal: AbortSignal.timeout(10000), // 10 секунд
       });
+      
       if (refreshRes.ok) {
         const refreshData = await refreshRes.json().catch(() => ({}));
         // Используем токен из ответа, а не из cookies
         const newToken = refreshData?.access_token || cookies().get("directus_access_token")?.value;
         if (newToken) {
+          console.log("Token refreshed successfully, retrying profile fetch");
           ({ r, data } = await fetchProfile(newToken));
+        } else {
+          console.warn("Token refresh returned no access_token");
         }
+      } else {
+        const refreshErrorData = await refreshRes.json().catch(() => ({}));
+        console.error("Token refresh failed:", refreshRes.status, refreshErrorData);
       }
-    } catch (refreshError) {
-      console.error("Error refreshing token:", refreshError);
+    } catch (refreshError: any) {
+      console.error("Error refreshing token:", {
+        message: refreshError?.message,
+        code: refreshError?.code,
+        cause: refreshError?.cause,
+        stack: refreshError?.stack?.substring(0, 500)
+      });
+      // Не прерываем выполнение - вернем ошибку 401
     }
   }
 

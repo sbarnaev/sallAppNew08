@@ -10,11 +10,21 @@ export async function POST() {
     return NextResponse.json({ message: "No refresh token or DIRECTUS_URL" }, { status: 401 });
   }
 
+  // Проверяем, что URL валидный
+  if (!baseUrl.startsWith('http')) {
+    console.error("Invalid Directus URL in refresh:", baseUrl);
+    return NextResponse.json({ message: "Invalid DIRECTUS_URL" }, { status: 500 });
+  }
+
+  console.log("Refreshing token, Directus URL:", baseUrl);
+
   try {
     const res = await fetch(`${baseUrl}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: refreshToken })
+      body: JSON.stringify({ refresh_token: refreshToken }),
+      // Увеличиваем таймаут
+      signal: AbortSignal.timeout(10000), // 10 секунд
     });
 
     const data = await res.json();
@@ -56,10 +66,29 @@ export async function POST() {
     }
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Error refreshing token in Directus:", {
+      message: error?.message,
+      code: error?.code,
+      cause: error?.cause,
+      directusUrl: baseUrl,
+      stack: error?.stack?.substring(0, 500)
+    });
+    
+    // Если это SSL ошибка, даем более понятное сообщение
+    if (error?.code === 'ERR_SSL_PACKET_LENGTH_TOO_LONG' || error?.message?.includes('SSL')) {
+      return NextResponse.json({ 
+        message: "SSL connection error. Check DIRECTUS_URL format (should be https://...)", 
+        error: error?.message,
+        code: error?.code,
+        directusUrl: baseUrl
+      }, { status: 502 });
+    }
+    
     return NextResponse.json({ 
       message: "Cannot connect to Directus", 
-      error: String(error) 
+      error: String(error?.message || error),
+      code: error?.code
     }, { status: 502 });
   }
 }
