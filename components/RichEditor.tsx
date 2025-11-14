@@ -29,29 +29,71 @@ export default function RichEditor({ value, onChange }: Props) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2 border-b pb-2 mb-2">
-        <button type="button" className="px-2 py-1 border rounded" onClick={() => exec("bold")}>B</button>
-        <button type="button" className="px-2 py-1 border rounded" onClick={() => exec("italic")}>I</button>
-        <button type="button" className="px-2 py-1 border rounded" onClick={() => exec("underline")}>U</button>
-        <select className="px-2 py-1 border rounded" onChange={e => exec("formatBlock", e.target.value)}>
+        <button 
+          type="button" 
+          className="px-3 py-1.5 border rounded-lg hover:bg-gray-50 font-semibold transition-colors" 
+          onClick={(e) => { e.preventDefault(); exec("bold"); }}
+          title="Жирный (Ctrl+B)"
+        >
+          B
+        </button>
+        <button 
+          type="button" 
+          className="px-3 py-1.5 border rounded-lg hover:bg-gray-50 italic transition-colors" 
+          onClick={(e) => { e.preventDefault(); exec("italic"); }}
+          title="Курсив (Ctrl+I)"
+        >
+          I
+        </button>
+        <button 
+          type="button" 
+          className="px-3 py-1.5 border rounded-lg hover:bg-gray-50 underline transition-colors" 
+          onClick={(e) => { e.preventDefault(); exec("underline"); }}
+          title="Подчеркнутый (Ctrl+U)"
+        >
+          U
+        </button>
+        <select 
+          className="px-3 py-1.5 border rounded-lg hover:bg-gray-50 text-sm transition-colors" 
+          onChange={e => exec("formatBlock", e.target.value)}
+          title="Стиль текста"
+        >
           <option value="p">Текст</option>
-          <option value="h1">H1</option>
-          <option value="h2">H2</option>
-          <option value="h3">H3</option>
+          <option value="h1">Заголовок 1</option>
+          <option value="h2">Заголовок 2</option>
+          <option value="h3">Заголовок 3</option>
         </select>
-        <input type="color" className="w-10 h-8 border rounded" onChange={e => exec("foreColor", e.target.value)} />
-        <button type="button" className="px-2 py-1 border rounded" onClick={() => exec("insertOrderedList")}>1.</button>
-        <button type="button" className="px-2 py-1 border rounded" onClick={() => exec("insertUnorderedList")}>•</button>
-        <button type="button" className="px-2 py-1 border rounded" onClick={() => exec("formatBlock", "blockquote")}>❝</button>
-        <button type="button" className="px-2 py-1 border rounded" onClick={() => exec("insertHTML", '<input type="checkbox" />')}>
-          ☑
+        <input 
+          type="color" 
+          className="w-10 h-8 border rounded-lg cursor-pointer" 
+          onChange={e => exec("foreColor", e.target.value)}
+          title="Цвет текста"
+        />
+        <button 
+          type="button" 
+          className="px-3 py-1.5 border rounded-lg hover:bg-gray-50 transition-colors" 
+          onClick={(e) => { e.preventDefault(); exec("insertOrderedList"); }}
+          title="Нумерованный список"
+        >
+          1.
+        </button>
+        <button 
+          type="button" 
+          className="px-3 py-1.5 border rounded-lg hover:bg-gray-50 transition-colors" 
+          onClick={(e) => { e.preventDefault(); exec("insertUnorderedList"); }}
+          title="Маркированный список"
+        >
+          •
         </button>
       </div>
       <div
         ref={ref}
-        className="w-full h-64 overflow-auto border rounded-xl p-3"
+        className="w-full min-h-64 max-h-96 overflow-auto border rounded-xl p-4 bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all"
         contentEditable
         suppressContentEditableWarning
         onInput={() => onChange(ref.current?.innerHTML || "")}
+        style={{ minHeight: '256px' }}
+        placeholder="Начните вводить текст..."
       />
     </div>
   );
