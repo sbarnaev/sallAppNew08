@@ -187,11 +187,11 @@ export async function GET(_req: Request, ctx: { params: { clientId: string } }) 
 
     // Генерируем даты: 7 дней назад + 83 дня вперед (включая сегодня) = 90 дней
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
     const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - 7);
+    startDate.setUTCDate(startDate.getUTCDate() - 7);
     const endDate = new Date(today);
-    endDate.setDate(endDate.getDate() + 83);
+    endDate.setUTCDate(endDate.getUTCDate() + 83);
 
     const forecasts: any[] = [];
     const currentDate = new Date(startDate);
