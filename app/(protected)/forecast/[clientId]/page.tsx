@@ -114,7 +114,7 @@ export default function ForecastPage() {
         <div className="card">
           <h1 className="text-xl font-semibold text-red-600 mb-2">Ошибка</h1>
           <p className="text-gray-600 mb-4">{error || "Не удалось загрузить прогноз"}</p>
-          <Link href={`/clients/${clientId}`} className="text-brand-600 hover:text-brand-700">
+          <Link href={`/clients/${clientId}`} className="text-blue-600 hover:text-blue-700">
             ← Вернуться к клиенту
           </Link>
         </div>
