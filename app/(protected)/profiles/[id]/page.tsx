@@ -3060,6 +3060,7 @@ export default function ProfileDetail() {
                   {savingNotes ? 'Сохранение...' : 'Сохранить'}
                 </button>
               </div>
+            </div>
           </div>
         </div>
       )}
