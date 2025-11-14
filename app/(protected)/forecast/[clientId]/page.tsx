@@ -244,25 +244,25 @@ export default function ForecastPage() {
                     return (
                       <div
                         key={forecast.date}
-                        className={`aspect-square border-2 rounded-lg p-1 md:p-2 flex flex-col min-h-[70px] md:min-h-[90px] ${
+                        className={`aspect-square border-2 rounded-lg p-0.5 md:p-2 flex flex-col min-h-[70px] md:min-h-[90px] overflow-hidden ${
                           isToday ? "border-blue-500 ring-2 ring-blue-200 shadow-md" : "border-gray-200"
                         } ${getIndexColor(forecast.index)}`}
                       >
-                        <div className="text-xs md:text-sm font-semibold mb-0.5 md:mb-1 flex items-center justify-between">
+                        <div className="text-xs md:text-sm font-semibold mb-0.5 md:mb-1 flex items-center justify-between px-0.5 md:px-0">
                           <span>{day}</span>
                           {isToday && <span className="text-blue-600 text-xs md:text-sm">●</span>}
                         </div>
                         {/* Мобильная версия: только общий индекс крупно */}
-                        <div className="md:hidden flex-1 flex flex-col justify-center items-center">
-                          <div className="font-extrabold text-lg mb-0.5">{forecast.index.toFixed(1)}</div>
-                          <div className="text-[8px] leading-tight opacity-75 text-center">
-                            <div>Л:{forecast.personality.score.toFixed(1)}</div>
-                            <div>К:{forecast.connector.score.toFixed(1)}</div>
-                            <div>Р:{forecast.realization.score.toFixed(1)}</div>
+                        <div className="md:hidden flex-1 flex flex-col justify-center items-center px-0.5">
+                          <div className="font-extrabold text-base mb-0.5">{forecast.index.toFixed(1)}</div>
+                          <div className="text-[7px] leading-tight opacity-75 text-center">
+                            <div className="truncate">Л:{forecast.personality.score.toFixed(1)}</div>
+                            <div className="truncate">К:{forecast.connector.score.toFixed(1)}</div>
+                            <div className="truncate">Р:{forecast.realization.score.toFixed(1)}</div>
                           </div>
                         </div>
                         {/* Десктопная версия: полная информация */}
-                        <div className="hidden md:flex flex-1 flex-col justify-center text-xs leading-tight space-y-1">
+                        <div className="hidden md:flex flex-1 flex flex-col justify-center text-xs leading-tight space-y-1">
                           <div className="flex justify-between items-center">
                             <span className="opacity-90 font-medium">Л:</span>
                             <span className="font-bold">{forecast.personality.score.toFixed(1)}</span>
