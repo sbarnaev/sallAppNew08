@@ -2993,20 +2993,56 @@ export default function ProfileDetail() {
             </div>
             
             {/* Мини-редактор markdown */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mb-2">
               <button className="rounded border px-2 py-1 text-sm hover:bg-gray-50" onClick={(e)=>{e.preventDefault(); wrapSelection('**');}}>B</button>
               <button className="rounded border px-2 py-1 text-sm hover:bg-gray-50" onClick={(e)=>{e.preventDefault(); wrapSelection('*');}}>I</button>
               <button className="rounded border px-2 py-1 text-sm hover:bg-gray-50" onClick={(e)=>{e.preventDefault(); prefixLines('## ');}}>H2</button>
               <button className="rounded border px-2 py-1 text-sm hover:bg-gray-50" onClick={(e)=>{e.preventDefault(); prefixLines('- ');}}>• Список</button>
             </div>
-            <textarea
-              ref={notesTextareaRef}
-              className="w-full h-64 rounded-xl border p-3 font-mono text-sm"
-              value={notesDraft}
-              onChange={(e)=>{ setNotesDraft(e.target.value); notesTouchedRef.current = true; }}
-              placeholder="Markdown поддерживается. Используйте **жирный**, *курсив*, ## заголовки, - списки"
-            />
-              <div className="flex gap-2 justify-end mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-sm font-medium text-gray-700 mb-2">Редактирование (Markdown)</div>
+                <textarea
+                  ref={notesTextareaRef}
+                  className="w-full h-64 rounded-xl border p-3 font-mono text-sm"
+                  value={notesDraft}
+                  onChange={(e)=>{ setNotesDraft(e.target.value); notesTouchedRef.current = true; }}
+                  placeholder="Markdown поддерживается. Используйте **жирный**, *курсив*, ## заголовки, - списки"
+                />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-gray-700 mb-2">Предпросмотр</div>
+                <div className="w-full h-64 rounded-xl border p-3 bg-gray-50 overflow-y-auto prose prose-sm max-w-none">
+                  {notesDraft ? (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-2 mt-3 first:mt-0" {...props} />,
+                        h2: ({node, ...props}) => <h2 className="text-base font-bold mb-2 mt-3 first:mt-0" {...props} />,
+                        h3: ({node, ...props}) => <h3 className="text-sm font-semibold mb-1 mt-2 first:mt-0" {...props} />,
+                        p: ({node, ...props}) => <p className="mb-2 last:mb-0 leading-relaxed" {...props} />,
+                        ul: ({node, ...props}) => <ul className="list-disc list-inside mb-2 space-y-1 ml-2" {...props} />,
+                        ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-2 space-y-1 ml-2" {...props} />,
+                        li: ({node, ...props}) => <li className="leading-relaxed" {...props} />,
+                        strong: ({node, ...props}) => <strong className="font-semibold" {...props} />,
+                        em: ({node, ...props}) => <em className="italic" {...props} />,
+                        code: ({node, inline, ...props}: any) => 
+                          inline ? (
+                            <code className="bg-gray-200 text-gray-800 px-1.5 py-0.5 rounded text-xs font-mono" {...props} />
+                          ) : (
+                            <code className="block bg-gray-200 text-gray-800 p-2 rounded text-xs font-mono overflow-x-auto mb-2" {...props} />
+                          ),
+                      }}
+                    >
+                      {notesDraft}
+                    </ReactMarkdown>
+                  ) : (
+                    <div className="text-sm text-gray-400 italic">Предпросмотр появится здесь</div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end mt-4">
                 <button className="rounded-xl border px-4 py-2" onClick={()=>setNotesOpen(false)}>Отмена</button>
                 <button
                   className="rounded-xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 disabled:opacity-60"
