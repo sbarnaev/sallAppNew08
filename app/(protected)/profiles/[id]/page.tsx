@@ -521,7 +521,7 @@ export default function ProfileDetail() {
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <style>
+        <style>
     @page {
       size: A4;
       margin: 20mm;
@@ -633,7 +633,7 @@ export default function ProfileDetail() {
     <div class="header">
       <div class="title">Расчёт профиля${clientName ? ' — ' + clientName : ''}</div>
       ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
-    </div>
+      </div>
     <div class="content">
       <h2 class="section-title">Сильные стороны</h2>
       <ul>
@@ -1002,8 +1002,8 @@ export default function ProfileDetail() {
       
       if (shouldStop) {
         if (pollingRef.current) {
-          setPolling(false);
-          pollingRef.current = false;
+        setPolling(false);
+        pollingRef.current = false;
           console.log("✅ Polling stopped:", { 
             hasRenderableHtml, 
             hasRaw, 
@@ -1685,7 +1685,7 @@ export default function ProfileDetail() {
     localUiStateRef: React.MutableRefObject<Record<string, boolean>>,
     saveChecked: (map: Record<string, boolean>) => void
   ) {
-    return (
+  return (
       <div className="space-y-6">
         {items.map((item, idx) => (
           <div key={idx} className="space-y-6">
@@ -1746,7 +1746,7 @@ export default function ProfileDetail() {
               <AccordionSection title="🔍 Диагностика" id="diagnostics">
                 <div className="space-y-6">
                   {Array.isArray(item.currentDiagnostics.resourceStates) && item.currentDiagnostics.resourceStates.length > 0 && (
-                    <div>
+        <div>
                       <h3 className="text-base font-semibold mb-3">Состояние ресурсов</h3>
                       <div className="space-y-3">
                         {item.currentDiagnostics.resourceStates.map((state: any, i: number) => (
@@ -2524,7 +2524,7 @@ export default function ProfileDetail() {
           <div className="flex-1 min-w-0">
             <div className="text-2xl font-semibold text-gray-900 break-words">{clientName || "Профиль"}</div>
             <div className="flex items-center gap-4 mt-2 flex-wrap">
-              {profile?.created_at && (
+          {profile?.created_at && (
                 <div className="text-sm text-gray-500">
                   <span className="font-medium">Дата создания:</span> {new Date(profile.created_at).toLocaleString("ru-RU")}
                 </div>
@@ -2538,8 +2538,8 @@ export default function ProfileDetail() {
                 </div>
               )}
             </div>
-          </div>
-          <ActionBar />
+        </div>
+        <ActionBar />
         </div>
       </div>
 
@@ -2784,8 +2784,8 @@ export default function ProfileDetail() {
                     {item.icon && <span>{item.icon}</span>}
                     <span>{item.label}</span>
                   </a>
-                ))}
-              </div>
+        ))}
+      </div>
             )}
           </div>
         );
@@ -2797,7 +2797,7 @@ export default function ProfileDetail() {
           <div className="flex items-center gap-3 text-red-800">
             <svg className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+          </svg>
             <div>
               <div className="font-semibold">Сессия истекла</div>
               <div className="text-sm mt-1">Пожалуйста, перелогиньтесь для продолжения работы.</div>
@@ -2852,9 +2852,9 @@ export default function ProfileDetail() {
       })()}
 
       {!polling && renderedFromJson && consultationType && (
-        <div className="card space-y-4">
-          <div className="font-medium">Задать вопрос по профилю</div>
-          <div className="space-y-3">
+      <div className="card space-y-4">
+        <div className="font-medium">Задать вопрос по профилю</div>
+        <div className="space-y-3">
             <div ref={chatBoxRef} className="rounded-xl border p-3 bg-white max-h-96 overflow-y-auto break-words">
             {chat.length === 0 && <div className="text-sm text-gray-500">Начните диалог — задайте вопрос ниже</div>}
             {chat.map((m, i) => (
@@ -2936,7 +2936,7 @@ export default function ProfileDetail() {
             </button>
           </form>
         </div>
-        </div>
+      </div>
       )}
 
       {/* Плавающая кнопка «Заметки» */}
@@ -2951,115 +2951,34 @@ export default function ProfileDetail() {
         <div className="fixed inset-0 bg-black/40 z-50 grid place-items-center p-4" onClick={() => setNotesOpen(false)}>
           <div className="bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e)=>e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 border-b">
-              <div className="font-semibold">Заметки по расчёту</div>
+            <div className="font-semibold">Заметки по расчёту</div>
               <button className="text-gray-500 hover:text-gray-800" onClick={() => setNotesOpen(false)}>✕</button>
             </div>
             <div className="p-6 overflow-y-auto flex-grow">
-            {/* Шаблоны заметок */}
-            <div className="flex flex-wrap gap-2 pb-2 border-b mb-4">
-              <span className="text-xs text-gray-500 mr-2">Шаблоны:</span>
-              <button
-                className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const template = `## Встреча ${new Date().toLocaleDateString('ru-RU')}\n\n### Обсудили:\n- \n- \n\n### Действия:\n- \n- \n\n### Следующая встреча:\n`;
-                  setNotesDraft(notesDraft + (notesDraft ? '\n\n' : '') + template);
+              <RichEditor
+              value={notesDraft}
+                onChange={(html) => {
+                  setNotesDraft(html);
                   notesTouchedRef.current = true;
                 }}
-              >
-                📅 Встреча
-              </button>
-              <button
-                className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const template = `## Заметки\n\n### Сильные стороны:\n- \n- \n\n### Области роста:\n- \n- \n\n### Рекомендации:\n- \n- \n`;
-                  setNotesDraft(notesDraft + (notesDraft ? '\n\n' : '') + template);
-                  notesTouchedRef.current = true;
-                }}
-              >
-                💡 Анализ
-              </button>
-              <button
-                className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const template = `## Задачи\n\n- [ ] \n- [ ] \n- [ ] \n`;
-                  setNotesDraft(notesDraft + (notesDraft ? '\n\n' : '') + template);
-                  notesTouchedRef.current = true;
-                }}
-              >
-                ✅ Задачи
-              </button>
-            </div>
-            
-            {/* Мини-редактор markdown */}
-            <div className="flex flex-wrap gap-2 mb-2">
-              <button className="rounded border px-2 py-1 text-sm hover:bg-gray-50" onClick={(e)=>{e.preventDefault(); wrapSelection('**');}}>B</button>
-              <button className="rounded border px-2 py-1 text-sm hover:bg-gray-50" onClick={(e)=>{e.preventDefault(); wrapSelection('*');}}>I</button>
-              <button className="rounded border px-2 py-1 text-sm hover:bg-gray-50" onClick={(e)=>{e.preventDefault(); prefixLines('## ');}}>H2</button>
-              <button className="rounded border px-2 py-1 text-sm hover:bg-gray-50" onClick={(e)=>{e.preventDefault(); prefixLines('- ');}}>• Список</button>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-sm font-medium text-gray-700 mb-2">Редактирование (Markdown)</div>
-                <textarea
-                  ref={notesTextareaRef}
-                  className="w-full h-64 rounded-xl border p-3 font-mono text-sm"
-                  value={notesDraft}
-                  onChange={(e)=>{ setNotesDraft(e.target.value); notesTouchedRef.current = true; }}
-                  placeholder="Markdown поддерживается. Используйте **жирный**, *курсив*, ## заголовки, - списки"
-                />
-              </div>
-              <div>
-                <div className="text-sm font-medium text-gray-700 mb-2">Предпросмотр</div>
-                <div className="w-full h-64 rounded-xl border p-3 bg-gray-50 overflow-y-auto prose prose-sm max-w-none">
-                  {notesDraft ? (
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-2 mt-3 first:mt-0" {...props} />,
-                        h2: ({node, ...props}) => <h2 className="text-base font-bold mb-2 mt-3 first:mt-0" {...props} />,
-                        h3: ({node, ...props}) => <h3 className="text-sm font-semibold mb-1 mt-2 first:mt-0" {...props} />,
-                        p: ({node, ...props}) => <p className="mb-2 last:mb-0 leading-relaxed" {...props} />,
-                        ul: ({node, ...props}) => <ul className="list-disc list-inside mb-2 space-y-1 ml-2" {...props} />,
-                        ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-2 space-y-1 ml-2" {...props} />,
-                        li: ({node, ...props}) => <li className="leading-relaxed" {...props} />,
-                        strong: ({node, ...props}) => <strong className="font-semibold" {...props} />,
-                        em: ({node, ...props}) => <em className="italic" {...props} />,
-                        code: ({node, inline, ...props}: any) => 
-                          inline ? (
-                            <code className="bg-gray-200 text-gray-800 px-1.5 py-0.5 rounded text-xs font-mono" {...props} />
-                          ) : (
-                            <code className="block bg-gray-200 text-gray-800 p-2 rounded text-xs font-mono overflow-x-auto mb-2" {...props} />
-                          ),
-                      }}
-                    >
-                      {notesDraft}
-                    </ReactMarkdown>
-                  ) : (
-                    <div className="text-sm text-gray-400 italic">Предпросмотр появится здесь</div>
-                  )}
-                </div>
-              </div>
-            </div>
+              />
             <div className="flex gap-2 justify-end mt-4">
-                <button className="rounded-xl border px-4 py-2" onClick={()=>setNotesOpen(false)}>Отмена</button>
-                <button
-                  className="rounded-xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 disabled:opacity-60"
-                  disabled={savingNotes}
-                  onClick={async()=>{
-                    setSavingNotes(true);
-                    try {
-                      const res = await fetch(`/api/profiles/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: notesDraft }) });
-                      if (!res.ok) throw new Error('Failed to save notes');
-                      setProfile(p => (p ? { ...p, notes: notesDraft } : p));
-                      setNotesOpen(false);
-                    } finally { setSavingNotes(false); }
-                  }}
-                >
-                  {savingNotes ? 'Сохранение...' : 'Сохранить'}
-                </button>
+              <button className="rounded-xl border px-4 py-2" onClick={()=>setNotesOpen(false)}>Отмена</button>
+              <button
+                className="rounded-xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 disabled:opacity-60"
+                disabled={savingNotes}
+                onClick={async()=>{
+                  setSavingNotes(true);
+                  try {
+                    const res = await fetch(`/api/profiles/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: notesDraft }) });
+                    if (!res.ok) throw new Error('Failed to save notes');
+                    setProfile(p => (p ? { ...p, notes: notesDraft } : p));
+                    setNotesOpen(false);
+                  } finally { setSavingNotes(false); }
+                }}
+              >
+                {savingNotes ? 'Сохранение...' : 'Сохранить'}
+              </button>
               </div>
             </div>
           </div>

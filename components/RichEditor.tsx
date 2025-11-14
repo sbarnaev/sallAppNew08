@@ -25,11 +25,6 @@ export default function RichEditor({ value, onChange }: Props) {
     onChange(ref.current.innerHTML);
   }
 
-  useEffect(() => {
-    if (ref.current && ref.current.innerHTML !== value) {
-      ref.current.innerHTML = value;
-    }
-  }, [value]);
 
   return (
     <div className="space-y-2">
