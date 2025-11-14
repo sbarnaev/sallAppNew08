@@ -46,7 +46,23 @@ async function setupDirectusPermissions(token: string, force: boolean = false) {
       });
       results.push('Создана роль "master"');
     } else {
-      results.push('Роль "master" уже существует');
+      // Обновляем существующую роль, убираем admin_access если есть
+      if (existingRole.admin_access) {
+        await fetch(`${baseUrl}/roles/${existingRole.id}`, {
+          method: 'PATCH',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            admin_access: false,
+            app_access: true,
+          }),
+        });
+        results.push('Обновлена роль "master" (убраны права администратора)');
+      } else {
+        results.push('Роль "master" уже существует с правильными правами');
+      }
     }
   } catch (error: any) {
     throw new Error(`Ошибка создания роли: ${error.message}`);
@@ -145,8 +161,8 @@ async function setupDirectusPermissions(token: string, force: boolean = false) {
           fields: collection.fields,
         };
 
-        if (existing && force) {
-          // Обновляем существующее
+        if (existing) {
+          // Всегда обновляем существующее, чтобы применить правильные фильтры
           await fetch(`${baseUrl}/permissions/${existing.id}`, {
             method: 'PATCH',
             headers: {
@@ -156,7 +172,7 @@ async function setupDirectusPermissions(token: string, force: boolean = false) {
             body: JSON.stringify(permission),
           });
           results.push(`Обновлено: ${collection.name}.${action}`);
-        } else if (!existing) {
+        } else {
           // Создаём новое
           await fetch(`${baseUrl}/permissions`, {
             method: 'POST',
@@ -167,8 +183,6 @@ async function setupDirectusPermissions(token: string, force: boolean = false) {
             body: JSON.stringify(permission),
           });
           results.push(`Создано: ${collection.name}.${action}`);
-        } else {
-          results.push(`Пропущено: ${collection.name}.${action} (уже существует)`);
         }
       } catch (error: any) {
         results.push(`Ошибка ${collection.name}.${action}: ${error.message}`);
