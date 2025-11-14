@@ -2751,9 +2751,9 @@ export default function ProfileDetail() {
             {navigationExpanded && (
               <div className="p-4 pt-0 flex flex-wrap gap-2">
                 {menuItems.map((item) => (
-                  <a
+                  <button
                     key={item.id}
-                    href={`#${item.id}`}
+                    type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       const element = document.getElementById(item.id);
@@ -2776,11 +2776,11 @@ export default function ProfileDetail() {
                         });
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer"
                   >
                     {item.icon && <span>{item.icon}</span>}
                     <span>{item.label}</span>
-                  </a>
+                  </button>
         ))}
       </div>
             )}
