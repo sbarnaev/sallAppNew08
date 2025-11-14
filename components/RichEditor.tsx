@@ -9,12 +9,25 @@ interface Props {
 
 export default function RichEditor({ value, onChange }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  
   // Инициализируем HTML начальным значением и синхронизируем при внешних изменениях
   useEffect(() => {
     if (!ref.current) return;
     const html = value || "";
+    // Обновляем только если значение действительно изменилось
     if (ref.current.innerHTML !== html) {
       ref.current.innerHTML = html;
+    }
+  }, [value]);
+
+  // Обработка placeholder для contentEditable
+  useEffect(() => {
+    if (!ref.current) return;
+    const isEmpty = !ref.current.textContent?.trim();
+    if (isEmpty) {
+      ref.current.setAttribute('data-placeholder', 'Начните вводить текст...');
+    } else {
+      ref.current.removeAttribute('data-placeholder');
     }
   }, [value]);
 
@@ -88,12 +101,21 @@ export default function RichEditor({ value, onChange }: Props) {
       </div>
       <div
         ref={ref}
-        className="w-full min-h-64 max-h-96 overflow-auto border rounded-xl p-4 bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all"
+        className="w-full min-h-64 max-h-96 overflow-auto border rounded-xl p-4 bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all outline-none"
         contentEditable
         suppressContentEditableWarning
-        onInput={() => onChange(ref.current?.innerHTML || "")}
+        onInput={() => {
+          const html = ref.current?.innerHTML || "";
+          onChange(html);
+          // Обновляем placeholder
+          const isEmpty = !ref.current?.textContent?.trim();
+          if (isEmpty) {
+            ref.current?.setAttribute('data-placeholder', 'Начните вводить текст...');
+          } else {
+            ref.current?.removeAttribute('data-placeholder');
+          }
+        }}
         style={{ minHeight: '256px' }}
-        placeholder="Начните вводить текст..."
       />
     </div>
   );

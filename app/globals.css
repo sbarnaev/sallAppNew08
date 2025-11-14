@@ -17,6 +17,13 @@
   animation: fade-in 0.5s ease-out;
 }
 
+/* Placeholder для contentEditable */
+[contenteditable][data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
 :root {
   --bg: 255 255 255;
 }
