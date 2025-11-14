@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "start:with-init": "next start & sleep 10 && sh scripts/init-directus.sh",
     "lint": "eslint .",
     "setup:directus": "node scripts/setup-directus.mjs",
-    "setup:directus-permissions": "node scripts/setup-directus-permissions.mjs"
+    "setup:directus-permissions": "node scripts/setup-directus-permissions.mjs",
+    "init:directus": "sh scripts/init-directus.sh"
   },
   "dependencies": {
     "clsx": "2.1.1",
