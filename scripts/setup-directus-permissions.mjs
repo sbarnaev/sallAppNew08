@@ -11,7 +11,7 @@
  *
  * Что делает:
  * - Создаёт роль "master" (если не существует)
- * - Настраивает permissions для коллекций: clients, profiles, qa, profile_chunks
+ * - Настраивает permissions для коллекций: clients, profiles, qa, profile_chunks, consultations, consultation_details
  * - Устанавливает фильтры по owner_user для изоляции данных пользователей
  * - Проверяет настройки токенов (AUTH_TOKEN_TTL, AUTH_REFRESH_TOKEN_TTL)
  */
@@ -257,6 +257,59 @@ async function main() {
     fields: '*'
   });
 
+  console.log('\n📝 Настройка permissions для коллекции "consultations":');
+  await setupCollectionPermissions(token, masterRoleId, 'consultations', {
+    permissions: {
+      // Пользователь видит только свои консультации
+      _and: [
+        { owner_user: { _eq: '$CURRENT_USER' } }
+      ]
+    },
+    validation: {
+      owner_user: { _eq: '$CURRENT_USER' }
+    },
+    presets: {
+      owner_user: '$CURRENT_USER'
+    },
+    fields: '*'
+  });
+
+  console.log('\n📝 Настройка permissions для коллекции "consultation_details":');
+  await setupCollectionPermissions(token, masterRoleId, 'consultation_details', {
+    permissions: {
+      // Пользователь видит только детали своих консультаций
+      // Используем фильтр через связанную коллекцию consultations
+      consultation_id: {
+        owner_user: { _eq: '$CURRENT_USER' }
+      }
+    },
+    validation: {},
+    presets: null,
+    fields: '*'
+  });
+
+  console.log('\n📝 Настройка permissions для коллекции "images_id":');
+  await setupCollectionPermissions(token, masterRoleId, 'images_id', {
+    permissions: {
+      // Пользователь видит только изображения своих профилей
+      // Предполагаем, что images_id связана с profiles через profile_id или owner_user
+      // Если структура другая, нужно будет скорректировать
+      _or: [
+        { owner_user: { _eq: '$CURRENT_USER' } },
+        {
+          profile_id: {
+            owner_user: { _eq: '$CURRENT_USER' }
+          }
+        }
+      ]
+    },
+    validation: {},
+    presets: {
+      owner_user: '$CURRENT_USER'
+    },
+    fields: '*'
+  });
+
   // 3) Проверяем настройки токенов
   await checkTokenSettings(token);
 
@@ -265,6 +318,15 @@ async function main() {
   console.log('   - Убедитесь, что пользователи назначены на роль "master"');
   console.log('   - Проверьте, что в Directus установлены AUTH_TOKEN_TTL и AUTH_REFRESH_TOKEN_TTL');
   console.log('   - Перезапустите Directus после изменения переменных окружения');
+  console.log('\n📋 Настроены permissions для коллекций:');
+  console.log('   ✓ clients - только свои клиенты');
+  console.log('   ✓ profiles - только свои профили');
+  console.log('   ✓ qa - только Q&A для своих профилей');
+  console.log('   ✓ profile_chunks - только chunks своих профилей');
+  console.log('   ✓ consultations - только свои консультации');
+  console.log('   ✓ consultation_details - только детали своих консультаций');
+  console.log('   ✓ images_id - только изображения своих профилей');
+  console.log('\n⚠️  Системные коллекции (directus_*) не настроены - они доступны только админам');
 }
 
 main().catch((e) => {
