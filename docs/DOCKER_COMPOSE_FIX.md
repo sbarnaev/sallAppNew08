@@ -64,8 +64,8 @@ services:
       REDIS: "redis://cache:6379"
       
       # Долгоживущие токены (10 лет в секундах)
-      AUTH_TOKEN_TTL: "315360000"
-      AUTH_REFRESH_TOKEN_TTL: "315360000"
+      AUTH_TOKEN_TTL: 315360000
+      AUTH_REFRESH_TOKEN_TTL: 315360000
       
       # После первого успешного входа удалите ADMIN_EMAIL и ADMIN_PASSWORD
       # так как они теперь хранятся в базе данных
@@ -110,7 +110,7 @@ volumes:
 
 ```yaml
 # Время жизни сессии (опционально)
-AUTH_SESSION_TTL: "315360000"
+AUTH_SESSION_TTL: 315360000
 
 # Включить проверку IP (опционально, может вызвать проблемы)
 # AUTH_IP_TRUST_PROXY: "true"
