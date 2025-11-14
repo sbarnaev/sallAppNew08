@@ -19,7 +19,7 @@ export default function NewClientPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!firstName.trim() || !lastName.trim() || !birthDate.trim()) return;
+    if (!firstName.trim() || !lastName.trim() || !birthDate.trim() || !gender) return;
     
     setLoading(true);
     setError(null);
@@ -153,11 +153,12 @@ export default function NewClientPage() {
             </div>
             
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Пол</label>
+              <label className="block text-sm font-medium text-gray-700">Пол *</label>
               <select
                 className="w-full rounded-xl border border-gray-300 p-3 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white appearance-none [background-image:linear-gradient(45deg,transparent 50%,#9CA3AF 50%),linear-gradient(135deg,#9CA3AF 50%,transparent 50%),linear-gradient(to_right,#d1d5db,#d1d5db)]; [background-position:calc(100%-20px) calc(1em+2px),calc(100%-15px) calc(1em+2px),calc(100%-2.5rem) 0.5em]; [background-size:5px_5px,5px_5px,1px_1.5em]; [background-repeat:no-repeat]"
                 value={gender}
                 onChange={(e) => setGender(e.target.value as "male" | "female" | "")}
+                required
               >
                 <option value="">Выберите пол</option>
                 <option value="male">Мужской</option>
@@ -270,7 +271,7 @@ export default function NewClientPage() {
           </button>
           <button 
             type="submit"
-            disabled={loading || !firstName.trim() || !lastName.trim() || !birthDate.trim()}
+            disabled={loading || !firstName.trim() || !lastName.trim() || !birthDate.trim() || !gender}
             className="flex-1 rounded-2xl bg-brand-600 text-white py-3 font-medium hover:bg-brand-700 transition disabled:opacity-50"
           >
             {loading ? "Создание..." : "Создать клиента"}

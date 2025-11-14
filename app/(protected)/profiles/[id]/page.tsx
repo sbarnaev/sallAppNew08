@@ -282,14 +282,14 @@ function LoadingMessage() {
     // Показываем основное сообщение, затем через 2 секунды начинаем показывать факты
     const factTimer = setTimeout(() => setShowFact(true), 2000);
     
-    // Меняем факты каждые 30 секунд на случайный
+    // Меняем факты каждые 15 секунд на случайный
     const interval = setInterval(() => {
       setFactIndex(() => {
         const randomIndex = Math.floor(Math.random() * INTERESTING_FACTS.length);
         setKey(prev => prev + 1); // Меняем key для анимации
         return randomIndex;
       });
-    }, 30000);
+    }, 15000);
 
     return () => {
       clearTimeout(factTimer);
@@ -2502,8 +2502,8 @@ export default function ProfileDetail() {
         </div>
       </div>
 
-      {/* Пять кубиков (только для базового расчета) */}
-      {consultationType === "base" && (() => {
+      {/* Пять кубиков - вывод кодов для всех типов расчетов */}
+      {(() => {
         // digits: или массив, или строка JSON/CSV; возьмём как есть порядок
         let arr: any[] = [];
         const d = (profile as any)?.digits;
@@ -2517,13 +2517,51 @@ export default function ProfileDetail() {
             arr = String(d).split(/[,\s]+/).filter(Boolean);
           }
         }
+        
+        // Для партнерского расчета проверяем наличие кодов в raw_json
+        if (consultationType === "partner" && arr.length === 0 && profile?.raw_json) {
+          try {
+            let payload: any = profile.raw_json;
+            if (typeof payload === "string") payload = JSON.parse(payload);
+            const item = Array.isArray(payload) ? payload[0] : payload;
+            if (item?.firstParticipantCodes) {
+              arr = Array.isArray(item.firstParticipantCodes) ? item.firstParticipantCodes : String(item.firstParticipantCodes).split(/[,\s]+/).filter(Boolean);
+            } else if (item?.partnerCodes) {
+              arr = Array.isArray(item.partnerCodes) ? item.partnerCodes : String(item.partnerCodes).split(/[,\s]+/).filter(Boolean);
+            }
+          } catch {}
+        }
+        
+        if (arr.length === 0) return null;
+        
+        // Определяем заголовок в зависимости от типа
+        let title = "Коды профиля";
+        if (consultationType === "partner") {
+          try {
+            let payload: any = profile?.raw_json;
+            if (typeof payload === "string") payload = JSON.parse(payload);
+            const item = Array.isArray(payload) ? payload[0] : payload;
+            if (item?.firstParticipantCodes && item?.secondParticipantCodes) {
+              // Если есть коды обоих участников, показываем коды первого участника
+              title = "Коды первого участника";
+            } else if (item?.partnerCodes) {
+              title = "Коды партнера";
+            }
+          } catch {}
+        }
+        
         return (
-          <div className="flex flex-wrap gap-3 md:gap-6 justify-center items-center py-4">
-            {arr.slice(0,5).map((val: any, i: number) => (
-              <div key={i} className="w-14 h-14 md:w-[74px] md:h-[74px] rounded-xl shadow-sm bg-[#1f92aa] text-white font-bold text-xl md:text-[28px] grid place-items-center">
-                {val ?? ""}
-              </div>
-            ))}
+          <div className="space-y-3">
+            <div className="text-center">
+              <h2 className="text-lg md:text-xl font-semibold text-gray-900">{title}</h2>
+            </div>
+            <div className="flex flex-wrap gap-3 md:gap-6 justify-center items-center py-4">
+              {arr.slice(0,5).map((val: any, i: number) => (
+                <div key={i} className="w-14 h-14 md:w-[74px] md:h-[74px] rounded-xl shadow-sm bg-[#1f92aa] text-white font-bold text-xl md:text-[28px] grid place-items-center">
+                  {val ?? ""}
+                </div>
+              ))}
+            </div>
           </div>
         );
       })()}
@@ -2695,7 +2733,7 @@ export default function ProfileDetail() {
         if (menuItems.length === 0) return null;
 
         return (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm sticky top-16 md:top-4 z-10">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm sticky top-20 md:top-4 z-10 md:mt-0 mt-16">
             <button
               onClick={() => setNavigationExpanded(!navigationExpanded)}
               className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-t-2xl"
@@ -2812,9 +2850,9 @@ export default function ProfileDetail() {
 
       {!polling && renderedFromJson && consultationType && (
       <div className="card space-y-4">
-        <div className="font-medium">Задать вопрос по профилю</div>
+        <div className="font-semibold text-lg">💬 Чат с ИИ по профилю</div>
         <div className="space-y-3">
-            <div ref={chatBoxRef} className="rounded-xl border p-3 bg-white max-h-96 overflow-y-auto break-words">
+            <div ref={chatBoxRef} className="rounded-xl border-2 border-gray-200 p-4 bg-white min-h-[300px] max-h-[500px] md:max-h-[600px] overflow-y-auto break-words">
             {chat.length === 0 && <div className="text-sm text-gray-500">Начните диалог — задайте вопрос ниже</div>}
             {chat.map((m, i) => (
               <div key={i} className={`mb-3 ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
@@ -2881,7 +2919,7 @@ export default function ProfileDetail() {
           </div>
           <form onSubmit={ask} className="flex items-start gap-3">
             <textarea
-              className="flex-1 rounded-xl border p-3 h-24 resize-none overflow-y-auto"
+              className="flex-1 rounded-xl border-2 border-gray-200 p-4 h-28 md:h-32 resize-none overflow-y-auto text-base focus:border-brand-500 focus:ring-2 focus:ring-brand-200 transition"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Например: как лучше работать с конфликтом 2↔7?"
@@ -2889,7 +2927,7 @@ export default function ProfileDetail() {
             />
             <button
               disabled={loading}
-              className="rounded-2xl bg-brand-600 text-white px-4 py-2 h-11 mt-1 hover:bg-brand-700 disabled:opacity-60"
+              className="rounded-2xl bg-brand-600 text-white px-6 py-4 h-28 md:h-32 hover:bg-brand-700 disabled:opacity-60 transition-colors font-medium text-base"
             >
               {loading ? "Думаю..." : "Спросить"}
             </button>

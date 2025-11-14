@@ -11,7 +11,7 @@ export function MobileMenu() {
       {/* Кнопка открытия меню (только на мобильных) */}
       <button
         onClick={() => setIsOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-50 w-12 h-12 bg-white border border-gray-300 rounded-xl shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+        className="md:hidden fixed top-4 left-4 z-[60] w-12 h-12 bg-white border border-gray-300 rounded-xl shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
         aria-label="Открыть меню"
       >
         <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
