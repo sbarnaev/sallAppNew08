@@ -82,6 +82,23 @@ export async function POST(req: Request) {
   const { clientId, name, birthday, type, request, clientRequest, query, prompt, partnerName, partnerBirthday, goal } = payload || {};
   const publicCode = generatePublicCode();
 
+  // 0) Получаем gender из данных клиента, если clientId указан
+  let clientGender: string | null = null;
+  if (clientId && directusUrl) {
+    try {
+      const clientRes = await fetch(`${directusUrl}/items/clients/${clientId}?fields=gender`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        cache: "no-store",
+      });
+      if (clientRes.ok) {
+        const clientData = await clientRes.json().catch(() => ({}));
+        clientGender = clientData?.data?.gender || null;
+      }
+    } catch (error) {
+      console.warn("[CALC] Failed to fetch client gender:", error);
+    }
+  }
+
   // 1) Пытаемся создать пустой профиль в Directus, чтобы получить profileId для дальнейшего поллинга
   let profileId: number | null = null;
   if (directusUrl) {
@@ -152,6 +169,8 @@ export async function POST(req: Request) {
       type: type || "base",
       profileId, // важно для последующего обновления профиля n8n
       public_code: publicCode,
+      // Gender клиента (если есть)
+      gender: clientGender || null,
       // Дополнительный запрос пользователя (для целевого расчёта)
       request: request ?? clientRequest ?? query ?? prompt ?? null,
       // Поля для партнерского расчета
