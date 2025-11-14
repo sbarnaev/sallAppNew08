@@ -341,6 +341,7 @@ export async function POST(req: NextRequest) {
   const clientData = {
     name: `${body.first_name.trim()} ${body.last_name.trim()}`.trim(),
     birth_date: body.birth_date || null,
+    gender: body.gender === "male" || body.gender === "female" ? body.gender : null,
     phone: body.phone?.trim() || null,
     email: body.email?.trim() || null,
     source: body.source?.trim() || null,
