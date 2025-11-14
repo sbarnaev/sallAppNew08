@@ -15,10 +15,15 @@ export default function NewCalculationPage() {
   const [error, setError] = useState<string | null>(null);
   const [client, setClient] = useState<any | null>(null);
   const canStart = Boolean(name && birthday);
-  const [targetText, setTargetText] = useState("");
+  // Поля для целевого расчета
+  const [targetCurrent, setTargetCurrent] = useState(""); // что есть сейчас
+  const [targetWant, setTargetWant] = useState(""); // что клиент хочет
+  const [targetAdditional, setTargetAdditional] = useState(""); // доп. информация
+  const canStartTarget = Boolean(name && birthday && targetCurrent.trim() && targetWant.trim());
+  
   // Поля для партнерского расчета
   const [partnerName, setPartnerName] = useState("");
-  const [partnerBirthday, setPartnerBirthday] = useState("");
+  const [partnerBirthday, setPartnerBirthday] = useState(""); // формат дд.мм.гггг
   const [partnerGoal, setPartnerGoal] = useState<string>("");
   const canStartPartner = Boolean(name && birthday && partnerName && partnerBirthday && partnerGoal);
 
@@ -58,10 +63,27 @@ export default function NewCalculationPage() {
         birthday, // YYYY-MM-DD
       };
       if (clientIdParam) payload.clientId = Number(clientIdParam);
-      if (type === "target") payload.request = targetText || undefined;
+      if (type === "target") {
+        // Объединяем все поля в одно
+        const parts = [
+          `Что есть сейчас: ${targetCurrent.trim()}`,
+          `Что клиент хочет: ${targetWant.trim()}`
+        ];
+        if (targetAdditional.trim()) {
+          parts.push(`Дополнительная информация: ${targetAdditional.trim()}`);
+        }
+        payload.request = parts.join("\n\n");
+      }
       if (type === "partner") {
         payload.partnerName = partnerName;
-        payload.partnerBirthday = partnerBirthday;
+        // Преобразуем дд.мм.гггг в YYYY-MM-DD
+        const m = partnerBirthday.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+        if (m) {
+          const [, dd, mm, yyyy] = m;
+          payload.partnerBirthday = `${yyyy}-${mm}-${dd}`;
+        } else {
+          payload.partnerBirthday = partnerBirthday; // fallback
+        }
         payload.goal = partnerGoal;
       }
 
@@ -135,45 +157,83 @@ export default function NewCalculationPage() {
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button
-            disabled={loading || !canStart}
-            onClick={() => startCalc("base")}
-            className="card text-left hover:shadow-md transition disabled:opacity-60"
-          >
+          {/* Базовый расчет */}
+          <div className="card text-left flex flex-col h-full">
             <div className="text-lg font-semibold mb-1">Базовый</div>
-            <div className="text-sm text-gray-600">Основной расчёт по дате рождения</div>
-          </button>
+            <div className="text-sm text-gray-600 mb-4 flex-grow">Основной расчёт по дате рождения</div>
+            <div className="mt-auto">
+              <button
+                disabled={loading || !canStart}
+                onClick={() => startCalc("base")}
+                className="w-full rounded-2xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 disabled:opacity-60 transition"
+              >
+                Запустить базовый расчёт
+              </button>
+            </div>
+          </div>
 
-          <div className="card text-left">
+          {/* Целевой расчет */}
+          <div className="card text-left flex flex-col h-full">
             <div className="text-lg font-semibold mb-1">Целевой</div>
-            <div className="text-sm text-gray-600 mb-3">Опишите запрос клиента — что именно хотим получить/изменить</div>
-            <textarea
-              className="w-full rounded-xl border p-3 h-24"
-              placeholder="Например: улучшить коммуникацию в команде; найти подход к партнёру; скорректировать карьерный вектор"
-              value={targetText}
-              onChange={(e)=>setTargetText(e.target.value)}
-            />
+            <div className="text-sm text-gray-600 mb-3">Опишите запрос клиента</div>
+            
+            <div className="space-y-3 flex-grow flex flex-col">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Что есть сейчас *</label>
+                <textarea
+                  className="w-full rounded-xl border border-gray-300 p-2 text-sm resize-none"
+                  placeholder="Текущая ситуация, проблемы, сложности"
+                  value={targetCurrent}
+                  onChange={(e) => setTargetCurrent(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Что клиент хочет *</label>
+                <textarea
+                  className="w-full rounded-xl border border-gray-300 p-2 text-sm resize-none"
+                  placeholder="Желаемый результат, цель, изменения"
+                  value={targetWant}
+                  onChange={(e) => setTargetWant(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Дополнительная информация</label>
+                <textarea
+                  className="w-full rounded-xl border border-gray-300 p-2 text-sm resize-none"
+                  placeholder="Любая дополнительная информация (необязательно)"
+                  value={targetAdditional}
+                  onChange={(e) => setTargetAdditional(e.target.value)}
+                  rows={2}
+                />
+              </div>
+            </div>
+            
             <div className="mt-3 flex justify-end">
               <button
-                disabled={loading || !canStart || !targetText.trim()}
+                disabled={loading || !canStartTarget}
                 onClick={() => startCalc("target")}
-                className="rounded-2xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 disabled:opacity-60"
+                className="rounded-2xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 disabled:opacity-60 transition"
               >
                 Запустить целевой расчёт
               </button>
             </div>
           </div>
 
-          <div className="card text-left">
+          {/* Партнёрский расчет */}
+          <div className="card text-left flex flex-col h-full">
             <div className="text-lg font-semibold mb-1">Партнёрский</div>
             <div className="text-sm text-gray-600 mb-3">Расчёт для пары (два человека)</div>
             
-            <div className="space-y-3">
+            <div className="space-y-3 flex-grow flex flex-col">
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Имя второго человека</label>
                 <input
                   type="text"
-                  className="w-full rounded-xl border p-2 text-sm"
+                  className="w-full rounded-xl border border-gray-300 p-2 text-sm"
                   placeholder="Имя"
                   value={partnerName}
                   onChange={(e) => setPartnerName(e.target.value)}
@@ -182,33 +242,58 @@ export default function NewCalculationPage() {
               
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Дата рождения второго человека</label>
-                <input
-                  type="date"
-                  className="w-full rounded-xl border p-2 text-sm"
-                  value={partnerBirthday}
-                  onChange={(e) => setPartnerBirthday(e.target.value)}
-                />
+                <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    className="w-full rounded-xl border border-gray-300 p-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                    placeholder="дд.мм.гггг"
+                    value={partnerBirthday}
+                    onChange={(e) => {
+                      // Маска: DD.MM.YYYY (ввод подряд цифр)
+                      const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+                      const parts = [digits.slice(0,2), digits.slice(2,4), digits.slice(4,8)].filter(Boolean);
+                      const masked = parts.join(".");
+                      setPartnerBirthday(masked);
+                    }}
+                  />
+                  <input
+                    type="date"
+                    className="rounded-xl border border-gray-300 p-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white"
+                    value={(partnerBirthday.match(/^(\d{2})\.(\d{2})\.(\d{4})$/) ? `${partnerBirthday.slice(6,10)}-${partnerBirthday.slice(3,5)}-${partnerBirthday.slice(0,2)}` : "")}
+                    onChange={(e) => {
+                      const iso = e.target.value; // YYYY-MM-DD
+                      if (iso) {
+                        const [yyyy, mm, dd] = iso.split("-");
+                        setPartnerBirthday(`${dd}.${mm}.${yyyy}`);
+                      } else {
+                        setPartnerBirthday("");
+                      }
+                    }}
+                  />
+                </div>
               </div>
               
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Цель расчета</label>
                 <textarea
-                  className="w-full rounded-xl border p-2 text-sm h-20 resize-none"
+                  className="w-full rounded-xl border border-gray-300 p-2 text-sm resize-none"
                   placeholder="Например: улучшить отношения в семье; найти подход к ребенку; наладить работу с бизнес-партнером"
                   value={partnerGoal}
                   onChange={(e) => setPartnerGoal(e.target.value)}
+                  rows={3}
                 />
               </div>
+            </div>
               
-              <div className="mt-3 flex justify-end">
-                <button
-                  disabled={loading || !canStartPartner}
-                  onClick={() => startCalc("partner")}
-                  className="rounded-2xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 disabled:opacity-60"
-                >
-                  Запустить партнёрский расчёт
-                </button>
-              </div>
+            <div className="mt-3 flex justify-end">
+              <button
+                disabled={loading || !canStartPartner}
+                onClick={() => startCalc("partner")}
+                className="rounded-2xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 disabled:opacity-60 transition"
+              >
+                Запустить партнёрский расчёт
+              </button>
             </div>
           </div>
         </div>
