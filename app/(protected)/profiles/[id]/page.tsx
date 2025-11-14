@@ -1181,46 +1181,6 @@ export default function ProfileDetail() {
     }
   }
 
-  function wrapSelection(prefix: string, suffix = prefix) {
-    const ta = notesTextareaRef.current;
-    if (!ta) return;
-    const { selectionStart, selectionEnd } = ta;
-    const before = notesDraft.slice(0, selectionStart);
-    const selected = notesDraft.slice(selectionStart, selectionEnd);
-    const after = notesDraft.slice(selectionEnd);
-    const next = before + prefix + selected + suffix + after;
-    setNotesDraft(next);
-    notesTouchedRef.current = true;
-    const cursorStart = selectionStart + prefix.length;
-    const cursorEnd = cursorStart + selected.length;
-    requestAnimationFrame(() => {
-      ta.focus();
-      ta.setSelectionRange(cursorStart, cursorEnd);
-    });
-  }
-
-  function prefixLines(prefix: string) {
-    const ta = notesTextareaRef.current;
-    if (!ta) return;
-    let { selectionStart, selectionEnd } = ta;
-    if (selectionStart === selectionEnd) {
-      selectionStart = notesDraft.lastIndexOf("\n", selectionStart - 1) + 1;
-      const lineEnd = notesDraft.indexOf("\n", selectionEnd);
-      selectionEnd = lineEnd === -1 ? notesDraft.length : lineEnd;
-    }
-    const before = notesDraft.slice(0, selectionStart);
-    const selected = notesDraft.slice(selectionStart, selectionEnd);
-    const after = notesDraft.slice(selectionEnd);
-    const newSelected = selected.split("\n").map(line => prefix + line).join("\n");
-    const next = before + newSelected + after;
-    setNotesDraft(next);
-    notesTouchedRef.current = true;
-    requestAnimationFrame(() => {
-      ta.focus();
-      ta.setSelectionRange(selectionStart, selectionStart + newSelected.length);
-    });
-  }
-
   // Сохранение состояния чекбоксов в Directus (profiles.ui_state JSON)
   const saveChecked = useCallback(async (nextMap: Record<string, boolean>) => {
     // Очередь сохранений, чтобы клик не терялся при поллинге
