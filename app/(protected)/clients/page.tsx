@@ -183,6 +183,9 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
               <Link href={`/clients/${c.id}`} className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors text-center">
                 Открыть
               </Link>
+              <Link href={`/forecast/${c.id}`} className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700 text-sm font-medium transition-colors text-center">
+                Прогноз
+              </Link>
               <Link href={`/profiles?filter[client_id][_eq]=${c.id}`} className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors text-center">
                 Расчёты
               </Link>
