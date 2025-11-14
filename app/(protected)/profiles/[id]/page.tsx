@@ -355,7 +355,6 @@ export default function ProfileDetail() {
   const [notesDraft, setNotesDraft] = useState<string>("");
   const [savingNotes, setSavingNotes] = useState(false);
   const notesTouchedRef = useRef(false);
-  const notesTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const notesOpenRef = useRef(false);
   useEffect(() => { notesOpenRef.current = notesOpen; }, [notesOpen]);
   const [chat, setChat] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
