@@ -252,22 +252,32 @@ export default function ForecastPage() {
                           <span>{day}</span>
                           {isToday && <span className="text-blue-600 text-xs md:text-sm">●</span>}
                         </div>
-                        <div className="flex-1 flex flex-col justify-center text-[10px] md:text-xs leading-tight space-y-0.5 md:space-y-1">
+                        {/* Мобильная версия: только общий индекс крупно */}
+                        <div className="md:hidden flex-1 flex flex-col justify-center items-center">
+                          <div className="font-extrabold text-lg mb-0.5">{forecast.index.toFixed(1)}</div>
+                          <div className="text-[8px] leading-tight opacity-75 text-center">
+                            <div>Л:{forecast.personality.score.toFixed(1)}</div>
+                            <div>К:{forecast.connector.score.toFixed(1)}</div>
+                            <div>Р:{forecast.realization.score.toFixed(1)}</div>
+                          </div>
+                        </div>
+                        {/* Десктопная версия: полная информация */}
+                        <div className="hidden md:flex flex-1 flex-col justify-center text-xs leading-tight space-y-1">
                           <div className="flex justify-between items-center">
                             <span className="opacity-90 font-medium">Л:</span>
-                            <span className="font-bold text-xs md:text-sm">{forecast.personality.score.toFixed(1)}</span>
+                            <span className="font-bold">{forecast.personality.score.toFixed(1)}</span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="opacity-90 font-medium">К:</span>
-                            <span className="font-bold text-xs md:text-sm">{forecast.connector.score.toFixed(1)}</span>
+                            <span className="font-bold">{forecast.connector.score.toFixed(1)}</span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="opacity-90 font-medium">Р:</span>
-                            <span className="font-bold text-xs md:text-sm">{forecast.realization.score.toFixed(1)}</span>
+                            <span className="font-bold">{forecast.realization.score.toFixed(1)}</span>
                           </div>
-                          <div className="flex justify-between items-center border-t border-current border-opacity-30 pt-0.5 md:pt-1 mt-0.5 md:mt-1">
+                          <div className="flex justify-between items-center border-t border-current border-opacity-30 pt-1 mt-1">
                             <span className="opacity-95 font-semibold">И:</span>
-                            <span className="font-extrabold text-sm md:text-base">{forecast.index.toFixed(1)}</span>
+                            <span className="font-extrabold text-base">{forecast.index.toFixed(1)}</span>
                           </div>
                         </div>
                       </div>
