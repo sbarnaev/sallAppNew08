@@ -137,7 +137,7 @@ export default function ForecastPage() {
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Заголовок */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -149,7 +149,7 @@ export default function ForecastPage() {
         <div className="flex gap-2">
           <Link
             href={`/clients/${clientId}`}
-            className="rounded-xl border border-gray-300 text-gray-700 px-4 py-2 hover:bg-gray-50 flex items-center gap-2"
+            className="rounded-xl border border-gray-300 text-gray-700 px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm"
           >
             ← К клиенту
           </Link>
@@ -244,7 +244,7 @@ export default function ForecastPage() {
                     return (
                       <div
                         key={forecast.date}
-                        className={`aspect-square border-2 rounded-lg p-2 md:p-3 flex flex-col min-h-[80px] md:min-h-[100px] ${
+                        className={`aspect-square border-2 rounded-lg p-2 md:p-3 flex flex-col min-h-[90px] md:min-h-[110px] ${
                           isToday ? "border-blue-500 ring-2 ring-blue-200 shadow-md" : "border-gray-200"
                         } ${getIndexColor(forecast.index)}`}
                       >

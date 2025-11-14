@@ -112,7 +112,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
             <p className="text-gray-500 mb-4">
               {searchTerm ? "Попробуйте изменить параметры поиска" : "Создайте первого клиента"}
             </p>
-            <Link href="/clients/new" className="inline-flex items-center gap-2 rounded-xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700">
+            <Link href="/clients/new" className="inline-flex items-center gap-2 rounded-xl bg-green-100 text-green-700 px-4 py-2 hover:bg-green-200 border border-green-200">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
