@@ -2948,14 +2948,14 @@ export default function ProfileDetail() {
 
       {notesOpen && (
         <div className="fixed inset-0 bg-black/40 z-50 grid place-items-center p-4" onClick={() => setNotesOpen(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-2xl p-4 space-y-3" onClick={(e)=>e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-            <div className="font-semibold">Заметки по расчёту</div>
+          <div className="bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e)=>e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b">
+              <div className="font-semibold">Заметки по расчёту</div>
               <button className="text-gray-500 hover:text-gray-800" onClick={() => setNotesOpen(false)}>✕</button>
             </div>
-            
+            <div className="p-6 overflow-y-auto flex-grow">
             {/* Шаблоны заметок */}
-            <div className="flex flex-wrap gap-2 pb-2 border-b">
+            <div className="flex flex-wrap gap-2 pb-2 border-b mb-4">
               <span className="text-xs text-gray-500 mr-2">Шаблоны:</span>
               <button
                 className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
