@@ -6,6 +6,80 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import html2pdf from "html2pdf.js";
 
+// Интересные факты для отображения во время генерации
+const INTERESTING_FACTS = [
+  "🧠 Знаете ли вы, что мозг человека генерирует около 70 000 мыслей в день?",
+  "💫 Системный анализ личности основан на древних знаниях о циклах и архетипах",
+  "🌟 Каждый человек уникален, но все мы следуем определенным паттернам развития",
+  "📊 Психологи утверждают, что понимание себя — первый шаг к успеху",
+  "🎯 Целеустремленность увеличивает вероятность достижения цели на 42%",
+  "🤝 Коммуникация составляет 93% нашего взаимодействия с миром",
+  "💡 Интуиция часто работает быстрее логического мышления",
+  "🌱 Личностный рост — это непрерывный процесс, а не конечная точка",
+  "🎨 Творчество помогает находить нестандартные решения проблем",
+  "⚖️ Баланс между разными аспектами личности — ключ к гармонии",
+  "🔮 Самопознание открывает двери к новым возможностям",
+  "🌟 У каждого есть уникальные таланты, которые ждут своего раскрытия",
+  "💪 Сила воли, как мышца, укрепляется через практику",
+  "🌊 Эмоции — это волны, которые можно научиться управлять",
+  "🎭 Мы играем разные роли, но важно оставаться собой",
+  "🔍 Глубокое понимание себя помогает лучше понимать других",
+  "📈 Небольшие ежедневные изменения приводят к большим результатам",
+  "🎯 Ясность целей увеличивает мотивацию в 3 раза",
+  "🤔 Рефлексия — мощный инструмент для личностного развития",
+  "✨ Каждый день — новая возможность для роста и изменений"
+];
+
+function LoadingMessage() {
+  const [factIndex, setFactIndex] = useState(0);
+  const [showFact, setShowFact] = useState(false);
+  const [key, setKey] = useState(0); // Для принудительного ререндера при смене факта
+
+  useEffect(() => {
+    // Показываем основное сообщение, затем через 2 секунды начинаем показывать факты
+    const factTimer = setTimeout(() => setShowFact(true), 2000);
+    
+    // Меняем факты каждые 30 секунд
+    const interval = setInterval(() => {
+      setFactIndex((prev) => {
+        const next = (prev + 1) % INTERESTING_FACTS.length;
+        setKey(prev => prev + 1); // Меняем key для анимации
+        return next;
+      });
+    }, 30000);
+
+    return () => {
+      clearTimeout(factTimer);
+      clearInterval(interval);
+    };
+  }, []);
+
+  return (
+    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 p-6 shadow-sm">
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0">
+          <svg className="w-6 h-6 animate-spin text-blue-600" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+          </svg>
+        </div>
+        <div className="flex-grow">
+          <div className="font-semibold text-gray-900 mb-2">
+            Уже делаю расчёт, пожалуйста, подождите...
+          </div>
+          {showFact && (
+            <div className="mt-3 p-3 bg-white rounded-xl border border-blue-100" key={key}>
+              <div className="text-sm text-gray-700 animate-fade-in">
+                {INTERESTING_FACTS[factIndex]}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type Profile = {
   id: number;
   html?: string | null;
@@ -29,6 +103,7 @@ export default function ProfileDetail() {
   const [loading, setLoading] = useState(false);
   const [polling, setPolling] = useState(true);
   const pollingRef = useRef(true);
+  const [navigationExpanded, setNavigationExpanded] = useState(true);
   const [expandAll, setExpandAll] = useState(false);
   const localUiStateRef = useRef<Record<string, boolean>>({});
   const [checkedMap, setCheckedMap] = useState<Record<string, boolean>>({});
@@ -2366,15 +2441,7 @@ export default function ProfileDetail() {
         );
       })()}
 
-      {polling && (
-        <div className="card flex items-center gap-3 text-gray-700">
-          <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-          </svg>
-          Данные рассчитываются... ещё немного
-        </div>
-      )}
+      {polling && <LoadingMessage />}
 
       {/* Меню-навигация по блокам */}
       {!polling && renderedFromJson && consultationType && (() => {
@@ -2426,42 +2493,57 @@ export default function ProfileDetail() {
         if (menuItems.length === 0) return null;
 
         return (
-          <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm sticky top-4 z-10">
-            <div className="text-sm font-semibold text-gray-700 mb-3">Навигация по блокам:</div>
-            <div className="flex flex-wrap gap-2">
-              {menuItems.map((item) => (
-                <a
-                  key={item.id}
-                  href={`#${item.id}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const element = document.getElementById(item.id);
-                    if (element) {
-                      // Находим меню навигации для расчета offset
-                      const menuElement = e.currentTarget.closest('.bg-white.rounded-2xl.border') as HTMLElement;
-                      let offset = 100; // Дефолтный offset
-                      
-                      if (menuElement) {
-                        const menuHeight = menuElement.offsetHeight;
-                        // Высота меню + 10% от его высоты
-                        offset = menuHeight + (menuHeight * 0.1);
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm sticky top-4 z-10">
+            <button
+              onClick={() => setNavigationExpanded(!navigationExpanded)}
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-t-2xl"
+            >
+              <div className="text-sm font-semibold text-gray-700">Навигация по блокам</div>
+              <svg 
+                className={`w-5 h-5 text-gray-500 transition-transform ${navigationExpanded ? 'rotate-180' : ''}`}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {navigationExpanded && (
+              <div className="p-4 pt-0 flex flex-wrap gap-2">
+                {menuItems.map((item) => (
+                  <a
+                    key={item.id}
+                    href={`#${item.id}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const element = document.getElementById(item.id);
+                      if (element) {
+                        // Находим меню навигации для расчета offset
+                        const menuElement = e.currentTarget.closest('.bg-white.rounded-2xl.border') as HTMLElement;
+                        let offset = 100; // Дефолтный offset
+                        
+                        if (menuElement) {
+                          const menuHeight = menuElement.offsetHeight;
+                          // Высота меню + 10% от его высоты
+                          offset = menuHeight + (menuHeight * 0.1);
+                        }
+                        
+                        const elementPosition = element.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - offset;
+                        window.scrollTo({
+                          top: offsetPosition,
+                          behavior: 'smooth'
+                        });
                       }
-                      
-                      const elementPosition = element.getBoundingClientRect().top;
-                      const offsetPosition = elementPosition + window.pageYOffset - offset;
-                      window.scrollTo({
-                        top: offsetPosition,
-                        behavior: 'smooth'
-                      });
-                    }
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
-                >
-                  {item.icon && <span>{item.icon}</span>}
-                  <span>{item.label}</span>
-                </a>
-              ))}
-            </div>
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                  >
+                    {item.icon && <span>{item.icon}</span>}
+                    <span>{item.label}</span>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         );
       })()}

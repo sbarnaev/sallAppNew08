@@ -38,14 +38,14 @@ async function getClientsMap(clientIds: number[]) {
     if (clientIds.length === 0) return {};
     const ids = clientIds.join(',');
     const res = await internalApiFetch(`/api/clients?filter[id][_in]=${ids}&fields=id,name,birth_date&limit=1000`, { cache: 'no-store' });
-    const { data } = await res.json().catch(() => ({ data: [] }));
-    if (data?.data) {
-      const map: Record<number, { name: string; birth_date?: string }> = {};
-      (data.data as any[]).forEach((c: any) => {
-        if (c.id) map[c.id] = { name: c.name || '', birth_date: c.birth_date };
-      });
-      return map;
-    }
+    const response = await res.json().catch(() => ({ data: [] }));
+    // API может возвращать либо { data: [...] } либо { data: { data: [...] } }
+    const clientsArray = response?.data?.data || response?.data || [];
+    const map: Record<number, { name: string; birth_date?: string }> = {};
+    (clientsArray as any[]).forEach((c: any) => {
+      if (c.id) map[c.id] = { name: c.name || '', birth_date: c.birth_date };
+    });
+    return map;
   } catch (error) {
     console.error("Error fetching clients:", error);
   }
