@@ -275,15 +275,18 @@ function LoadingMessage() {
   const [key, setKey] = useState(0); // Для принудительного ререндера при смене факта
 
   useEffect(() => {
+    // Выбираем случайный факт при первом рендере
+    setFactIndex(Math.floor(Math.random() * INTERESTING_FACTS.length));
+    
     // Показываем основное сообщение, затем через 2 секунды начинаем показывать факты
     const factTimer = setTimeout(() => setShowFact(true), 2000);
     
-    // Меняем факты каждые 30 секунд
+    // Меняем факты каждые 30 секунд на случайный
     const interval = setInterval(() => {
-      setFactIndex((prev) => {
-        const next = (prev + 1) % INTERESTING_FACTS.length;
+      setFactIndex(() => {
+        const randomIndex = Math.floor(Math.random() * INTERESTING_FACTS.length);
         setKey(prev => prev + 1); // Меняем key для анимации
-        return next;
+        return randomIndex;
       });
     }, 30000);
 
@@ -2847,10 +2850,11 @@ export default function ProfileDetail() {
         ) : null;
       })()}
 
-      <div className="card space-y-4">
-        <div className="font-medium">Задать вопрос по профилю</div>
-        <div className="space-y-3">
-          <div ref={chatBoxRef} className="rounded-xl border p-3 bg-white max-h-96 overflow-y-auto break-words">
+      {!polling && renderedFromJson && consultationType && (
+        <div className="card space-y-4">
+          <div className="font-medium">Задать вопрос по профилю</div>
+          <div className="space-y-3">
+            <div ref={chatBoxRef} className="rounded-xl border p-3 bg-white max-h-96 overflow-y-auto break-words">
             {chat.length === 0 && <div className="text-sm text-gray-500">Начните диалог — задайте вопрос ниже</div>}
             {chat.map((m, i) => (
               <div key={i} className={`mb-3 ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
@@ -2931,7 +2935,8 @@ export default function ProfileDetail() {
             </button>
           </form>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Плавающая кнопка «Заметки» */}
       <button
@@ -3001,24 +3006,24 @@ export default function ProfileDetail() {
               onChange={(e)=>{ setNotesDraft(e.target.value); notesTouchedRef.current = true; }}
               placeholder="Markdown поддерживается. Используйте **жирный**, *курсив*, ## заголовки, - списки"
             />
-            <div className="flex gap-2 justify-end">
-              <button className="rounded-xl border px-4 py-2" onClick={()=>setNotesOpen(false)}>Отмена</button>
-              <button
-                className="rounded-xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 disabled:opacity-60"
-                disabled={savingNotes}
-                onClick={async()=>{
-                  setSavingNotes(true);
-                  try {
-                    const res = await fetch(`/api/profiles/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: notesDraft }) });
-                    if (!res.ok) throw new Error('Failed to save notes');
-                    setProfile(p => (p ? { ...p, notes: notesDraft } : p));
-                    setNotesOpen(false);
-                  } finally { setSavingNotes(false); }
-                }}
-              >
-                {savingNotes ? 'Сохранение...' : 'Сохранить'}
-              </button>
-            </div>
+              <div className="flex gap-2 justify-end mt-4">
+                <button className="rounded-xl border px-4 py-2" onClick={()=>setNotesOpen(false)}>Отмена</button>
+                <button
+                  className="rounded-xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 disabled:opacity-60"
+                  disabled={savingNotes}
+                  onClick={async()=>{
+                    setSavingNotes(true);
+                    try {
+                      const res = await fetch(`/api/profiles/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: notesDraft }) });
+                      if (!res.ok) throw new Error('Failed to save notes');
+                      setProfile(p => (p ? { ...p, notes: notesDraft } : p));
+                      setNotesOpen(false);
+                    } finally { setSavingNotes(false); }
+                  }}
+                >
+                  {savingNotes ? 'Сохранение...' : 'Сохранить'}
+                </button>
+              </div>
           </div>
         </div>
       )}
