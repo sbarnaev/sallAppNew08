@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { MobileMenu } from "@/components/MobileMenu";
+import { requireAuth } from "@/lib/guards";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const token = cookies().get("directus_access_token")?.value;
-  if (!token) redirect("/login");
+  // Автоматически проверяет и обновляет токен при необходимости
+  await requireAuth();
 
   return (
     <div className="min-h-screen flex">
