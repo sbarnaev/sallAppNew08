@@ -36,7 +36,7 @@ export function MobileMenu() {
         <div className="flex flex-col h-full p-4">
           {/* Заголовок с кнопкой закрытия */}
           <div className="flex items-center justify-between mb-6">
-            <div className="font-semibold text-lg">SAL App</div>
+            <div className="font-semibold text-lg">САЛ ПРОФИ</div>
             <button
               onClick={() => setIsOpen(false)}
               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"

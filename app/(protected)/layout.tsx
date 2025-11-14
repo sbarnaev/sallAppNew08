@@ -14,7 +14,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       
       {/* Десктопное меню (скрыто на мобильных) */}
       <aside className="hidden md:flex bg-white border-r p-4 transition-all duration-300 w-[60px] hover:w-[240px] group relative flex-col h-screen">
-        <div className="font-semibold mb-6 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">SAL App</div>
+        <div className="font-semibold mb-6 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">САЛ ПРОФИ</div>
         <nav className="space-y-2 text-sm flex-1 flex flex-col">
           <div className="flex flex-col space-y-2">
             <Link className="flex items-center px-3 py-2 rounded-xl hover:bg-gray-100 whitespace-nowrap" href="/dashboard">

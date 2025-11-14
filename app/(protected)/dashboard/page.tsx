@@ -75,10 +75,10 @@ export default async function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Панель управления</h1>
         <div className="flex gap-2">
-          <Link href="/clients/new" className="rounded-xl bg-green-600 text-white px-3 md:px-4 py-2 hover:bg-green-700 text-sm whitespace-nowrap">
+          <Link href="/clients/new" className="rounded-xl bg-green-100 text-green-700 px-3 md:px-4 py-2 hover:bg-green-200 border border-green-200 text-sm whitespace-nowrap">
             + Клиент
           </Link>
-          <Link href="/profiles/new" className="rounded-xl bg-brand-600 text-white px-3 md:px-4 py-2 hover:bg-brand-700 text-sm whitespace-nowrap">
+          <Link href="/profiles/new" className="rounded-xl bg-blue-100 text-blue-700 px-3 md:px-4 py-2 hover:bg-blue-200 border border-blue-200 text-sm whitespace-nowrap">
             + Расчёт
           </Link>
         </div>

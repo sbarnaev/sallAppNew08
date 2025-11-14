@@ -71,7 +71,7 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
     <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl md:text-3xl font-semibold">Расчёты</h1>
-        <Link href="/profiles/new" className="rounded-2xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 text-sm md:text-base whitespace-nowrap text-center">Новый расчёт</Link>
+        <Link href="/profiles/new" className="rounded-2xl bg-blue-100 text-blue-700 px-4 py-2 hover:bg-blue-200 border border-blue-200 text-sm md:text-base whitespace-nowrap text-center">Новый расчёт</Link>
       </div>
 
       <form className="flex flex-col sm:flex-row gap-3" action="/profiles" method="get">

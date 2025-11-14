@@ -179,18 +179,18 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
             </div>
             
             {/* Действия */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <Link href={`/clients/${c.id}`} className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <Link href={`/clients/${c.id}`} className="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors text-center">
                 Открыть
               </Link>
-              <Link href={`/forecast/${c.id}`} className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700 text-sm font-medium transition-colors text-center">
+              <Link href={`/forecast/${c.id}`} className="px-3 py-2 rounded-lg bg-purple-100 text-purple-700 hover:bg-purple-200 border border-purple-200 text-sm font-medium transition-colors text-center">
                 Прогноз
               </Link>
-              <Link href={`/profiles?filter[client_id][_eq]=${c.id}`} className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors text-center">
+              <Link href={`/profiles?filter[client_id][_eq]=${c.id}`} className="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors text-center">
                 Расчёты
               </Link>
-              <Link href={`/profiles/new?clientId=${c.id}`} className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 text-sm font-medium transition-colors text-center">
-                Новый расчёт
+              <Link href={`/profiles/new?clientId=${c.id}`} className="px-3 py-2 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200 text-sm font-medium transition-colors text-center">
+                Расчёт
               </Link>
             </div>
           </div>

@@ -53,11 +53,11 @@ interface ForecastData {
 }
 
 function getIndexColor(index: number): string {
-  if (index >= 1.5) return "bg-green-600 text-white"; // Сильный плюс
-  if (index >= 0.5) return "bg-green-200 text-green-900"; // Плюс
-  if (index >= -0.49) return "bg-gray-100 text-gray-700"; // Нейтраль
-  if (index >= -1.49) return "bg-orange-200 text-orange-900"; // Минус
-  return "bg-red-600 text-white"; // Сильный минус
+  if (index >= 1.5) return "bg-green-500 text-white"; // Сильный плюс
+  if (index >= 0.5) return "bg-green-100 text-green-800"; // Плюс
+  if (index >= -0.49) return "bg-gray-50 text-gray-800"; // Нейтраль
+  if (index >= -1.49) return "bg-orange-100 text-orange-800"; // Минус
+  return "bg-red-500 text-white"; // Сильный минус
 }
 
 function getIndexLabel(index: number): string {
@@ -159,26 +159,18 @@ export default function ForecastPage() {
       {/* Коды клиента */}
       <div className="card p-4 md:p-6">
         <h2 className="text-lg md:text-xl font-semibold mb-4">Коды клиента</h2>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="text-center p-3 bg-blue-50 rounded-lg">
-            <div className="text-xs text-gray-600 mb-1">Личность</div>
-            <div className="text-2xl font-bold text-blue-700">{data.codes.personality}</div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <div className="text-sm text-gray-600 mb-2">Личность</div>
+            <div className="text-3xl font-bold text-blue-700">{data.codes.personality}</div>
           </div>
-          <div className="text-center p-3 bg-purple-50 rounded-lg">
-            <div className="text-xs text-gray-600 mb-1">Коннектор</div>
-            <div className="text-2xl font-bold text-purple-700">{data.codes.connector}</div>
+          <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-100">
+            <div className="text-sm text-gray-600 mb-2">Коннектор</div>
+            <div className="text-3xl font-bold text-purple-700">{data.codes.connector}</div>
           </div>
-          <div className="text-center p-3 bg-green-50 rounded-lg">
-            <div className="text-xs text-gray-600 mb-1">Реализация</div>
-            <div className="text-2xl font-bold text-green-700">{data.codes.realization}</div>
-          </div>
-          <div className="text-center p-3 bg-yellow-50 rounded-lg">
-            <div className="text-xs text-gray-600 mb-1">Генератор</div>
-            <div className="text-2xl font-bold text-yellow-700">{data.codes.generator}</div>
-          </div>
-          <div className="text-center p-3 bg-indigo-50 rounded-lg">
-            <div className="text-xs text-gray-600 mb-1">Миссия</div>
-            <div className="text-2xl font-bold text-indigo-700">{data.codes.mission}</div>
+          <div className="text-center p-4 bg-green-50 rounded-lg border border-green-100">
+            <div className="text-sm text-gray-600 mb-2">Реализация</div>
+            <div className="text-3xl font-bold text-green-700">{data.codes.realization}</div>
           </div>
         </div>
       </div>
@@ -188,23 +180,23 @@ export default function ForecastPage() {
         <h2 className="text-lg md:text-xl font-semibold mb-4">Легенда</h2>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-green-600 rounded"></div>
+            <div className="w-6 h-6 bg-green-500 rounded border border-green-600"></div>
             <span>Сильный плюс (≥1.5)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-green-200 rounded"></div>
+            <div className="w-6 h-6 bg-green-100 rounded border border-green-200"></div>
             <span>Плюс (0.5-1.49)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-gray-100 rounded"></div>
+            <div className="w-6 h-6 bg-gray-50 rounded border border-gray-200"></div>
             <span>Нейтраль (-0.49-0.49)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-orange-200 rounded"></div>
+            <div className="w-6 h-6 bg-orange-100 rounded border border-orange-200"></div>
             <span>Минус (-0.5--1.49)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-red-600 rounded"></div>
+            <div className="w-6 h-6 bg-red-500 rounded border border-red-600"></div>
             <span>Сильный минус (≤-1.5)</span>
           </div>
         </div>
@@ -224,10 +216,10 @@ export default function ForecastPage() {
             return (
               <div key={monthKey} className="card p-4 md:p-6">
                 <h2 className="text-lg md:text-xl font-semibold mb-4 capitalize">{monthName}</h2>
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-7 gap-2 md:gap-3">
                   {/* Заголовки дней недели */}
                   {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((day) => (
-                    <div key={day} className="text-center text-xs font-semibold text-gray-600 py-2">
+                    <div key={day} className="text-center text-sm md:text-base font-semibold text-gray-700 py-2">
                       {day}
                     </div>
                   ))}
@@ -251,30 +243,30 @@ export default function ForecastPage() {
                     return (
                       <div
                         key={forecast.date}
-                        className={`aspect-square border-2 rounded-lg p-1 flex flex-col ${
-                          isToday ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-200"
+                        className={`aspect-square border-2 rounded-lg p-2 md:p-3 flex flex-col min-h-[80px] md:min-h-[100px] ${
+                          isToday ? "border-blue-500 ring-2 ring-blue-200 shadow-md" : "border-gray-200"
                         } ${getIndexColor(forecast.index)}`}
                       >
-                        <div className="text-xs font-semibold mb-1 flex items-center justify-between">
+                        <div className="text-sm md:text-base font-semibold mb-1.5 flex items-center justify-between">
                           <span>{day}</span>
-                          {isToday && <span className="text-blue-600">●</span>}
+                          {isToday && <span className="text-blue-600 text-lg">●</span>}
                         </div>
-                        <div className="flex-1 flex flex-col justify-center text-[10px] leading-tight space-y-0.5">
-                          <div className="flex justify-between">
-                            <span className="opacity-80">Л:</span>
-                            <span className="font-semibold">{forecast.personality.score.toFixed(1)}</span>
+                        <div className="flex-1 flex flex-col justify-center text-xs md:text-sm leading-relaxed space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="opacity-90 font-medium">Л:</span>
+                            <span className="font-bold text-base md:text-lg">{forecast.personality.score.toFixed(1)}</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="opacity-80">К:</span>
-                            <span className="font-semibold">{forecast.connector.score.toFixed(1)}</span>
+                          <div className="flex justify-between items-center">
+                            <span className="opacity-90 font-medium">К:</span>
+                            <span className="font-bold text-base md:text-lg">{forecast.connector.score.toFixed(1)}</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="opacity-80">Р:</span>
-                            <span className="font-semibold">{forecast.realization.score.toFixed(1)}</span>
+                          <div className="flex justify-between items-center">
+                            <span className="opacity-90 font-medium">Р:</span>
+                            <span className="font-bold text-base md:text-lg">{forecast.realization.score.toFixed(1)}</span>
                           </div>
-                          <div className="flex justify-between border-t border-current border-opacity-20 pt-0.5 mt-0.5">
-                            <span className="opacity-90 font-semibold">И:</span>
-                            <span className="font-bold">{forecast.index.toFixed(1)}</span>
+                          <div className="flex justify-between items-center border-t border-current border-opacity-30 pt-1 mt-1">
+                            <span className="opacity-95 font-semibold">И:</span>
+                            <span className="font-extrabold text-lg md:text-xl">{forecast.index.toFixed(1)}</span>
                           </div>
                         </div>
                       </div>
