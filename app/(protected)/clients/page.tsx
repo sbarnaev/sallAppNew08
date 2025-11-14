@@ -59,26 +59,27 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
   const hasPrev = page > 1;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Заголовок с статистикой */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Клиенты</h1>
-          <p className="text-gray-500 mt-1">Всего клиентов: {total}</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Клиенты</h1>
+          <p className="text-sm md:text-base text-gray-500 mt-1">Всего клиентов: {total}</p>
         </div>
         <div className="flex gap-3">
-          <Link href="/clients/new" className="rounded-xl bg-green-600 text-white px-6 py-3 hover:bg-green-700 flex items-center gap-2">
+          <Link href="/clients/new" className="rounded-xl bg-green-600 text-white px-4 md:px-6 py-2 md:py-3 hover:bg-green-700 flex items-center gap-2 text-sm md:text-base whitespace-nowrap">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            Новый клиент
+            <span className="hidden sm:inline">Новый клиент</span>
+            <span className="sm:hidden">Новый</span>
           </Link>
         </div>
       </div>
 
       {/* Поиск */}
       <div className="card">
-        <form className="flex gap-3" action="/clients" method="get">
+        <form className="flex flex-col sm:flex-row gap-3" action="/clients" method="get">
           <div className="flex-1 relative">
             <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -86,15 +87,16 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
             <input
               name="search"
               defaultValue={searchTerm}
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-              placeholder="Поиск по имени, email, телефону..."
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-base"
+              placeholder="Поиск по имени, email..."
             />
           </div>
-          <button type="submit" className="rounded-xl bg-gray-900 text-white px-6 py-3 hover:bg-gray-800 flex items-center gap-2">
+          <button type="submit" className="rounded-xl bg-gray-900 text-white px-4 md:px-6 py-3 hover:bg-gray-800 flex items-center justify-center gap-2 whitespace-nowrap">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            Искать
+            <span className="hidden sm:inline">Искать</span>
+            <span className="sm:hidden">Найти</span>
           </button>
         </form>
       </div>
@@ -178,13 +180,13 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
             
             {/* Действия */}
             <div className="flex items-center gap-2 flex-wrap">
-              <Link href={`/clients/${c.id}`} className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors whitespace-nowrap">
+              <Link href={`/clients/${c.id}`} className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors text-center">
                 Открыть
               </Link>
-              <Link href={`/profiles?filter[client_id][_eq]=${c.id}`} className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors whitespace-nowrap">
+              <Link href={`/profiles?filter[client_id][_eq]=${c.id}`} className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors text-center">
                 Расчёты
               </Link>
-              <Link href={`/profiles/new?clientId=${c.id}`} className="px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 text-sm font-medium transition-colors whitespace-nowrap">
+              <Link href={`/profiles/new?clientId=${c.id}`} className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 text-sm font-medium transition-colors text-center">
                 Новый расчёт
               </Link>
             </div>
@@ -194,7 +196,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
 
       {/* Пагинация */}
       {(hasPrev || hasNext) && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             {hasPrev && (
               <Link
@@ -213,7 +215,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
               </Link>
             )}
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-xs sm:text-sm text-gray-500 text-center">
             Страница {displayPage} из {totalPages} • Всего {total} клиентов
           </div>
         </div>

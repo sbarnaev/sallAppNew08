@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { MobileMenu } from "@/components/MobileMenu";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const token = cookies().get("directus_access_token")?.value;
@@ -8,7 +9,11 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
   return (
     <div className="min-h-screen flex">
-      <aside className="bg-white border-r p-4 transition-all duration-300 w-[60px] hover:w-[240px] group relative flex flex-col h-screen">
+      {/* Мобильное меню */}
+      <MobileMenu />
+      
+      {/* Десктопное меню (скрыто на мобильных) */}
+      <aside className="hidden md:flex bg-white border-r p-4 transition-all duration-300 w-[60px] hover:w-[240px] group relative flex-col h-screen">
         <div className="font-semibold mb-6 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">SAL App</div>
         <nav className="space-y-2 text-sm flex-1 flex flex-col">
           <div className="flex flex-col space-y-2">
@@ -33,7 +38,9 @@ export default async function ProtectedLayout({ children }: { children: React.Re
           </form>
         </nav>
       </aside>
-      <main className="flex-1 p-6">{children}</main>
+      
+      {/* Основной контент */}
+      <main className="flex-1 p-4 md:p-6 pt-16 md:pt-6">{children}</main>
     </div>
   );
 }

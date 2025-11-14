@@ -68,28 +68,30 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
   const hasPrev = page > 1;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Расчёты</h1>
-        <Link href="/profiles/new" className="rounded-2xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700">Новый расчёт</Link>
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-semibold">Расчёты</h1>
+        <Link href="/profiles/new" className="rounded-2xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 text-sm md:text-base whitespace-nowrap text-center">Новый расчёт</Link>
       </div>
 
-      <form className="flex gap-3 items-end" action="/profiles" method="get">
+      <form className="flex flex-col sm:flex-row gap-3" action="/profiles" method="get">
         <div className="flex-1">
           <label className="block text-sm mb-1">Поиск по имени или дате рождения</label>
           <input 
             name="search" 
             defaultValue={(searchParams.search as string) || ""} 
-            className="rounded-xl border p-3 w-full" 
-            placeholder="Имя, фамилия или дата рождения (ДД.ММ.ГГГГ, ГГГГ)..." 
+            className="rounded-xl border p-3 w-full text-base" 
+            placeholder="Имя, фамилия или дата..." 
           />
         </div>
-        <button type="submit" className="rounded-2xl bg-gray-900 text-white px-4 py-2 h-[42px]">Искать</button>
-        {(searchParams.search as string) && (
-          <Link href="/profiles" className="rounded-2xl border border-gray-300 px-4 py-2 h-[42px] flex items-center hover:bg-gray-50">
-            Сбросить
-          </Link>
-        )}
+        <div className="flex gap-2 sm:flex-col">
+          <button type="submit" className="flex-1 sm:flex-none rounded-2xl bg-gray-900 text-white px-4 py-2 h-[42px] text-sm md:text-base whitespace-nowrap">Искать</button>
+          {(searchParams.search as string) && (
+            <Link href="/profiles" className="flex-1 sm:flex-none rounded-2xl border border-gray-300 px-4 py-2 h-[42px] flex items-center justify-center hover:bg-gray-50 text-sm md:text-base whitespace-nowrap">
+              Сбросить
+            </Link>
+          )}
+        </div>
       </form>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
