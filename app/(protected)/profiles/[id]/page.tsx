@@ -2478,11 +2478,11 @@ export default function ProfileDetail() {
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
       {/* Общая шапка */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-        <div className="flex items-start justify-between gap-4">
+      <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <div className="text-2xl font-semibold text-gray-900 break-words">{clientName || "Профиль"}</div>
-            <div className="flex items-center gap-4 mt-2 flex-wrap">
+            <div className="text-xl md:text-2xl font-semibold text-gray-900 break-words">{clientName || "Профиль"}</div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
           {profile?.created_at && (
                 <div className="text-sm text-gray-500">
                   <span className="font-medium">Дата создания:</span> {new Date(profile.created_at).toLocaleString("ru-RU")}
@@ -2518,9 +2518,9 @@ export default function ProfileDetail() {
           }
         }
         return (
-          <div className="flex flex-wrap gap-6 justify-center items-center py-4">
+          <div className="flex flex-wrap gap-3 md:gap-6 justify-center items-center py-4">
             {arr.slice(0,5).map((val: any, i: number) => (
-              <div key={i} className="w-[74px] h-[74px] rounded-xl shadow-sm bg-[#1f92aa] text-white font-bold text-[28px] grid place-items-center">
+              <div key={i} className="w-14 h-14 md:w-[74px] md:h-[74px] rounded-xl shadow-sm bg-[#1f92aa] text-white font-bold text-xl md:text-[28px] grid place-items-center">
                 {val ?? ""}
               </div>
             ))}
@@ -2695,7 +2695,7 @@ export default function ProfileDetail() {
         if (menuItems.length === 0) return null;
 
         return (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm sticky top-4 z-10">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm sticky top-20 md:top-4 z-10">
             <button
               onClick={() => setNavigationExpanded(!navigationExpanded)}
               className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-t-2xl"

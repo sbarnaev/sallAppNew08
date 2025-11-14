@@ -71,14 +71,14 @@ export default async function DashboardPage() {
   const clientsMap = await getClientsMap(clientIds);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Панель управления</h1>
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Панель управления</h1>
         <div className="flex gap-2">
-          <Link href="/clients/new" className="rounded-xl bg-green-600 text-white px-4 py-2 hover:bg-green-700 text-sm">
+          <Link href="/clients/new" className="rounded-xl bg-green-600 text-white px-3 md:px-4 py-2 hover:bg-green-700 text-sm whitespace-nowrap">
             + Клиент
           </Link>
-          <Link href="/profiles/new" className="rounded-xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 text-sm">
+          <Link href="/profiles/new" className="rounded-xl bg-brand-600 text-white px-3 md:px-4 py-2 hover:bg-brand-700 text-sm whitespace-nowrap">
             + Расчёт
           </Link>
         </div>
