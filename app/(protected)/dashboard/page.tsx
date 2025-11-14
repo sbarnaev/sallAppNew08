@@ -38,12 +38,21 @@ async function getClientsMap(clientIds: number[]) {
     if (clientIds.length === 0) return {};
     const ids = clientIds.join(',');
     const res = await internalApiFetch(`/api/clients?filter[id][_in]=${ids}&fields=id,name,birth_date&limit=1000`, { cache: 'no-store' });
+    if (!res.ok) {
+      console.error("Failed to fetch clients:", res.status);
+      return {};
+    }
     const response = await res.json().catch(() => ({ data: [] }));
-    // API может возвращать либо { data: [...] } либо { data: { data: [...] } }
-    const clientsArray = response?.data?.data || response?.data || [];
+    // API возвращает { data: [...] }
+    const clientsArray = Array.isArray(response?.data) ? response.data : [];
     const map: Record<number, { name: string; birth_date?: string }> = {};
-    (clientsArray as any[]).forEach((c: any) => {
-      if (c.id) map[c.id] = { name: c.name || '', birth_date: c.birth_date };
+    clientsArray.forEach((c: any) => {
+      if (c?.id) {
+        map[c.id] = { 
+          name: c.name || '', 
+          birth_date: c.birth_date 
+        };
+      }
     });
     return map;
   } catch (error) {
