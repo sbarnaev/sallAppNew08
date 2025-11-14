@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import html2pdf from "html2pdf.js";
+import RichEditor from "@/components/RichEditor";
 
 // Интересные факты для отображения во время генерации (200 фактов)
 const INTERESTING_FACTS = [
