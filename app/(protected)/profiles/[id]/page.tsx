@@ -2602,7 +2602,7 @@ export default function ProfileDetail() {
               const imageUrl = getImageUrl(img);
               
               return (
-                <div key={i} className="rounded-2xl overflow-hidden border bg-gray-50 relative" style={{ aspectRatio: '2/3' }}>
+                <div key={i} className="rounded-2xl overflow-hidden border bg-gray-50 relative max-w-[200px] mx-auto sm:max-w-none sm:mx-0" style={{ aspectRatio: '2/3' }}>
                   {imageUrl ? (
                     <>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2695,7 +2695,7 @@ export default function ProfileDetail() {
         if (menuItems.length === 0) return null;
 
         return (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm sticky top-20 md:top-4 z-10">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm sticky top-16 md:top-4 z-10">
             <button
               onClick={() => setNavigationExpanded(!navigationExpanded)}
               className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-t-2xl"
@@ -2901,7 +2901,7 @@ export default function ProfileDetail() {
       {/* Плавающая кнопка «Заметки» */}
       <button
         onClick={() => setNotesOpen(true)}
-        className="fixed right-6 bottom-6 rounded-full shadow-lg bg-brand-600 text-white px-5 py-3 hover:bg-brand-700 z-40"
+        className="fixed right-4 bottom-4 md:right-6 md:bottom-6 rounded-full shadow-lg bg-brand-600 text-white px-4 py-2 md:px-5 md:py-3 hover:bg-brand-700 z-30 text-sm md:text-base"
       >
         📝 Заметки
       </button>
