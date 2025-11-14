@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
 
   const response = NextResponse.json({ ok: true });
   const secure = process.env.NODE_ENV === "production";
-  // Устанавливаем очень долгое время жизни для cookies (10 лет)
-  const maxAge = 60 * 60 * 24 * 365 * 10; // 10 лет в секундах
+  // Время жизни токенов: 3 дня
+  const maxAge = 60 * 60 * 24 * 3; // 3 дня в секундах
   
   if (access) {
     response.cookies.set("directus_access_token", access, { 

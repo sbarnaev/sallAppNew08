@@ -1,13 +1,11 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 // Функция для получения текущего пользователя
 async function getCurrentUser(token: string, baseUrl: string) {
   try {
-    console.log("Getting current user - URL:", `${baseUrl}/users/me`);
-    console.log("Getting current user - Token:", token ? "Present" : "Missing");
-    
     const response = await fetch(`${baseUrl}/users/me`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -15,19 +13,14 @@ async function getCurrentUser(token: string, baseUrl: string) {
       }
     });
     
-    console.log("Getting current user - Response status:", response.status);
-    
     if (response.ok) {
       const data = await response.json();
-      console.log("Getting current user - Response data:", data);
       return data?.data;
     }
     
-    const errorData = await response.json().catch(() => ({}));
-    console.log("Getting current user - Error response:", errorData);
     return null;
   } catch (error) {
-    console.log("Getting current user - Fetch error:", error);
+    logger.error("Error getting current user:", error);
     return null;
   }
 }
@@ -36,11 +29,7 @@ export async function GET(req: NextRequest) {
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
   
-  console.log("Getting clients - Token:", token ? "Present" : "Missing");
-  console.log("Getting clients - Base URL:", baseUrl);
-  
   if (!token || !baseUrl) {
-    console.log("Getting clients - Unauthorized: no token or base URL");
     return NextResponse.json({ data: [], message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
   }
 
@@ -55,9 +44,7 @@ export async function GET(req: NextRequest) {
       const meData = await meRes.json().catch(() => ({}));
       currentUserId = meData?.data?.id || null;
     }
-    console.log("Getting clients - Resolved currentUserId:", currentUserId);
   } catch {
-    console.log("Getting clients - Could not resolve current user id, proceeding without explicit filter");
   }
 
   const incomingParams = req.nextUrl.searchParams;
@@ -147,7 +134,7 @@ export async function GET(req: NextRequest) {
         });
       }
     } catch (error) {
-      console.error("Error searching clients by name:", error);
+      logger.error("Error searching clients by name:", error);
     }
     
     // 2. Поиск по дате рождения (если поисковый запрос похож на дату)
@@ -179,7 +166,7 @@ export async function GET(req: NextRequest) {
             });
           }
         } catch (error) {
-          console.error("Error searching clients by date:", error);
+          logger.error("Error searching clients by date:", error);
         }
       }
     }
@@ -213,7 +200,7 @@ export async function GET(req: NextRequest) {
           });
         }
       } catch (error) {
-        console.error("Error searching clients by year:", error);
+        logger.error("Error searching clients by year:", error);
       }
     }
     
@@ -247,7 +234,6 @@ export async function GET(req: NextRequest) {
   }
 
   const url = `${baseUrl}/items/clients?${sp.toString()}`;
-  console.log("Getting clients - Directus URL:", url);
 
   async function fetchList(accessToken: string) {
     try {
@@ -258,7 +244,7 @@ export async function GET(req: NextRequest) {
       const data = await r.json().catch(() => ({ data: [], meta: {}, errors: [] }));
       return { r, data } as const;
     } catch (error) {
-      console.error("Error fetching from Directus:", error);
+      logger.error("Error fetching from Directus:", error);
       return { 
         r: new Response(null, { status: 500 }), 
         data: { data: [], meta: { filter_count: 0 }, errors: [{ message: String(error) }] } 
@@ -285,9 +271,6 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  console.log("Getting clients - Directus response status:", r.status);
-  console.log("Getting clients - Directus response data:", data);
-
   // Обработка различных статусов
   if (r.status === 404) {
     return NextResponse.json({ data: [], meta: { filter_count: 0 }, upstreamStatus: 404 });
@@ -295,7 +278,7 @@ export async function GET(req: NextRequest) {
   
   // Если ошибка, но есть данные - возвращаем пустой массив
   if (!r.ok && (!data || !data.data)) {
-    console.error("Directus error response:", data);
+    logger.error("Directus error response");
     return NextResponse.json({ data: [], meta: { filter_count: 0 } }, { status: 200 });
   }
   
@@ -306,34 +289,24 @@ export async function POST(req: NextRequest) {
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
   
-  console.log("Creating client - Token:", token ? "Present" : "Missing");
-  console.log("Creating client - Base URL:", baseUrl);
-  
   if (!token || !baseUrl) {
-    console.log("Creating client - Unauthorized: no token or base URL");
     return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
   }
 
   const body = await req.json();
-  console.log("Creating client - Request body:", body);
   
   // Валидация обязательных полей
   if (!body.first_name?.trim()) {
-    console.log("Creating client - Validation error: missing first_name");
     return NextResponse.json({ message: "Имя обязательно для заполнения" }, { status: 400 });
   }
   if (!body.last_name?.trim()) {
-    console.log("Creating client - Validation error: missing last_name");
     return NextResponse.json({ message: "Фамилия обязательна для заполнения" }, { status: 400 });
   }
 
   // Получаем текущего пользователя
   const currentUser = await getCurrentUser(token, baseUrl);
-  console.log("Creating client - Current user:", currentUser);
-  console.log("Creating client - Current user ID:", currentUser?.id);
   
   if (!currentUser?.id) {
-    console.log("Creating client - Error: could not get current user ID");
     return NextResponse.json({ message: "Ошибка получения данных пользователя" }, { status: 500 });
   }
 
@@ -350,11 +323,7 @@ export async function POST(req: NextRequest) {
     owner_user: currentUser.id,
   };
 
-  console.log("Creating client - Prepared data:", clientData);
-  console.log("Creating client - Owner user being set:", currentUser.id);
-
   const url = `${baseUrl}/items/clients`;
-  console.log("Creating client - Directus URL:", url);
   
   try {
     const r = await fetch(url, {
@@ -367,26 +336,10 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(clientData),
     });
     
-    console.log("Creating client - Directus response status:", r.status);
-    
     const data = await r.json().catch(()=>({}));
-    console.log("Creating client - Directus response data:", data);
-    console.log("Creating client - Created client fields:", data?.data);
-    
-    // Логируем ошибки более детально
-    if (!r.ok) {
-      console.log("Creating client - Error details:", {
-        status: r.status,
-        statusText: r.statusText,
-        data: data,
-        errors: data?.errors,
-        message: data?.message
-      });
-    }
     
     // Если токен истек, попробуем обновить его
     if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
-      console.log("Creating client - Token expired, attempting refresh...");
 
       // Попробуем обновить токен
       const origin = req.nextUrl.origin;
@@ -396,8 +349,6 @@ export async function POST(req: NextRequest) {
       });
 
       if (refreshRes.ok) {
-        console.log("Creating client - Token refreshed, retrying...");
-        
         // Получим новый токен из ответа
         const refreshData = await refreshRes.json().catch(() => ({}));
         const newToken = refreshData?.access_token || cookies().get("directus_access_token")?.value;
@@ -415,8 +366,6 @@ export async function POST(req: NextRequest) {
           });
           
           const retryData = await retryRes.json().catch(()=>({}));
-          console.log("Creating client - Retry response status:", retryRes.status);
-          console.log("Creating client - Retry response data:", retryData);
           
           return NextResponse.json(retryData, { status: retryRes.status });
         }
@@ -425,7 +374,7 @@ export async function POST(req: NextRequest) {
     
     return NextResponse.json(data, { status: r.status });
   } catch (error) {
-    console.log("Creating client - Fetch error:", error);
+    logger.error("Creating client - Fetch error:", error);
     return NextResponse.json({ message: "Ошибка соединения с Directus", error: String(error) }, { status: 502 });
   }
 } 

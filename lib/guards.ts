@@ -94,7 +94,7 @@ async function refreshAccessToken(refreshToken: string, baseUrl: string | null):
     // Сохраняем новые токены в cookies
     const cookieStore = cookies();
     const secure = process.env.NODE_ENV === "production";
-    const maxAge = 60 * 60 * 24 * 365 * 10; // 10 лет
+    const maxAge = 60 * 60 * 24 * 3; // 3 дня
 
     cookieStore.set("directus_access_token", newAccessToken, {
       httpOnly: true,

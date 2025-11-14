@@ -12,19 +12,8 @@ export async function POST() {
 
   // Проверяем, что URL валидный
   if (!baseUrl.startsWith('http')) {
-    console.error("Invalid Directus URL in refresh:", baseUrl);
     return NextResponse.json({ message: "Invalid DIRECTUS_URL" }, { status: 500 });
   }
-
-  console.log("[DEBUG] ===== TOKEN REFRESH DEBUG =====");
-  console.log("[DEBUG] Refreshing token, Directus URL:", baseUrl);
-  console.log("[DEBUG] Refresh token present:", !!refreshToken, "Length:", refreshToken?.length);
-  console.log("[DEBUG] URL type check:", {
-    startsWithHttps: baseUrl.startsWith('https://'),
-    startsWithHttp: baseUrl.startsWith('http://'),
-    containsPort: baseUrl.includes(':'),
-    rawUrl: baseUrl
-  });
 
   // Проверяем, что URL действительно валидный для HTTPS
   let finalBaseUrl = baseUrl;
@@ -35,22 +24,14 @@ export async function POST() {
       if (urlObj.port === '443') {
         urlObj.port = '';
         finalBaseUrl = urlObj.toString();
-        console.log("[DEBUG] Removed port 443 from HTTPS URL, new URL:", finalBaseUrl);
       }
     } catch (urlError) {
-      console.error("[DEBUG] Failed to parse URL for port check:", urlError);
     }
   }
 
   try {
     const refreshUrl = `${finalBaseUrl}/auth/refresh`;
     const requestBody = { refresh_token: refreshToken };
-    
-    console.log("[DEBUG] Making refresh request to:", refreshUrl);
-    console.log("[DEBUG] Refresh token present:", !!refreshToken);
-    console.log("[DEBUG] Refresh token length:", refreshToken?.length);
-    console.log("[DEBUG] Refresh token preview:", refreshToken ? `${refreshToken.substring(0, 20)}...${refreshToken.substring(refreshToken.length - 20)}` : 'null');
-    console.log("[DEBUG] Request body (without token):", JSON.stringify({ refresh_token: '[REDACTED]' }));
     
     const res = await fetch(refreshUrl, {
       method: "POST",
@@ -63,26 +44,16 @@ export async function POST() {
       signal: AbortSignal.timeout(10000), // 10 секунд
     });
     
-    console.log("[DEBUG] Refresh response status:", res.status, res.statusText);
-
     const responseText = await res.text();
-    console.log("[DEBUG] Refresh response body (full):", responseText);
     
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (parseError) {
-      console.error("Failed to parse refresh response:", parseError, "Response:", responseText);
-      throw new Error(`Invalid JSON response from Directus: ${responseText.substring(0, 100)}`);
+      throw new Error(`Invalid JSON response from Directus`);
     }
 
     if (!res.ok) {
-      console.error("[DEBUG] Directus refresh failed:", {
-        status: res.status,
-        statusText: res.statusText,
-        data: data,
-        errors: (data as any)?.errors
-      });
       return NextResponse.json(data || { message: "Token refresh failed" }, { status: res.status });
     }
 
@@ -95,8 +66,8 @@ export async function POST() {
       refresh_token: refresh 
     });
     const secure = process.env.NODE_ENV === "production";
-    // Устанавливаем очень долгое время жизни для cookies (10 лет)
-    const maxAge = 60 * 60 * 24 * 365 * 10; // 10 лет в секундах
+    // Время жизни токенов: 3 дня
+    const maxAge = 60 * 60 * 24 * 3; // 3 дня в секундах
     
     if (access) {
       response.cookies.set("directus_access_token", access, { 
@@ -120,30 +91,16 @@ export async function POST() {
 
     return response;
   } catch (error: any) {
-    console.error("Error refreshing token in Directus:", {
-      message: error?.message,
-      code: error?.code,
-      cause: error?.cause,
-      directusUrl: finalBaseUrl,
-      originalUrl: baseUrl,
-      stack: error?.stack?.substring(0, 500)
-    });
-    
     // Если это SSL ошибка, даем более понятное сообщение
     if (error?.code === 'ERR_SSL_PACKET_LENGTH_TOO_LONG' || error?.message?.includes('SSL')) {
       return NextResponse.json({ 
         message: "SSL connection error. Check DIRECTUS_URL format (should be https://...)", 
-        error: error?.message,
-        code: error?.code,
-        directusUrl: finalBaseUrl,
-        originalUrl: baseUrl
+        code: error?.code
       }, { status: 502 });
     }
     
     return NextResponse.json({ 
-      message: "Cannot connect to Directus", 
-      error: String(error?.message || error),
-      code: error?.code
+      message: "Cannot connect to Directus"
     }, { status: 502 });
   }
 }
