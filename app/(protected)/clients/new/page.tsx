@@ -7,6 +7,7 @@ export default function NewClientPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [gender, setGender] = useState<"male" | "female" | "">("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [source, setSource] = useState("");
@@ -39,6 +40,7 @@ export default function NewClientPage() {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           birth_date: isoBirth,
+          gender: gender || null,
           phone: phone.trim() || null,
           email: email.trim() || null,
           source: source.trim() || null,
@@ -114,38 +116,53 @@ export default function NewClientPage() {
             </div>
           </div>
           
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Дата рождения *</label>
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 items-center">
-              <input
-                className="w-full rounded-xl border border-gray-300 p-3 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                type="text"
-                inputMode="numeric"
-                placeholder="дд.мм.гггг"
-                value={birthDate}
-                onChange={(e) => {
-                  // Маска: DD.MM.YYYY (ввод подряд цифр)
-                  const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
-                  const parts = [digits.slice(0,2), digits.slice(2,4), digits.slice(4,8)].filter(Boolean);
-                  const masked = parts.join(".");
-                  setBirthDate(masked);
-                }}
-                required
-              />
-              <input
-                className="rounded-xl border border-gray-300 p-3 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white"
-                type="date"
-                value={(birthDate.match(/^(\d{2})\.(\d{2})\.(\d{4})$/) ? `${birthDate.slice(6,10)}-${birthDate.slice(3,5)}-${birthDate.slice(0,2)}` : "")}
-                onChange={(e) => {
-                  const iso = e.target.value; // YYYY-MM-DD
-                  if (iso) {
-                    const [yyyy, mm, dd] = iso.split("-");
-                    setBirthDate(`${dd}.${mm}.${yyyy}`);
-                  } else {
-                    setBirthDate("");
-                  }
-                }}
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Дата рождения *</label>
+              <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                <input
+                  className="w-full rounded-xl border border-gray-300 p-3 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="дд.мм.гггг"
+                  value={birthDate}
+                  onChange={(e) => {
+                    // Маска: DD.MM.YYYY (ввод подряд цифр)
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+                    const parts = [digits.slice(0,2), digits.slice(2,4), digits.slice(4,8)].filter(Boolean);
+                    const masked = parts.join(".");
+                    setBirthDate(masked);
+                  }}
+                  required
+                />
+                <input
+                  className="rounded-xl border border-gray-300 p-3 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white"
+                  type="date"
+                  value={(birthDate.match(/^(\d{2})\.(\d{2})\.(\d{4})$/) ? `${birthDate.slice(6,10)}-${birthDate.slice(3,5)}-${birthDate.slice(0,2)}` : "")}
+                  onChange={(e) => {
+                    const iso = e.target.value; // YYYY-MM-DD
+                    if (iso) {
+                      const [yyyy, mm, dd] = iso.split("-");
+                      setBirthDate(`${dd}.${mm}.${yyyy}`);
+                    } else {
+                      setBirthDate("");
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Пол</label>
+              <select
+                className="w-full rounded-xl border border-gray-300 p-3 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white appearance-none [background-image:linear-gradient(45deg,transparent 50%,#9CA3AF 50%),linear-gradient(135deg,#9CA3AF 50%,transparent 50%),linear-gradient(to_right,#d1d5db,#d1d5db)]; [background-position:calc(100%-20px) calc(1em+2px),calc(100%-15px) calc(1em+2px),calc(100%-2.5rem) 0.5em]; [background-size:5px_5px,5px_5px,1px_1.5em]; [background-repeat:no-repeat]"
+                value={gender}
+                onChange={(e) => setGender(e.target.value as "male" | "female" | "")}
+              >
+                <option value="">Выберите пол</option>
+                <option value="male">Мужской</option>
+                <option value="female">Женский</option>
+              </select>
             </div>
           </div>
         </div>

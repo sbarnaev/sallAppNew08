@@ -15,13 +15,62 @@ function generatePublicCode(): string {
   return out;
 }
 
+/**
+ * Обновляет access token через refresh token
+ * Возвращает новый access token или null в случае ошибки
+ */
+async function refreshAccessToken(refreshToken: string, baseUrl: string): Promise<string | null> {
+  try {
+    const refreshUrl = `${baseUrl}/auth/refresh`;
+    const res = await fetch(refreshUrl, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!res.ok) {
+      console.error("[CALC] Token refresh failed:", res.status, res.statusText);
+      return null;
+    }
+
+    const data = await res.json().catch(() => ({}));
+    return data?.data?.access_token || null;
+  } catch (error) {
+    console.error("[CALC] Error refreshing token:", error);
+    return null;
+  }
+}
+
 export async function POST(req: Request) {
-  const token = cookies().get("directus_access_token")?.value;
+  let token = cookies().get("directus_access_token")?.value;
   const refreshToken = cookies().get("directus_refresh_token")?.value;
   const directusUrl = getDirectusUrl();
   const n8nUrl = process.env.N8N_CALC_URL;
-  if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  
+  if (!token && !refreshToken) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
   if (!n8nUrl) return NextResponse.json({ message: "No N8N_CALC_URL configured" }, { status: 400 });
+
+  // ОБЯЗАТЕЛЬНЫЙ REFRESH перед отправкой в n8n для получения свежего токена
+  if (refreshToken && directusUrl) {
+    console.log("[CALC] Refreshing token before n8n request...");
+    const freshToken = await refreshAccessToken(refreshToken, directusUrl);
+    if (freshToken) {
+      token = freshToken;
+      console.log("[CALC] Token refreshed successfully");
+    } else {
+      console.warn("[CALC] Token refresh failed, using existing token");
+    }
+  }
+
+  if (!token) {
+    return NextResponse.json({ message: "Unauthorized - no valid token" }, { status: 401 });
+  }
 
   let payload: any = {};
   try {
