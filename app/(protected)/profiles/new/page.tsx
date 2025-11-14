@@ -64,7 +64,7 @@ export default function NewCalculationPage() {
       };
       if (clientIdParam) payload.clientId = Number(clientIdParam);
       if (type === "target") {
-        // Объединяем все поля в одно
+        // Объединяем все поля в одну строку без переносов
         const parts = [
           `Что есть сейчас: ${targetCurrent.trim()}`,
           `Что клиент хочет: ${targetWant.trim()}`
@@ -72,7 +72,7 @@ export default function NewCalculationPage() {
         if (targetAdditional.trim()) {
           parts.push(`Дополнительная информация: ${targetAdditional.trim()}`);
         }
-        payload.request = parts.join("\n\n");
+        payload.request = parts.join(" ");
       }
       if (type === "partner") {
         payload.partnerName = partnerName;
