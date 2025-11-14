@@ -214,9 +214,10 @@ export default function ForecastPage() {
             });
 
             return (
-              <div key={monthKey} className="card p-4 md:p-6">
+              <div key={monthKey} className="card p-3 md:p-6">
                 <h2 className="text-lg md:text-xl font-semibold mb-4 capitalize">{monthName}</h2>
-                <div className="grid grid-cols-7 gap-2 md:gap-3">
+                <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
+                  <div className="grid grid-cols-7 gap-1.5 md:gap-3 min-w-[600px]">
                   {/* Заголовки дней недели */}
                   {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((day) => (
                     <div key={day} className="text-center text-sm md:text-base font-semibold text-gray-700 py-2">
@@ -272,6 +273,7 @@ export default function ForecastPage() {
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               </div>
             );
