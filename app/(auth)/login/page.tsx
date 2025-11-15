@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -74,6 +75,13 @@ export default function LoginPage() {
               Войти
             </button>
           </form>
+
+          <div className="text-center text-sm text-gray-600 pt-4 border-t border-gray-200">
+            Нет аккаунта?{" "}
+            <Link href="/register" className="text-blue-600 hover:text-blue-800 font-medium">
+              Зарегистрироваться
+            </Link>
+          </div>
         </div>
       </div>
     </div>
