@@ -10,7 +10,7 @@
  *   DIRECTUS_URL="..." DIRECTUS_ADMIN_TOKEN="..." node scripts/setup-registration-codes.mjs
  */
 
-const DIRECTUS_URL = process.env.DIRECTUS_URL?.replace(/\/+$/, '');
+const DIRECTUS_URL = process.env.DIRECTUS_URL?.trim().replace(/\/+$/, '') || '';
 const ADMIN_TOKEN = process.env.DIRECTUS_ADMIN_TOKEN;
 const ADMIN_EMAIL = process.env.DIRECTUS_ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.DIRECTUS_ADMIN_PASSWORD;
@@ -26,7 +26,9 @@ if (!ADMIN_TOKEN && !(ADMIN_EMAIL && ADMIN_PASSWORD)) {
 
 async function loginIfNeeded() {
   if (ADMIN_TOKEN) return ADMIN_TOKEN;
-  const res = await fetch(`${DIRECTUS_URL}/auth/login`, {
+  const cleanUrl = DIRECTUS_URL.trim().replace(/\/+$/, '');
+  const loginUrl = `${cleanUrl}/auth/login`;
+  const res = await fetch(loginUrl, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
@@ -40,7 +42,12 @@ async function loginIfNeeded() {
 }
 
 async function api(path, method = 'GET', token, body) {
-  const res = await fetch(`${DIRECTUS_URL}${path}`, {
+  // Убираем пробелы и слеши в начале пути, добавляем слеш если нужно
+  const cleanPath = path.trim().replace(/^\/+/, '');
+  const cleanUrl = DIRECTUS_URL.trim().replace(/\/+$/, '');
+  const fullUrl = `${cleanUrl}/${cleanPath}`;
+  
+  const res = await fetch(fullUrl, {
     method,
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -50,7 +57,7 @@ async function api(path, method = 'GET', token, body) {
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`${method} ${path} failed: ${res.status} ${res.statusText} ${text}`);
+    throw new Error(`${method} ${fullUrl} failed: ${res.status} ${res.statusText} ${text}`);
   }
   return res.json();
 }
