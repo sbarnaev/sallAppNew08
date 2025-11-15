@@ -584,6 +584,129 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   return NextResponse.json(data, { status: r.ok ? 200 : r.status });
 }
 
+export async function DELETE(req: Request, ctx: { params: { id: string }}) {
+  const token = cookies().get("directus_access_token")?.value;
+  const baseUrl = getDirectusUrl();
+  if (!token || !baseUrl) {
+    return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
+  }
+  
+  const { id } = ctx.params;
+  const { confirm } = await req.json().catch(() => ({ confirm: false }));
+  
+  if (!confirm) {
+    return NextResponse.json({ message: "Deletion not confirmed" }, { status: 400 });
+  }
+
+  async function safeJson(r: Response) {
+    return r.json().catch(() => ({}));
+  }
+
+  async function authorizedFetch(url: string, init: RequestInit = {}) {
+    const doFetch = async (tkn: string) => 
+      fetch(url, { 
+        ...init, 
+        headers: { 
+          ...(init.headers || {}), 
+          Authorization: `Bearer ${tkn}`, 
+          Accept: "application/json" 
+        }, 
+        cache: "no-store" 
+      });
+    
+    const initialToken = cookies().get("directus_access_token")?.value || token || "";
+    let r = await doFetch(initialToken);
+    
+    if (r.status === 401) {
+      try {
+        const origin = new URL(req.url).origin;
+        const refresh = await fetch(`${origin}/api/refresh`, { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (refresh.ok) {
+          const newToken = cookies().get("directus_access_token")?.value || token || "";
+          r = await doFetch(newToken);
+        }
+      } catch {}
+    }
+    return r;
+  }
+
+  try {
+    // Удаляем связанные записи (best-effort)
+    try {
+      // Удаляем QA записи
+      const qaListRes = await authorizedFetch(
+        `${baseUrl}/items/qa?filter[profile_id][_eq]=${id}&fields=id&limit=5000`
+      );
+      if (qaListRes.ok) {
+        const qaList = await safeJson(qaListRes);
+        const qaIds: number[] = Array.isArray(qaList?.data) 
+          ? qaList.data.map((x: any) => x.id) 
+          : [];
+        
+        if (qaIds.length > 0) {
+          const batches: number[][] = [];
+          for (let i = 0; i < qaIds.length; i += 100) {
+            batches.push(qaIds.slice(i, i + 100));
+          }
+          for (const batch of batches) {
+            await authorizedFetch(
+              `${baseUrl}/items/qa?ids=${batch.join(',')}`, 
+              { method: 'DELETE' }
+            ).catch(() => {});
+          }
+        }
+      }
+    } catch {}
+
+    // Удаляем profile_chunks (если есть)
+    try {
+      const chunksRes = await authorizedFetch(
+        `${baseUrl}/items/profile_chunks?filter[profile_id][_eq]=${id}&fields=id&limit=5000`
+      );
+      if (chunksRes.ok) {
+        const chunks = await safeJson(chunksRes);
+        const chunkIds: number[] = Array.isArray(chunks?.data) 
+          ? chunks.data.map((x: any) => x.id) 
+          : [];
+        
+        if (chunkIds.length > 0) {
+          const batches: number[][] = [];
+          for (let i = 0; i < chunkIds.length; i += 100) {
+            batches.push(chunkIds.slice(i, i + 100));
+          }
+          for (const batch of batches) {
+            await authorizedFetch(
+              `${baseUrl}/items/profile_chunks?ids=${batch.join(',')}`, 
+              { method: 'DELETE' }
+            ).catch(() => {});
+          }
+        }
+      }
+    } catch {}
+
+    // Удаляем профиль
+    const r = await authorizedFetch(`${baseUrl}/items/profiles/${id}`, { method: 'DELETE' });
+    
+    if (!r.ok && r.status !== 404) {
+      const err = await safeJson(r);
+      return NextResponse.json(
+        err || { message: 'Delete failed' }, 
+        { status: r.status }
+      );
+    }
+    
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json(
+      { message: 'Delete failed', error: String(error) }, 
+      { status: 500 }
+    );
+  }
+}
+
 export async function PATCH(req: Request, ctx: { params: { id: string }}) {
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();

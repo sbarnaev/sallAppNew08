@@ -6,6 +6,10 @@ const ClientSearchButton = dynamic(() => import("./ClientSearchButton").then(mod
   ssr: false
 });
 
+const DeleteProfile = dynamic(() => import("./DeleteProfile").then(mod => ({ default: mod.default })), {
+  ssr: false
+});
+
 async function getProfiles(searchParams: Record<string, string | string[] | undefined>) {
   try {
     const params = new URLSearchParams();
@@ -126,8 +130,8 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
           const birthDateStr = client?.birth_date ? new Date(client.birth_date).toLocaleDateString("ru-RU") : null;
           
           return (
-            <Link key={p.id} href={`/profiles/${p.id}`} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-all hover:border-blue-300">
-              <div className="space-y-3">
+            <div key={p.id} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-all hover:border-blue-300 relative group">
+              <Link href={`/profiles/${p.id}`} className="block space-y-3">
                 <div className="font-semibold text-lg text-gray-900 break-words">{clientName}</div>
                 <div className="space-y-1 text-sm text-gray-600">
                   <div className="flex items-center gap-2">
@@ -144,8 +148,11 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
                     {consultationType}
                   </span>
                 </div>
+              </Link>
+              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <DeleteProfile id={p.id} />
               </div>
-            </Link>
+            </div>
           );
         })}
       </div>

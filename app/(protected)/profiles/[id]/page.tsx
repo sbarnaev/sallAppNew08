@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import html2pdf from "html2pdf.js";
 import RichEditor from "@/components/RichEditor";
+import DeleteProfile from "../DeleteProfile";
 
 // Интересные факты для отображения во время генерации (200 фактов)
 const INTERESTING_FACTS = [
@@ -2498,7 +2499,10 @@ export default function ProfileDetail() {
               )}
             </div>
         </div>
-        <ActionBar />
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <ActionBar />
+          {!polling && profile && <DeleteProfile id={id} />}
+        </div>
         </div>
       </div>
 
