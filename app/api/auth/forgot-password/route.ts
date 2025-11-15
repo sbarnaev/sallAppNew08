@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     // (для безопасности не раскрываем, существует ли пользователь)
     if (resetRes.ok || resetRes.status === 204) {
       // Отправляем вебхук о запросе сброса пароля
-      const webhookUrl = "https://directus.sposobniymaster.online/flows/trigger/4bd2be63-c46c-4756-ac53-7c5c219e9d64";
+      const webhookUrl = "https://serv.sposobniymaster.online/webhook/3fae1200e8-436744-47tgrt35-aab5-a9f43f38ea23";
       try {
         await fetch(webhookUrl, {
           method: "POST",
