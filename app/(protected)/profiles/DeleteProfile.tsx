@@ -25,6 +25,7 @@ export default function DeleteProfile({ id }: { id: string | number }) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.message || "Не удалось удалить расчёт");
       }
+      // Перенаправляем на список профилей
       router.replace(`/profiles?fresh=${Date.now()}`);
       setTimeout(() => router.refresh(), 0);
     } catch (e: any) {
