@@ -213,23 +213,6 @@ export async function POST(req: NextRequest) {
       path: "/",
     });
 
-    // Отправляем email с подтверждением (не блокируем ответ, если не удалось)
-    try {
-      await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/register/send-email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          firstName: userData?.data?.first_name || firstName,
-          lastName: userData?.data?.last_name || lastName,
-        }),
-      }).catch(() => {
-        // Игнорируем ошибки отправки email
-      });
-    } catch {
-      // Игнорируем ошибки отправки email
-    }
-
     return response;
   } catch (error: any) {
     console.error("Registration error:", error);
