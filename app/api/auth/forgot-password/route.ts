@@ -33,6 +33,24 @@ export async function POST(req: NextRequest) {
     // Directus возвращает 204 No Content при успехе, даже если пользователь не найден
     // (для безопасности не раскрываем, существует ли пользователь)
     if (resetRes.ok || resetRes.status === 204) {
+      // Отправляем вебхук о запросе сброса пароля
+      const webhookUrl = "https://directus.sposobniymaster.online/flows/trigger/4bd2be63-c46c-4756-ac53-7c5c219e9d64";
+      try {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email.trim(),
+            timestamp: new Date().toISOString(),
+            type: "password_reset_request",
+          }),
+        }).catch(() => {
+          // Игнорируем ошибки вебхука, чтобы не блокировать основной процесс
+        });
+      } catch {
+        // Игнорируем ошибки вебхука
+      }
+
       return NextResponse.json({
         message: "Если пользователь с таким email существует, инструкции отправлены на почту",
       });
