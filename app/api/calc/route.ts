@@ -82,6 +82,19 @@ export async function POST(req: Request) {
   const { clientId, name, birthday, type, request, clientRequest, query, prompt, partnerName, partnerBirthday, goal } = payload || {};
   const publicCode = generatePublicCode();
 
+  // Функция для очистки текста от переносов строк и специальных символов
+  function cleanText(text: string | null | undefined): string | null {
+    if (!text || typeof text !== "string") return null;
+    return text
+      .replace(/\r\n/g, " ") // Windows переносы
+      .replace(/\n/g, " ") // Unix переносы
+      .replace(/\r/g, " ") // Mac переносы
+      .replace(/\t/g, " ") // Табуляции
+      .replace(/[^\x20-\x7E\u0400-\u04FF]/g, " ") // Удаляем все непечатаемые символы кроме пробела и кириллицы/латиницы
+      .replace(/\s+/g, " ") // Множественные пробелы в один
+      .trim();
+  }
+
   // 0) Получаем gender из данных клиента, если clientId указан
   let clientGender: string | null = null;
   if (clientId && directusUrl) {
@@ -171,12 +184,12 @@ export async function POST(req: Request) {
       public_code: publicCode,
       // Gender клиента (если есть)
       gender: clientGender || null,
-      // Дополнительный запрос пользователя (для целевого расчёта)
-      request: request ?? clientRequest ?? query ?? prompt ?? null,
+      // Дополнительный запрос пользователя (для целевого расчёта) - очищаем от переносов строк
+      request: cleanText(request ?? clientRequest ?? query ?? prompt ?? null),
       // Поля для партнерского расчета
       partnerName: type === "partner" ? partnerName : undefined,
       partnerBirthday: type === "partner" ? partnerBirthday : undefined,
-      goal: type === "partner" ? goal : undefined,
+      goal: type === "partner" ? cleanText(goal) : undefined,
       // Передаем URL Directus для n8n workflow (без слеша в конце)
       directusUrl: cleanDirectusUrl,
       // Передаем токены в body для n8n workflow

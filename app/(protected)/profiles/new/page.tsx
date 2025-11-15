@@ -43,6 +43,18 @@ export default function NewCalculationPage() {
     }
   }, [clientIdParam]);
 
+  // Функция для очистки текста от переносов строк и специальных символов
+  function cleanText(text: string): string {
+    return text
+      .replace(/\r\n/g, " ") // Windows переносы
+      .replace(/\n/g, " ") // Unix переносы
+      .replace(/\r/g, " ") // Mac переносы
+      .replace(/\t/g, " ") // Табуляции
+      .replace(/[^\x20-\x7E\u0400-\u04FF]/g, " ") // Удаляем все непечатаемые символы кроме пробела и кириллицы/латиницы
+      .replace(/\s+/g, " ") // Множественные пробелы в один
+      .trim();
+  }
+
   async function startCalc(type: "base" | "target" | "partner") {
     setError(null);
     if (!name || !birthday) {
@@ -64,13 +76,13 @@ export default function NewCalculationPage() {
       };
       if (clientIdParam) payload.clientId = Number(clientIdParam);
       if (type === "target") {
-        // Объединяем все поля в одну строку без переносов
+        // Объединяем все поля в одну строку без переносов и спецсимволов
         const parts = [
-          `Что есть сейчас: ${targetCurrent.trim()}`,
-          `Что клиент хочет: ${targetWant.trim()}`
+          `Что есть сейчас: ${cleanText(targetCurrent)}`,
+          `Что клиент хочет: ${cleanText(targetWant)}`
         ];
         if (targetAdditional.trim()) {
-          parts.push(`Дополнительная информация: ${targetAdditional.trim()}`);
+          parts.push(`Дополнительная информация: ${cleanText(targetAdditional)}`);
         }
         payload.request = parts.join(" ");
       }
@@ -84,7 +96,7 @@ export default function NewCalculationPage() {
         } else {
           payload.partnerBirthday = partnerBirthday; // fallback
         }
-        payload.goal = partnerGoal;
+        payload.goal = cleanText(partnerGoal);
       }
 
       const res = await fetch("/api/calc", {
