@@ -7,6 +7,7 @@ import remarkGfm from "remark-gfm";
 import html2pdf from "html2pdf.js";
 import RichEditor from "@/components/RichEditor";
 import DeleteProfile from "../DeleteProfile";
+import { calculateSALCodes, getCodeShortLabel } from "@/lib/sal-codes";
 
 // Интересные факты для отображения во время генерации (200 фактов)
 const INTERESTING_FACTS = [
@@ -342,6 +343,7 @@ export default function ProfileDetail() {
   const id = params?.id as string;
   const [profile, setProfile] = useState<Profile | null>(null);
   const [clientName, setClientName] = useState<string>("");
+  const [clientBirthDate, setClientBirthDate] = useState<string | null>(null);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -2500,7 +2502,7 @@ export default function ProfileDetail() {
             </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          <ActionBar />
+        <ActionBar />
           {!polling && profile && <DeleteProfile id={id} />}
         </div>
         </div>
@@ -2539,6 +2541,20 @@ export default function ProfileDetail() {
         // Названия кодов САЛ
         const codeLabels = ["Код Личности", "Код Коннектора", "Код Реализации", "Код Генератора", "Код Миссии"];
         
+        // Если кодов нет в digits, пытаемся рассчитать по дате рождения клиента
+        if (arr.length === 0 && clientBirthDate) {
+          const calculatedCodes = calculateSALCodes(clientBirthDate);
+          if (calculatedCodes) {
+            arr = [
+              calculatedCodes.personality,
+              calculatedCodes.connector,
+              calculatedCodes.realization,
+              calculatedCodes.generator,
+              calculatedCodes.mission,
+            ];
+          }
+        }
+        
         if (arr.length === 0) return null;
         
         // Определяем заголовок в зависимости от типа
@@ -2563,16 +2579,16 @@ export default function ProfileDetail() {
               <h2 className="text-lg md:text-xl font-semibold text-gray-900">{title}</h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6 py-4">
-              {arr.slice(0,5).map((val: any, i: number) => (
+            {arr.slice(0,5).map((val: any, i: number) => (
                 <div key={i} className="flex flex-col items-center gap-2">
                   <div className="w-14 h-14 md:w-[74px] md:h-[74px] rounded-xl shadow-sm bg-[#1f92aa] text-white font-bold text-xl md:text-[28px] grid place-items-center">
-                    {val ?? ""}
+                {val ?? ""}
                   </div>
                   <div className="text-xs md:text-sm text-gray-600 text-center font-medium">
                     {codeLabels[i] || `Код ${i + 1}`}
                   </div>
-                </div>
-              ))}
+              </div>
+            ))}
             </div>
           </div>
         );
