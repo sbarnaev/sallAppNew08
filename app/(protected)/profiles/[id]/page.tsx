@@ -944,13 +944,14 @@ export default function ProfileDetail() {
       if (Array.isArray(p?.chat_history) && chatRef.current.length === 0) {
         setChat(p.chat_history);
       }
-      // Подтянем имя клиента
+      // Подтянем имя клиента и дату рождения
       if (p?.client_id) {
         try {
           const rc = await fetch(`/api/clients/${p.client_id}`, { cache: "no-store" });
           const cj = await rc.json().catch(()=>({}));
-          const name = cj?.data?.name || "";
-          if (name) setClientName(name);
+          const client = cj?.data;
+          if (client?.name) setClientName(client.name);
+          if (client?.birth_date) setClientBirthDate(client.birth_date);
         } catch {}
       }
       const htmlCandidate = p?.html || p?.raw_html || p?.content || p?.html_content;
