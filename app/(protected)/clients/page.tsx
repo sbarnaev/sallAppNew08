@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { internalApiFetch } from "@/lib/fetchers";
 
+export const dynamic = "force-dynamic";
+
 function getSingleValue(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return value[0] ?? "";
   return value ?? "";
