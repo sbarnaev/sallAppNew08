@@ -20,6 +20,7 @@ export function calculateSALCodes(birthday: string): SALCodes | null {
   try {
     // Нормализуем дату
     let day: number, month: number, year: number;
+    let dob: string; // дата в формате DD.MM.YYYY
     
     // Формат DD.MM.YYYY
     if (birthday.includes('.')) {
@@ -28,6 +29,7 @@ export function calculateSALCodes(birthday: string): SALCodes | null {
       day = parseInt(parts[0], 10);
       month = parseInt(parts[1], 10);
       year = parseInt(parts[2], 10);
+      dob = birthday;
     } 
     // Формат YYYY-MM-DD
     else if (birthday.includes('-')) {
@@ -36,6 +38,8 @@ export function calculateSALCodes(birthday: string): SALCodes | null {
       year = parseInt(parts[0], 10);
       month = parseInt(parts[1], 10);
       day = parseInt(parts[2], 10);
+      // Преобразуем в DD.MM.YYYY для расчета коннектора
+      dob = `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
     } else {
       return null;
     }
@@ -43,30 +47,43 @@ export function calculateSALCodes(birthday: string): SALCodes | null {
     if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
     if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900 || year > 2100) return null;
 
-    // Функция для приведения числа к однозначному (сумма цифр до одной)
-    function reduceToSingleDigit(num: number): number {
-      while (num > 9 && num !== 11 && num !== 22 && num !== 33) {
-        num = Math.floor(num / 10) + (num % 10);
+    // Сумма до 1–9 (для всех кодов, кроме миссии)
+    const digitSum1to9 = (n: number): number => {
+      while (n > 9) {
+        n = n.toString().split('').reduce((a, b) => a + parseInt(b, 10), 0);
       }
-      return num;
-    }
+      return n;
+    };
 
-    // Расчет кодов САЛ
-    // Код Личности = день рождения
-    const personality = reduceToSingleDigit(day);
+    // Сумма с мастер-числами 11, 22 (для миссии)
+    const digitSumMission = (n: number): number => {
+      if (n === 11 || n === 22) return n;
+      while (n > 9) {
+        n = n.toString().split('').reduce((a, b) => a + parseInt(b, 10), 0);
+      }
+      return n;
+    };
 
-    // Код Коннектора = месяц рождения
-    const connector = reduceToSingleDigit(month);
+    // Код Личности = сумма цифр дня (до 9)
+    const personality = digitSum1to9(day);
 
-    // Код Реализации = сумма цифр года
-    const yearSum = year.toString().split('').reduce((sum, digit) => sum + parseInt(digit, 10), 0);
-    const realization = reduceToSingleDigit(yearSum);
+    // Код Коннектора = сумма всех цифр даты (до 9)
+    const connector = digitSum1to9(
+      dob.replace(/\D/g, '').split('').reduce((a, b) => a + parseInt(b, 10), 0)
+    );
 
-    // Код Генератора = сумма дня и месяца
-    const generator = reduceToSingleDigit(day + month);
+    // Код Реализации = сумма последних 2 цифр года (до 9)
+    const realization = digitSum1to9(
+      (year % 100).toString().split('').reduce((a, b) => a + parseInt(b, 10), 0)
+    );
 
-    // Код Миссии = сумма всех кодов
-    const mission = reduceToSingleDigit(personality + connector + realization + generator);
+    // Код Генератора = (сумма цифр дня) × (сумма цифр месяца), затем до 9
+    const sumDay = day.toString().split('').reduce((a, b) => a + parseInt(b, 10), 0);
+    const sumMonth = month.toString().split('').reduce((a, b) => a + parseInt(b, 10), 0);
+    const generator = digitSum1to9(sumDay * sumMonth);
+
+    // Код Миссии = personality + connector → допускает 11 и 22
+    const mission = digitSumMission(personality + connector);
 
     return {
       personality,
