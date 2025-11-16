@@ -2536,6 +2536,9 @@ export default function ProfileDetail() {
           } catch {}
         }
         
+        // Названия кодов САЛ
+        const codeLabels = ["Код Личности", "Код Коннектора", "Код Реализации", "Код Генератора", "Код Миссии"];
+        
         if (arr.length === 0) return null;
         
         // Определяем заголовок в зависимости от типа
@@ -2559,10 +2562,15 @@ export default function ProfileDetail() {
             <div className="text-center">
               <h2 className="text-lg md:text-xl font-semibold text-gray-900">{title}</h2>
             </div>
-            <div className="flex flex-wrap gap-3 md:gap-6 justify-center items-center py-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6 py-4">
               {arr.slice(0,5).map((val: any, i: number) => (
-                <div key={i} className="w-14 h-14 md:w-[74px] md:h-[74px] rounded-xl shadow-sm bg-[#1f92aa] text-white font-bold text-xl md:text-[28px] grid place-items-center">
-                  {val ?? ""}
+                <div key={i} className="flex flex-col items-center gap-2">
+                  <div className="w-14 h-14 md:w-[74px] md:h-[74px] rounded-xl shadow-sm bg-[#1f92aa] text-white font-bold text-xl md:text-[28px] grid place-items-center">
+                    {val ?? ""}
+                  </div>
+                  <div className="text-xs md:text-sm text-gray-600 text-center font-medium">
+                    {codeLabels[i] || `Код ${i + 1}`}
+                  </div>
                 </div>
               ))}
             </div>
