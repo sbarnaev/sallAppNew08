@@ -83,12 +83,12 @@ export default function ExpressConsultationPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 max-w-4xl mx-auto px-4 pb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Экспресс-консультация</h1>
         <Link
           href="/consultations"
-          className="text-sm text-gray-600 hover:text-gray-900"
+          className="text-sm text-gray-600 hover:text-gray-900 whitespace-nowrap"
         >
           ← Назад к консультациям
         </Link>

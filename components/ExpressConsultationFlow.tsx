@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { logger } from "@/lib/logger";
 
 interface ConsultationStep {
   id?: number;
@@ -46,19 +47,27 @@ export default function ExpressConsultationFlow({
     try {
       const res = await fetch(`/api/consultations/express/${consultationId}`);
       const data = await res.json().catch(() => ({}));
-      if (data?.steps) {
+      if (data?.steps && Array.isArray(data.steps) && data.steps.length > 0) {
         setSteps(data.steps);
         // Определяем текущий шаг на основе сохраненных данных
-        const lastStep = data.steps[data.steps.length - 1];
-        if (lastStep?.step_type) {
-          const stepTypes: StepType[] = ["point_a", "point_b", "resources", "closing"];
-          const currentIndex = stepTypes.indexOf(lastStep.step_type as StepType);
-          if (currentIndex < stepTypes.length - 1) {
-            setCurrentStep(stepTypes[currentIndex + 1]);
-          } else {
-            setCurrentStep("closing");
+        const stepTypes: StepType[] = ["point_a", "point_b", "resources", "closing"];
+        const completedSteps = new Set(data.steps.map((s: ConsultationStep) => s.step_type));
+        
+        // Находим первый незавершенный шаг
+        let nextStep: StepType = "point_a";
+        for (const stepType of stepTypes) {
+          if (!completedSteps.has(stepType)) {
+            nextStep = stepType;
+            break;
           }
         }
+        
+        // Если все шаги кроме closing завершены, переходим к closing
+        if (completedSteps.has("point_a") && completedSteps.has("point_b") && completedSteps.has("resources")) {
+          nextStep = "closing";
+        }
+        
+        setCurrentStep(nextStep);
       }
     } catch (error) {
       console.error("Error loading steps:", error);
@@ -175,7 +184,7 @@ export default function ExpressConsultationFlow({
             {/* Заголовок шага */}
             <button
               onClick={() => setCurrentStep(stepType)}
-              className="w-full px-6 py-4 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between"
+              className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-between text-left"
             >
               <div className="flex items-center gap-3">
                 <div
@@ -198,7 +207,7 @@ export default function ExpressConsultationFlow({
 
             {/* Содержимое шага */}
             {isOpen && (
-              <div className="p-6 bg-white">
+              <div className="p-4 sm:p-6 bg-white">
                 {stepType === "point_a" && (
                   <PointAStep
                     stepData={stepData}
@@ -258,7 +267,11 @@ function PointAStep({
   const [selectedOptions, setSelectedOptions] = useState<string[]>(
     stepData?.selected_options || []
   );
-  const [customText, setCustomText] = useState(stepData?.response || "");
+  const [customText, setCustomText] = useState(
+    stepData?.response && !stepData.selected_options?.length 
+      ? stepData.response 
+      : ""
+  );
 
   const options = [
     "Не получается найти клиентов",
@@ -272,14 +285,18 @@ function PointAStep({
   ];
 
   function handleSave() {
+    if (selectedOptions.length === 0 && !customText.trim()) {
+      return; // Валидация уже есть в disabled кнопки
+    }
+    
     const response = selectedOptions.length > 0 
-      ? selectedOptions.join(", ") + (customText ? `\n\nДополнительно: ${customText}` : "")
-      : customText;
+      ? selectedOptions.join(", ") + (customText.trim() ? `\n\nДополнительно: ${customText.trim()}` : "")
+      : customText.trim();
     
     onSave(
       "Что не получается? Что вас не устраивает в текущей ситуации?",
       response,
-      selectedOptions
+      selectedOptions.length > 0 ? selectedOptions : undefined
     );
   }
 
@@ -291,7 +308,7 @@ function PointAStep({
       
       <div>
         <label className="block text-sm font-medium mb-2">Выберите проблемы (можно несколько):</label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {options.map((option) => (
             <button
               key={option}
@@ -302,7 +319,7 @@ function PointAStep({
                     : [...prev, option]
                 );
               }}
-              className={`p-3 rounded-lg border text-left transition ${
+              className={`p-3 rounded-lg border text-left transition text-sm sm:text-base ${
                 selectedOptions.includes(option)
                   ? "bg-blue-50 border-blue-500 text-blue-700"
                   : "bg-white border-gray-300 hover:border-gray-400"
@@ -348,7 +365,11 @@ function PointBStep({
   const [selectedOptions, setSelectedOptions] = useState<string[]>(
     stepData?.selected_options || []
   );
-  const [customText, setCustomText] = useState(stepData?.response || "");
+  const [customText, setCustomText] = useState(
+    stepData?.response && !stepData.selected_options?.length 
+      ? stepData.response 
+      : ""
+  );
 
   const options = [
     "Зарабатывать больше денег",
@@ -362,14 +383,18 @@ function PointBStep({
   ];
 
   function handleSave() {
+    if (selectedOptions.length === 0 && !customText.trim()) {
+      return;
+    }
+    
     const response = selectedOptions.length > 0 
-      ? selectedOptions.join(", ") + (customText ? `\n\nДополнительно: ${customText}` : "")
-      : customText;
+      ? selectedOptions.join(", ") + (customText.trim() ? `\n\nДополнительно: ${customText.trim()}` : "")
+      : customText.trim();
     
     onSave(
       "К чему вы хотите прийти? Какой результат вы хотите получить?",
       response,
-      selectedOptions
+      selectedOptions.length > 0 ? selectedOptions : undefined
     );
   }
 
@@ -381,7 +406,7 @@ function PointBStep({
       
       <div>
         <label className="block text-sm font-medium mb-2">Выберите желания (можно несколько):</label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {options.map((option) => (
             <button
               key={option}
@@ -438,7 +463,11 @@ function ResourcesStep({
   const [selectedOptions, setSelectedOptions] = useState<string[]>(
     stepData?.selected_options || []
   );
-  const [customText, setCustomText] = useState(stepData?.response || "");
+  const [customText, setCustomText] = useState(
+    stepData?.response && !stepData.selected_options?.length 
+      ? stepData.response 
+      : ""
+  );
 
   const availableResources = [
     "Время",
@@ -459,12 +488,15 @@ function ResourcesStep({
   ];
 
   function handleSave() {
-    const response = `Доступные ресурсы: ${selectedOptions.join(", ")}\n\nЧто можем дать мы: ${offeredResources.join(", ")}${customText ? `\n\nДополнительно: ${customText}` : ""}`;
+    const resourcesText = selectedOptions.length > 0 
+      ? `Доступные ресурсы: ${selectedOptions.join(", ")}` 
+      : "Доступные ресурсы не указаны";
+    const response = `${resourcesText}\n\nЧто можем дать мы: ${offeredResources.join(", ")}${customText.trim() ? `\n\nДополнительно: ${customText.trim()}` : ""}`;
     
     onSave(
       "Какие есть ресурсы для перехода из точки А в точку Б?",
       response,
-      selectedOptions
+      selectedOptions.length > 0 ? selectedOptions : undefined
     );
   }
 
@@ -476,7 +508,7 @@ function ResourcesStep({
       
       <div>
         <label className="block text-sm font-medium mb-2">Какие ресурсы есть у клиента:</label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {availableResources.map((resource) => (
             <button
               key={resource}
@@ -557,12 +589,18 @@ function ClosingStep({
     <div className="space-y-6">
       <div className="bg-gray-50 rounded-lg p-4">
         <h3 className="font-medium mb-2">Резюме консультации:</h3>
-        <div className="space-y-2 text-sm">
+        <div className="space-y-3 text-sm">
           <div>
-            <span className="font-medium">Точка А:</span> {pointA?.response || "Не заполнено"}
+            <span className="font-medium text-gray-700">Точка А:</span>
+            <div className="mt-1 text-gray-600 whitespace-pre-wrap break-words">
+              {pointA?.response || "Не заполнено"}
+            </div>
           </div>
           <div>
-            <span className="font-medium">Точка Б:</span> {pointB?.response || "Не заполнено"}
+            <span className="font-medium text-gray-700">Точка Б:</span>
+            <div className="mt-1 text-gray-600 whitespace-pre-wrap break-words">
+              {pointB?.response || "Не заполнено"}
+            </div>
           </div>
         </div>
       </div>
@@ -571,12 +609,12 @@ function ClosingStep({
         <label className="block text-sm font-medium mb-2">
           Насколько важно для клиента попасть в точку Б? (1-10)
         </label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
             <button
               key={rating}
               onClick={() => setImportanceRating(rating)}
-              className={`w-10 h-10 rounded-lg border transition ${
+              className={`w-10 h-10 rounded-lg border transition text-sm ${
                 importanceRating === rating
                   ? "bg-blue-600 text-white border-blue-600"
                   : "bg-white border-gray-300 hover:border-gray-400"
@@ -645,4 +683,5 @@ function ClosingStep({
     </div>
   );
 }
+
 
