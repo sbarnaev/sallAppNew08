@@ -149,11 +149,11 @@ export async function POST(req: NextRequest) {
       // Задержка перед запросом
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // САМЫЙ ПРОСТОЙ ЗАПРОС - все консультации клиента, без фильтров
-      // Это покажет, что вообще возвращает Directus
-      const simpleUrl = `${baseUrl}/items/consultations?filter[client_id][_eq]=${client_id}&sort=-created_at&limit=50&fields=*`;
+      // Пробуем запросить только разрешенные поля (id, type, status)
+      // Проблема: нет прав на client_id и created_at, поэтому используем только базовые поля
+      const simpleUrl = `${baseUrl}/items/consultations?filter[type][_eq]=express&sort=-id&limit=50&fields=id,type,status,scheduled_at,owner_user`;
       
-      logger.log("Making simple fetch request to:", simpleUrl);
+      logger.log("Making fetch request to:", simpleUrl);
       
       try {
         const fetchRes = await fetch(simpleUrl, {
@@ -170,34 +170,29 @@ export async function POST(req: NextRequest) {
         if (fetchRes.ok) {
           const fetchData = await fetchRes.json().catch(() => ({}));
           
-          logger.log("ALL CONSULTATIONS FOR CLIENT:", {
+          logger.log("ALL EXPRESS CONSULTATIONS:", {
             hasData: !!fetchData?.data,
             isArray: Array.isArray(fetchData?.data),
             totalCount: Array.isArray(fetchData?.data) ? fetchData.data.length : 0,
             allConsultations: Array.isArray(fetchData?.data) ? fetchData.data.map((item: any) => ({
               id: item.id,
-              client_id: item.client_id,
               type: item.type,
               status: item.status,
               owner_user: item.owner_user,
-              created_at: item.created_at,
               scheduled_at: item.scheduled_at,
             })) : null,
           });
           
           if (fetchData?.data && Array.isArray(fetchData.data)) {
-            // Ищем экспресс-консультацию
-            let found = fetchData.data.find((c: any) => c.type === "express");
+            // Ищем консультацию с нужным owner_user (самую свежую по ID)
+            let found = fetchData.data
+              .filter((c: any) => c.owner_user === ownerUserId)
+              .sort((a: any, b: any) => (b.id || 0) - (a.id || 0))[0];
             
-            // Если не нашли по типу, берем самую свежую
+            // Если не нашли по owner_user, берем самую свежую экспресс-консультацию
             if (!found && fetchData.data.length > 0) {
-              const sorted = [...fetchData.data].sort((a: any, b: any) => {
-                const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
-                const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
-                return bTime - aTime;
-              });
-              found = sorted[0];
-              logger.log("Using most recent consultation as fallback:", found?.id, found?.type);
+              found = fetchData.data.sort((a: any, b: any) => (b.id || 0) - (a.id || 0))[0];
+              logger.log("Using most recent express consultation as fallback:", found?.id);
             }
             
             if (found?.id) {
@@ -205,7 +200,7 @@ export async function POST(req: NextRequest) {
               consultationData = { data: found };
               logger.log(`✅ Successfully found consultation ID: ${consultationId}`);
             } else {
-              logger.error("❌ No consultation found in response, even though 204 was returned");
+              logger.error("❌ No consultation found in response");
             }
           } else {
             logger.error("❌ Response data is not an array:", fetchData);
@@ -213,6 +208,36 @@ export async function POST(req: NextRequest) {
         } else {
           const errorText = await fetchRes.text().catch(() => "");
           logger.error(`❌ Fetch failed with status ${fetchRes.status}:`, errorText.substring(0, 500));
+          
+          // Если ошибка прав доступа, пробуем запросить только id
+          if (fetchRes.status === 403) {
+            logger.log("Trying minimal request with only id field...");
+            const minimalUrl = `${baseUrl}/items/consultations?filter[type][_eq]=express&sort=-id&limit=50&fields=id`;
+            
+            try {
+              const minimalRes = await fetch(minimalUrl, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  Accept: "application/json",
+                },
+                cache: "no-store",
+                signal: AbortSignal.timeout(10000),
+              });
+              
+              if (minimalRes.ok) {
+                const minimalData = await minimalRes.json().catch(() => ({}));
+                if (minimalData?.data && Array.isArray(minimalData.data) && minimalData.data.length > 0) {
+                  // Берем самую свежую (по ID)
+                  const latest = minimalData.data.sort((a: any, b: any) => (b.id || 0) - (a.id || 0))[0];
+                  consultationId = latest?.id;
+                  consultationData = { data: { id: consultationId } };
+                  logger.log(`✅ Found consultation ID with minimal request: ${consultationId}`);
+                }
+              }
+            } catch (minimalError: any) {
+              logger.error("Minimal request also failed:", minimalError?.message || minimalError);
+            }
+          }
         }
       } catch (fetchError: any) {
         logger.error(`❌ Fetch error:`, fetchError?.message || fetchError);
