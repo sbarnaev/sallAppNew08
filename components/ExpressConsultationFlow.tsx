@@ -118,7 +118,7 @@ export default function ExpressConsultationFlow({
         const filtered = prev.filter(
           (s) => !(s.step_type === stepType && s.step_order === stepOrder)
         );
-        return [...filtered, newStep];
+        return [...filtered, newStep].sort((a, b) => a.step_order - b.step_order);
       });
     } catch (error) {
       console.error("Error saving step:", error);
@@ -264,14 +264,28 @@ function PointAStep({
   onSave: (question: string, response: string, options?: string[]) => void;
   saving: boolean;
 }) {
-  const [selectedOptions, setSelectedOptions] = useState<string[]>(
-    stepData?.selected_options || []
-  );
-  const [customText, setCustomText] = useState(
-    stepData?.response && !stepData.selected_options?.length 
-      ? stepData.response 
-      : ""
-  );
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [customText, setCustomText] = useState("");
+
+  // Восстанавливаем состояние из сохраненных данных
+  useEffect(() => {
+    if (stepData) {
+      if (stepData.selected_options && stepData.selected_options.length > 0) {
+        setSelectedOptions(stepData.selected_options);
+        // Если есть selected_options, customText должен быть только дополнительным текстом
+        const responseText = stepData.response || "";
+        const additionalMatch = responseText.match(/Дополнительно:\s*(.+)/s);
+        setCustomText(additionalMatch ? additionalMatch[1].trim() : "");
+      } else {
+        // Если нет selected_options, значит весь ответ в customText
+        setSelectedOptions([]);
+        setCustomText(stepData.response || "");
+      }
+    } else {
+      setSelectedOptions([]);
+      setCustomText("");
+    }
+  }, [stepData]);
 
   const options = [
     "Не получается найти клиентов",
@@ -345,7 +359,7 @@ function PointAStep({
       <button
         onClick={handleSave}
         disabled={saving || (selectedOptions.length === 0 && !customText.trim())}
-        className="rounded-lg bg-blue-600 text-white px-4 py-2 hover:bg-blue-700 disabled:opacity-50"
+        className="w-full sm:w-auto rounded-lg bg-blue-600 text-white px-6 py-3 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
       >
         {saving ? "Сохранение..." : "Сохранить и перейти дальше"}
       </button>
@@ -362,14 +376,28 @@ function PointBStep({
   onSave: (question: string, response: string, options?: string[]) => void;
   saving: boolean;
 }) {
-  const [selectedOptions, setSelectedOptions] = useState<string[]>(
-    stepData?.selected_options || []
-  );
-  const [customText, setCustomText] = useState(
-    stepData?.response && !stepData.selected_options?.length 
-      ? stepData.response 
-      : ""
-  );
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [customText, setCustomText] = useState("");
+
+  // Восстанавливаем состояние из сохраненных данных
+  useEffect(() => {
+    if (stepData) {
+      if (stepData.selected_options && stepData.selected_options.length > 0) {
+        setSelectedOptions(stepData.selected_options);
+        // Если есть selected_options, customText должен быть только дополнительным текстом
+        const responseText = stepData.response || "";
+        const additionalMatch = responseText.match(/Дополнительно:\s*(.+)/s);
+        setCustomText(additionalMatch ? additionalMatch[1].trim() : "");
+      } else {
+        // Если нет selected_options, значит весь ответ в customText
+        setSelectedOptions([]);
+        setCustomText(stepData.response || "");
+      }
+    } else {
+      setSelectedOptions([]);
+      setCustomText("");
+    }
+  }, [stepData]);
 
   const options = [
     "Зарабатывать больше денег",
@@ -460,14 +488,28 @@ function ResourcesStep({
   onSave: (question: string, response: string, options?: string[]) => void;
   saving: boolean;
 }) {
-  const [selectedOptions, setSelectedOptions] = useState<string[]>(
-    stepData?.selected_options || []
-  );
-  const [customText, setCustomText] = useState(
-    stepData?.response && !stepData.selected_options?.length 
-      ? stepData.response 
-      : ""
-  );
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [customText, setCustomText] = useState("");
+
+  // Восстанавливаем состояние из сохраненных данных
+  useEffect(() => {
+    if (stepData) {
+      if (stepData.selected_options && stepData.selected_options.length > 0) {
+        setSelectedOptions(stepData.selected_options);
+        // Если есть selected_options, customText должен быть только дополнительным текстом
+        const responseText = stepData.response || "";
+        const additionalMatch = responseText.match(/Дополнительно:\s*(.+)/s);
+        setCustomText(additionalMatch ? additionalMatch[1].trim() : "");
+      } else {
+        // Если нет selected_options, значит весь ответ в customText
+        setSelectedOptions([]);
+        setCustomText(stepData.response || "");
+      }
+    } else {
+      setSelectedOptions([]);
+      setCustomText("");
+    }
+  }, [stepData]);
 
   const availableResources = [
     "Время",
@@ -554,7 +596,7 @@ function ResourcesStep({
       <button
         onClick={handleSave}
         disabled={saving}
-        className="rounded-lg bg-purple-600 text-white px-4 py-2 hover:bg-purple-700 disabled:opacity-50"
+        className="w-full sm:w-auto rounded-lg bg-purple-600 text-white px-6 py-3 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
       >
         {saving ? "Сохранение..." : "Сохранить и перейти к продаже"}
       </button>

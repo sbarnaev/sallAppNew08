@@ -79,8 +79,40 @@ export async function POST(
     }
 
     // 3. Получаем или рассчитываем коды САЛ
+    // Сначала пытаемся получить из профиля клиента
     let codes: any = null;
-    if (client.birth_date) {
+    let profileData: any = null;
+    
+    // Ищем последний профиль клиента
+    const profilesRes = await fetch(`${baseUrl}/items/profiles?filter[client_id][_eq]=${client.id}&sort=-created_at&limit=1&fields=id,digits,raw_json`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      cache: "no-store",
+    });
+
+    if (profilesRes.ok) {
+      const profilesData = await profilesRes.json().catch(() => ({}));
+      if (profilesData?.data && profilesData.data.length > 0) {
+        profileData = profilesData.data[0];
+        // Пытаемся получить коды из digits или raw_json
+        if (profileData.digits) {
+          const digitsArray = Array.isArray(profileData.digits) 
+            ? profileData.digits 
+            : (typeof profileData.digits === 'string' ? profileData.digits.split(',').map(Number) : []);
+          if (digitsArray.length >= 5) {
+            codes = [
+              { num: digitsArray[0], description: `Код Личности: ${digitsArray[0]}` },
+              { num: digitsArray[1], description: `Код Коннектора: ${digitsArray[1]}` },
+              { num: digitsArray[2], description: `Код Реализации: ${digitsArray[2]}` },
+              { num: digitsArray[3], description: `Код Генератора: ${digitsArray[3]}` },
+              { num: digitsArray[4], description: `Код Миссии: ${digitsArray[4]}` },
+            ];
+          }
+        }
+      }
+    }
+
+    // Если кодов нет, рассчитываем по дате рождения
+    if (!codes && client.birth_date) {
       const calculatedCodes = calculateSALCodes(client.birth_date);
       if (calculatedCodes) {
         codes = [
@@ -95,10 +127,16 @@ export async function POST(
 
     // 4. Формируем запрос к n8n для генерации инсайтов
     // Используем промпт из 1.json (базовая консультация)
+    // Формат кодов должен соответствовать ожидаемому n8n формату
+    const formattedCodes = codes?.map((c: any) => ({
+      num: c.num,
+      description: c.description || `Код: ${c.num}`,
+    })) || [];
+
     const n8nPayload = {
       name: client.name || "Клиент",
       birthday: client.birth_date || "",
-      codes: codes || [],
+      codes: formattedCodes,
       consultationData: {
         pointA: pointA.response,
         pointB: pointB.response,
@@ -108,6 +146,7 @@ export async function POST(
       refreshToken: refreshToken,
       type: "express",
       consultationId: Number(id),
+      profileId: profileData?.id || null,
     };
 
     // 5. Вызываем n8n workflow
