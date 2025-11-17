@@ -143,56 +143,53 @@ export async function POST(req: NextRequest) {
 
     // Статус 204 (No Content) - успешное создание без тела ответа
     if (r.status === 204) {
-      logger.log("Directus returned 204 (No Content), fetching created consultation...");
-      logger.log("Search parameters:", { client_id, ownerUserId, type: "express" });
+      logger.log("Directus returned 204 (No Content), fetching created consultation via internal API...");
       
       // Задержка перед запросом
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Пробуем запросить только разрешенные поля (id, type, status)
-      // Проблема: нет прав на client_id и created_at, поэтому используем только базовые поля
-      const simpleUrl = `${baseUrl}/items/consultations?filter[type][_eq]=express&sort=-id&limit=50&fields=id,type,status,scheduled_at,owner_user`;
-      
-      logger.log("Making fetch request to:", simpleUrl);
-      
+      // Используем внутренний API endpoint, который уже имеет правильные права доступа
+      // Это обходит проблему с правами доступа к полям в Directus
       try {
-        const fetchRes = await fetch(simpleUrl, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
+        const apiUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/consultations?filter[client_id][_eq]=${client_id}&filter[type][_eq]=express&sort=-id&limit=10`;
+        
+        logger.log("Fetching via internal API:", apiUrl);
+        
+        // Используем internalApiFetch для правильной передачи cookies
+        const { internalApiFetch } = await import("@/lib/fetchers");
+        const fetchRes = await internalApiFetch(`/api/consultations?filter[client_id][_eq]=${client_id}&filter[type][_eq]=express&sort=-id&limit=10`, {
           cache: "no-store",
           signal: AbortSignal.timeout(10000),
         });
 
-        logger.log(`Fetch response status: ${fetchRes.status}`);
+        logger.log(`Internal API response status: ${fetchRes.status}`);
 
         if (fetchRes.ok) {
           const fetchData = await fetchRes.json().catch(() => ({}));
           
-          logger.log("ALL EXPRESS CONSULTATIONS:", {
+          logger.log("Consultations from internal API:", {
             hasData: !!fetchData?.data,
             isArray: Array.isArray(fetchData?.data),
             totalCount: Array.isArray(fetchData?.data) ? fetchData.data.length : 0,
-            allConsultations: Array.isArray(fetchData?.data) ? fetchData.data.map((item: any) => ({
+            consultations: Array.isArray(fetchData?.data) ? fetchData.data.map((item: any) => ({
               id: item.id,
+              client_id: item.client_id,
               type: item.type,
               status: item.status,
               owner_user: item.owner_user,
-              scheduled_at: item.scheduled_at,
             })) : null,
           });
           
-          if (fetchData?.data && Array.isArray(fetchData.data)) {
-            // Ищем консультацию с нужным owner_user (самую свежую по ID)
+          if (fetchData?.data && Array.isArray(fetchData.data) && fetchData.data.length > 0) {
+            // Ищем консультацию с нужным owner_user или просто самую свежую
             let found = fetchData.data
-              .filter((c: any) => c.owner_user === ownerUserId)
+              .filter((c: any) => !ownerUserId || c.owner_user === ownerUserId || String(c.owner_user) === String(ownerUserId))
               .sort((a: any, b: any) => (b.id || 0) - (a.id || 0))[0];
             
-            // Если не нашли по owner_user, берем самую свежую экспресс-консультацию
+            // Если не нашли по owner_user, берем самую свежую
             if (!found && fetchData.data.length > 0) {
               found = fetchData.data.sort((a: any, b: any) => (b.id || 0) - (a.id || 0))[0];
-              logger.log("Using most recent express consultation as fallback:", found?.id);
+              logger.log("Using most recent consultation as fallback:", found?.id);
             }
             
             if (found?.id) {
@@ -200,47 +197,17 @@ export async function POST(req: NextRequest) {
               consultationData = { data: found };
               logger.log(`✅ Successfully found consultation ID: ${consultationId}`);
             } else {
-              logger.error("❌ No consultation found in response");
+              logger.error("❌ No consultation found in API response");
             }
           } else {
-            logger.error("❌ Response data is not an array:", fetchData);
+            logger.error("❌ API response data is not an array or empty:", fetchData);
           }
         } else {
           const errorText = await fetchRes.text().catch(() => "");
-          logger.error(`❌ Fetch failed with status ${fetchRes.status}:`, errorText.substring(0, 500));
-          
-          // Если ошибка прав доступа, пробуем запросить только id
-          if (fetchRes.status === 403) {
-            logger.log("Trying minimal request with only id field...");
-            const minimalUrl = `${baseUrl}/items/consultations?filter[type][_eq]=express&sort=-id&limit=50&fields=id`;
-            
-            try {
-              const minimalRes = await fetch(minimalUrl, {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  Accept: "application/json",
-                },
-                cache: "no-store",
-                signal: AbortSignal.timeout(10000),
-              });
-              
-              if (minimalRes.ok) {
-                const minimalData = await minimalRes.json().catch(() => ({}));
-                if (minimalData?.data && Array.isArray(minimalData.data) && minimalData.data.length > 0) {
-                  // Берем самую свежую (по ID)
-                  const latest = minimalData.data.sort((a: any, b: any) => (b.id || 0) - (a.id || 0))[0];
-                  consultationId = latest?.id;
-                  consultationData = { data: { id: consultationId } };
-                  logger.log(`✅ Found consultation ID with minimal request: ${consultationId}`);
-                }
-              }
-            } catch (minimalError: any) {
-              logger.error("Minimal request also failed:", minimalError?.message || minimalError);
-            }
-          }
+          logger.error(`❌ Internal API failed with status ${fetchRes.status}:`, errorText.substring(0, 500));
         }
       } catch (fetchError: any) {
-        logger.error(`❌ Fetch error:`, fetchError?.message || fetchError);
+        logger.error(`❌ Internal API fetch error:`, fetchError?.message || fetchError);
       }
 
       // Если все еще не удалось получить ID, возвращаем ошибку
