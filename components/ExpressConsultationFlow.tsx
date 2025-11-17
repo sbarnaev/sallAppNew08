@@ -41,6 +41,7 @@ export default function ExpressConsultationFlow({
   // Загружаем сохраненные шаги при монтировании
   useEffect(() => {
     loadSteps();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [consultationId]);
 
   async function loadSteps() {

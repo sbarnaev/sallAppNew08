@@ -233,7 +233,7 @@ export async function POST(req: NextRequest) {
         logger.error("Could not retrieve consultation ID after 204 response and all retries", {
           clientId: client_id,
           ownerUserId,
-          fetchUrl,
+          searchUrls: searchUrls.map((url, idx) => `URL ${idx + 1}: ${url.substring(0, 100)}...`),
         });
         return NextResponse.json(
           { 
