@@ -6,14 +6,64 @@ import { logger } from "@/lib/logger";
 export const dynamic = "force-dynamic";
 
 /**
- * Создает новую экспресс-консультацию
+ * Обновляет access token через refresh token
+ */
+async function refreshAccessToken(refreshToken: string, baseUrl: string): Promise<string | null> {
+  try {
+    const refreshUrl = `${baseUrl}/auth/refresh`;
+    const res = await fetch(refreshUrl, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const data = await res.json().catch(() => ({}));
+    return data?.data?.access_token || null;
+  } catch (error) {
+    logger.error("Error refreshing token:", error);
+    return null;
+  }
+}
+
+/**
+ * Создает новую экспресс-консультацию и запускает базовый расчет через n8n
  */
 export async function POST(req: NextRequest) {
-  const token = cookies().get("directus_access_token")?.value;
+  let token = cookies().get("directus_access_token")?.value;
+  const refreshToken = cookies().get("directus_refresh_token")?.value;
   const baseUrl = getDirectusUrl();
+  const n8nUrl = process.env.N8N_CALC_URL;
   
-  if (!token || !baseUrl) {
-    return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
+  if (!token && !refreshToken) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!baseUrl) {
+    return NextResponse.json({ message: "DIRECTUS_URL not configured" }, { status: 500 });
+  }
+
+  if (!n8nUrl) {
+    return NextResponse.json({ message: "N8N_CALC_URL not configured" }, { status: 500 });
+  }
+
+  // Обновляем токен перед запросами
+  if (refreshToken) {
+    const freshToken = await refreshAccessToken(refreshToken, baseUrl);
+    if (freshToken) {
+      token = freshToken;
+    }
+  }
+
+  if (!token) {
+    return NextResponse.json({ message: "Unauthorized - no valid token" }, { status: 401 });
   }
 
   try {
@@ -24,7 +74,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "client_id is required" }, { status: 400 });
     }
 
-    // Получаем текущего пользователя (консультанта)
+    // 1. Получаем данные клиента
+    const clientRes = await fetch(`${baseUrl}/items/clients/${client_id}?fields=id,name,birth_date,gender`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      cache: "no-store",
+    });
+
+    if (!clientRes.ok) {
+      return NextResponse.json({ message: "Client not found" }, { status: 404 });
+    }
+
+    const clientData = await clientRes.json().catch(() => ({}));
+    const client = clientData?.data;
+
+    if (!client || !client.birth_date) {
+      return NextResponse.json(
+        { message: "Client birth date is required for express consultation" },
+        { status: 400 }
+      );
+    }
+
+    // 2. Получаем текущего пользователя (консультанта)
     const meRes = await fetch(`${baseUrl}/users/me`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       cache: "no-store",
@@ -41,13 +111,82 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Failed to get user ID" }, { status: 500 });
     }
 
-    // Создаем экспресс-консультацию
-    const payload = {
+    // 3. Создаем пустой профиль для получения profileId
+    let profileId: number | null = null;
+    try {
+      const profileRes = await fetch(`${baseUrl}/items/profiles`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          client_id: Number(client_id),
+          owner_user: ownerUserId,
+        }),
+        cache: "no-store",
+      });
+
+      if (profileRes.ok) {
+        const profileData = await profileRes.json().catch(() => ({}));
+        profileId = profileData?.data?.id || null;
+      }
+    } catch (error) {
+      logger.warn("Failed to create profile placeholder:", error);
+    }
+
+    // 4. Вызываем n8n для генерации базового расчета
+    const n8nPayload = {
+      name: client.name || "Клиент",
+      birthday: client.birth_date,
+      clientId: Number(client_id),
+      type: "base", // Базовый расчет для экспресс-консультации
+      profileId,
+      gender: client.gender || null,
+      directusUrl: baseUrl.replace(/\/+$/, ''),
+      token: token,
+      refreshToken: refreshToken,
+    };
+
+    logger.log("Calling n8n for express consultation profile generation...");
+    
+    const n8nResponse = await fetch(n8nUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(n8nPayload),
+      signal: AbortSignal.timeout(60000), // 60 секунд
+    });
+
+    let finalProfileId = profileId;
+    
+    if (n8nResponse.ok) {
+      const n8nData = await n8nResponse.json().catch(() => ({}));
+      // n8n может вернуть profileId или обновить существующий
+      if (n8nData?.profileId) {
+        finalProfileId = n8nData.profileId;
+      }
+      logger.log("Profile generated successfully via n8n");
+    } else {
+      logger.warn("n8n profile generation failed, continuing without profile");
+      // Продолжаем без профиля, но это не критично для начала консультации
+    }
+
+    // 5. Создаем экспресс-консультацию (без scheduled_at - это необязательное поле)
+    const consultationPayload: any = {
       client_id: Number(client_id),
       owner_user: ownerUserId,
       type: "express",
       status: "in_progress",
     };
+
+    // Добавляем profile_id если есть
+    if (finalProfileId) {
+      consultationPayload.profile_id = finalProfileId;
+    }
 
     const url = `${baseUrl}/items/consultations`;
     const r = await fetch(url, {
@@ -57,7 +196,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(consultationPayload),
       cache: "no-store",
     });
 
@@ -71,11 +210,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json({
+      ...data,
+      profileId: finalProfileId, // Возвращаем profileId для использования в UI
+    }, { status: 200 });
   } catch (error: any) {
     logger.error("Express consultation start error:", error);
     return NextResponse.json(
-      { message: "Server error" },
+      { message: "Server error", error: error?.message },
       { status: 500 }
     );
   }

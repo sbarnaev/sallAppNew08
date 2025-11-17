@@ -56,7 +56,7 @@ export default function NewClientPage() {
         // Используем startTransition для правильной обработки навигации и обновления
         // Это гарантирует, что router.refresh() вызовется после завершения навигации
         startTransition(() => {
-          router.push("/clients");
+        router.push("/clients");
           router.refresh();
         });
       } else {

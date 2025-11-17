@@ -34,7 +34,15 @@ export default function ExpressConsultationPage() {
           throw new Error(data?.message || "Не удалось создать консультацию");
         }
 
-        setConsultationId(data?.data?.id || null);
+        const consultationId = data?.data?.id || null;
+        const profileId = data?.profileId || null;
+        
+        setConsultationId(consultationId);
+        
+        // Если профиль еще генерируется, показываем индикатор
+        if (!profileId) {
+          logger.warn("Profile generation may be in progress");
+        }
       } catch (err: any) {
         setError(err.message || "Ошибка создания консультации");
       } finally {
