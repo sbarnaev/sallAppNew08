@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { fetchJson } from "@/lib/fetchers";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 
 export const dynamic = "force-dynamic";
 
-const ClientSearchButton = dynamic(() => import("./ClientSearchButton").then(mod => ({ default: mod.ClientSearchButton })), {
+const ClientSearchButton = nextDynamic(() => import("./ClientSearchButton").then(mod => ({ default: mod.ClientSearchButton })), {
   ssr: false
 });
 
-const DeleteProfile = dynamic(() => import("./DeleteProfile").then(mod => ({ default: mod.default })), {
+const DeleteProfile = nextDynamic(() => import("./DeleteProfile").then(mod => ({ default: mod.default })), {
   ssr: false
 });
 
