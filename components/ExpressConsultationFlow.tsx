@@ -65,9 +65,9 @@ export default function ExpressConsultationFlow({
             const codes = calculateSALCodes(client.birth_date);
             setSalCodes(codes);
             
-            // Генерируем персонализированный контент на основе кодов
+            // Генерируем базовый персонализированный контент (без трактовок, они загрузятся позже)
             if (codes) {
-              const personalized = getPersonalizedContent(codes);
+              const personalized = getPersonalizedContent(codes, {});
               setPersonalizedContent(personalized);
             }
           }
