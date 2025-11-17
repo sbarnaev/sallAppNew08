@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { logger } from "@/lib/logger";
+import { calculateSALCodes, getCodeShortLabel } from "@/lib/sal-codes";
 
 interface ConsultationStep {
   id?: number;
@@ -17,6 +18,12 @@ interface ConsultationStep {
 interface ExpressConsultationFlowProps {
   consultationId: number;
   clientId: number;
+}
+
+interface ClientData {
+  id: number;
+  name: string;
+  birth_date: string;
 }
 
 type StepType = "point_a" | "point_b" | "resources" | "closing";
@@ -37,6 +44,32 @@ export default function ExpressConsultationFlow({
   const [steps, setSteps] = useState<ConsultationStep[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [clientData, setClientData] = useState<ClientData | null>(null);
+  const [salCodes, setSalCodes] = useState<ReturnType<typeof calculateSALCodes> | null>(null);
+
+  // Загружаем данные клиента и САЛ коды
+  useEffect(() => {
+    async function loadClientData() {
+      try {
+        const res = await fetch(`/api/clients/${clientId}`);
+        const data = await res.json().catch(() => ({}));
+        if (data?.data) {
+          const client = data.data;
+          setClientData(client);
+          
+          // Рассчитываем САЛ коды из даты рождения
+          if (client.birth_date) {
+            const codes = calculateSALCodes(client.birth_date);
+            setSalCodes(codes);
+          }
+        }
+      } catch (error: any) {
+        logger.error("Error loading client data:", error);
+      }
+    }
+    
+    loadClientData();
+  }, [clientId]);
 
   // Загружаем сохраненные шаги при монтировании
   useEffect(() => {
