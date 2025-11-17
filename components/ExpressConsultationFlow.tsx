@@ -219,6 +219,42 @@ export default function ExpressConsultationFlow({
 
   return (
     <div className="space-y-4">
+      {/* Информация о клиенте и САЛ коды */}
+      {clientData && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-1">
+                {clientData.name || `Клиент #${clientData.id}`}
+              </h2>
+              {clientData.birth_date && (
+                <div className="text-sm text-gray-600">
+                  Дата рождения: {new Date(clientData.birth_date).toLocaleDateString('ru-RU')}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {salCodes && (
+            <div>
+              <div className="text-sm font-medium text-gray-700 mb-3">Коды САЛ клиента:</div>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                {(['personality', 'connector', 'realization', 'generator', 'mission'] as const).map((key) => (
+                  <div key={key} className="flex flex-col items-center gap-2 p-3 bg-white rounded-lg border border-blue-200 shadow-sm">
+                    <div className="w-12 h-12 rounded-lg shadow-sm bg-[#1f92aa] text-white font-bold text-xl grid place-items-center">
+                      {salCodes[key]}
+                    </div>
+                    <div className="text-xs font-medium text-gray-700 text-center">
+                      {getCodeShortLabel(key)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Аккордеон с шагами */}
       {stepTypes.map((stepType) => {
         const config = STEP_CONFIG[stepType];
