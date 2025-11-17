@@ -220,10 +220,10 @@ export async function POST(req: NextRequest) {
 
       // Если все еще не удалось получить ID, возвращаем ошибку
       if (!consultationId) {
-        logger.error("Could not retrieve consultation ID after 204 response and all retries", {
+        logger.error("Could not retrieve consultation ID after 204 response", {
           clientId: client_id,
           ownerUserId,
-          searchUrls: searchUrls.map((url, idx) => `URL ${idx + 1}: ${url.substring(0, 100)}...`),
+          searchUrl: simpleUrl,
         });
         return NextResponse.json(
           { 
