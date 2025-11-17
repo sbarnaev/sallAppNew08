@@ -142,40 +142,110 @@ export async function POST(req: NextRequest) {
 
     // Статус 204 (No Content) - успешное создание без тела ответа
     if (r.status === 204) {
-      logger.log("Directus returned 204 (No Content), fetching created consultation...");
+      logger.log("Directus returned 204 (No Content), fetching created consultation with retry...");
       
       // Запрашиваем последнюю созданную консультацию для этого клиента
       // Используем фильтр по client_id, owner_user и type для точности
+      // Добавляем retry с задержкой, так как Directus может еще не успеть сохранить запись
       const fetchUrl = `${baseUrl}/items/consultations?filter[client_id][_eq]=${client_id}&filter[owner_user][_eq]=${ownerUserId}&filter[type][_eq]=express&sort=-created_at&limit=1&fields=id,client_id,type,status,scheduled_at,owner_user`;
       
-      try {
-        const fetchRes = await fetch(fetchUrl, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-          cache: "no-store",
-        });
-
-        if (fetchRes.ok) {
-          const fetchData = await fetchRes.json().catch(() => ({}));
-          if (fetchData?.data && Array.isArray(fetchData.data) && fetchData.data.length > 0) {
-            consultationId = fetchData.data[0]?.id;
-            consultationData = { data: fetchData.data[0] };
-            logger.log("Successfully fetched consultation ID after 204:", consultationId);
+      let retries = 3;
+      let delay = 500; // Начинаем с 500мс
+      
+      while (retries > 0 && !consultationId) {
+        try {
+          // Небольшая задержка перед запросом
+          if (retries < 3) {
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2; // Увеличиваем задержку с каждой попыткой
           }
+          
+          logger.log(`Attempting to fetch consultation (${4 - retries}/3)...`);
+          
+          const fetchRes = await fetch(fetchUrl, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+            cache: "no-store",
+            signal: AbortSignal.timeout(5000),
+          });
+
+          logger.log(`Fetch response status: ${fetchRes.status}`);
+
+          if (fetchRes.ok) {
+            const fetchData = await fetchRes.json().catch(() => ({}));
+            logger.log("Fetch data:", {
+              hasData: !!fetchData?.data,
+              isArray: Array.isArray(fetchData?.data),
+              length: Array.isArray(fetchData?.data) ? fetchData.data.length : 0,
+              firstItem: Array.isArray(fetchData?.data) && fetchData.data.length > 0 ? fetchData.data[0] : null,
+            });
+            
+            if (fetchData?.data && Array.isArray(fetchData.data) && fetchData.data.length > 0) {
+              consultationId = fetchData.data[0]?.id;
+              consultationData = { data: fetchData.data[0] };
+              logger.log("Successfully fetched consultation ID after 204:", consultationId);
+              break; // Успешно получили ID, выходим из цикла
+            }
+          } else {
+            const errorText = await fetchRes.text().catch(() => "");
+            logger.warn(`Fetch failed with status ${fetchRes.status}:`, errorText.substring(0, 200));
+          }
+        } catch (fetchError: any) {
+          logger.error(`Failed to fetch consultation after 204 (attempt ${4 - retries}):`, fetchError?.message || fetchError);
         }
-      } catch (fetchError: any) {
-        logger.error("Failed to fetch consultation after 204:", fetchError);
+        
+        retries--;
       }
 
-      // Если не удалось получить ID, возвращаем ошибку
+      // Если не удалось получить ID после всех попыток, пробуем более широкий поиск
       if (!consultationId) {
-        logger.error("Could not retrieve consultation ID after 204 response");
+        logger.warn("Could not retrieve consultation ID with filters, trying broader search...");
+        
+        try {
+          // Более широкий поиск - только по client_id и типу, без owner_user
+          const broaderUrl = `${baseUrl}/items/consultations?filter[client_id][_eq]=${client_id}&filter[type][_eq]=express&sort=-created_at&limit=5&fields=id,client_id,type,status,scheduled_at,owner_user`;
+          
+          const broaderRes = await fetch(broaderUrl, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+            cache: "no-store",
+            signal: AbortSignal.timeout(5000),
+          });
+
+          if (broaderRes.ok) {
+            const broaderData = await broaderRes.json().catch(() => ({}));
+            if (broaderData?.data && Array.isArray(broaderData.data) && broaderData.data.length > 0) {
+              // Берем самую свежую консультацию
+              const latest = broaderData.data[0];
+              consultationId = latest?.id;
+              consultationData = { data: latest };
+              logger.log("Found consultation with broader search:", consultationId);
+            }
+          }
+        } catch (broaderError: any) {
+          logger.error("Broader search also failed:", broaderError?.message || broaderError);
+        }
+      }
+
+      // Если все еще не удалось получить ID, возвращаем ошибку
+      if (!consultationId) {
+        logger.error("Could not retrieve consultation ID after 204 response and all retries", {
+          clientId: client_id,
+          ownerUserId,
+          fetchUrl,
+        });
         return NextResponse.json(
           { 
             message: "Consultation created but could not retrieve ID",
-            details: { status: 204, suggestion: "Try refreshing the page" },
+            details: { 
+              status: 204, 
+              suggestion: "The consultation was created but we couldn't find it. Please check the consultations list.",
+              clientId: client_id,
+            },
           },
           { status: 500 }
         );
