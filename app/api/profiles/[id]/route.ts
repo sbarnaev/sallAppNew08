@@ -19,8 +19,8 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   const { id } = ctx.params;
   
   // Проверяем, что ID валидный
-  if (!id || isNaN(Number(id))) {
-    console.error("[DEBUG] Invalid profile ID:", id);
+  if (!id || isNaN(Number(id)) || Number(id) <= 0) {
+    logger.error("[DEBUG] Invalid profile ID:", id);
     return NextResponse.json({ data: null, errors: [{ message: "Invalid profile ID" }] }, { status: 400 });
   }
   

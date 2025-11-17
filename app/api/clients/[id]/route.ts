@@ -58,6 +58,11 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
   const { id } = ctx.params;
+  
+  // Валидация ID
+  if (!id || isNaN(Number(id)) || Number(id) <= 0) {
+    return NextResponse.json({ message: "Invalid client ID" }, { status: 400 });
+  }
 
   const { confirm } = await req.json().catch(()=>({ confirm: false }));
   if (!confirm) return NextResponse.json({ message: "Deletion not confirmed" }, { status: 400 });
