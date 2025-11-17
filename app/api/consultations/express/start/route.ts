@@ -122,9 +122,10 @@ export async function POST(req: NextRequest) {
       scheduled_at: new Date().toISOString(), // Текущая дата/время для обязательного поля
     };
 
-    // Запрашиваем создание консультации с явным указанием полей для получения ID
-    // Используем параметр return=* чтобы Directus вернул созданную запись
-    const url = `${baseUrl}/items/consultations?fields=id,client_id,type,status,scheduled_at,owner_user&return=*`;
+    // Запрашиваем создание консультации
+    // Пробуем несколько вариантов URL для максимальной совместимости
+    // Вариант 1: с return=* и fields
+    let url = `${baseUrl}/items/consultations?fields=id,client_id,type,status,scheduled_at,owner_user&return=*`;
     const r = await fetch(url, {
       method: "POST",
       headers: {
@@ -204,10 +205,10 @@ export async function POST(req: NextRequest) {
         logger.warn("Could not retrieve consultation ID with filters, trying broader search...");
         
         try {
-          // Более широкий поиск - только по client_id и типу, без owner_user
-          const broaderUrl = `${baseUrl}/items/consultations?filter[client_id][_eq]=${client_id}&filter[type][_eq]=express&sort=-created_at&limit=5&fields=id,client_id,type,status,scheduled_at,owner_user`;
+          // Вариант 1: Более широкий поиск - только по client_id и типу, без owner_user
+          const broaderUrl1 = `${baseUrl}/items/consultations?filter[client_id][_eq]=${client_id}&filter[type][_eq]=express&sort=-created_at&limit=5&fields=id,client_id,type,status,scheduled_at,owner_user`;
           
-          const broaderRes = await fetch(broaderUrl, {
+          const broaderRes1 = await fetch(broaderUrl1, {
             headers: {
               Authorization: `Bearer ${token}`,
               Accept: "application/json",
@@ -216,14 +217,42 @@ export async function POST(req: NextRequest) {
             signal: AbortSignal.timeout(5000),
           });
 
-          if (broaderRes.ok) {
-            const broaderData = await broaderRes.json().catch(() => ({}));
-            if (broaderData?.data && Array.isArray(broaderData.data) && broaderData.data.length > 0) {
+          if (broaderRes1.ok) {
+            const broaderData1 = await broaderRes1.json().catch(() => ({}));
+            if (broaderData1?.data && Array.isArray(broaderData1.data) && broaderData1.data.length > 0) {
               // Берем самую свежую консультацию
-              const latest = broaderData.data[0];
+              const latest = broaderData1.data[0];
               consultationId = latest?.id;
               consultationData = { data: latest };
-              logger.log("Found consultation with broader search:", consultationId);
+              logger.log("Found consultation with broader search (without owner_user):", consultationId);
+            }
+          }
+          
+          // Вариант 2: Еще более широкий - только по client_id, без type
+          if (!consultationId) {
+            logger.warn("Trying even broader search - only by client_id...");
+            const broaderUrl2 = `${baseUrl}/items/consultations?filter[client_id][_eq]=${client_id}&sort=-created_at&limit=10&fields=id,client_id,type,status,scheduled_at,owner_user`;
+            
+            const broaderRes2 = await fetch(broaderUrl2, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: "application/json",
+              },
+              cache: "no-store",
+              signal: AbortSignal.timeout(5000),
+            });
+
+            if (broaderRes2.ok) {
+              const broaderData2 = await broaderRes2.json().catch(() => ({}));
+              if (broaderData2?.data && Array.isArray(broaderData2.data) && broaderData2.data.length > 0) {
+                // Ищем экспресс-консультацию среди последних
+                const expressConsultation = broaderData2.data.find((c: any) => c.type === "express");
+                if (expressConsultation) {
+                  consultationId = expressConsultation.id;
+                  consultationData = { data: expressConsultation };
+                  logger.log("Found consultation with very broad search:", consultationId);
+                }
+              }
             }
           }
         } catch (broaderError: any) {
