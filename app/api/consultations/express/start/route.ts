@@ -122,7 +122,8 @@ export async function POST(req: NextRequest) {
       scheduled_at: new Date().toISOString(), // Текущая дата/время для обязательного поля
     };
 
-    const url = `${baseUrl}/items/consultations`;
+    // Запрашиваем создание консультации с явным указанием полей для получения ID
+    const url = `${baseUrl}/items/consultations?fields=id,client_id,type,status,scheduled_at,owner_user`;
     const r = await fetch(url, {
       method: "POST",
       headers: {
@@ -134,7 +135,26 @@ export async function POST(req: NextRequest) {
       cache: "no-store",
     });
 
-    const consultationData = await r.json().catch(() => ({}));
+    // Сначала получаем текст ответа для диагностики
+    const responseText = await r.text().catch(() => "");
+    let consultationData: any = {};
+    
+    try {
+      consultationData = JSON.parse(responseText);
+    } catch {
+      logger.error("Failed to parse Directus response as JSON:", {
+        status: r.status,
+        statusText: r.statusText,
+        responseText: responseText.substring(0, 500),
+      });
+      return NextResponse.json(
+        { 
+          message: "Invalid response from Directus",
+          details: { status: r.status, responseText: responseText.substring(0, 500) },
+        },
+        { status: 500 }
+      );
+    }
 
     if (!r.ok) {
       logger.error("Error creating express consultation:", {
@@ -142,6 +162,7 @@ export async function POST(req: NextRequest) {
         statusText: r.statusText,
         errors: consultationData?.errors,
         data: consultationData,
+        responseText: responseText.substring(0, 500),
       });
       
       // Детальное сообщение об ошибке
@@ -158,24 +179,46 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Directus может вернуть ID в разных форматах
+    // Directus возвращает данные в формате { data: { id: ... } }
+    // Проверяем все возможные варианты
     const consultationId = consultationData?.data?.id 
       || consultationData?.id 
-      || consultationData?.data?.data?.id;
+      || consultationData?.data?.data?.id
+      || (Array.isArray(consultationData?.data) && consultationData.data[0]?.id)
+      || (Array.isArray(consultationData) && consultationData[0]?.id);
       
     if (!consultationId) {
       logger.error("Consultation created but no ID returned:", {
+        status: r.status,
+        statusText: r.statusText,
         fullResponse: consultationData,
+        responseText: responseText.substring(0, 1000),
         keys: Object.keys(consultationData || {}),
+        dataKeys: consultationData?.data ? Object.keys(consultationData.data) : [],
+        isArray: Array.isArray(consultationData?.data),
+        isDataArray: Array.isArray(consultationData),
       });
+      
+      // Попробуем получить ID через отдельный запрос, если консультация была создана
+      // Но это не идеально, лучше исправить проблему с ответом
       return NextResponse.json(
         { 
           message: "Consultation created but no ID returned",
-          details: consultationData,
+          details: {
+            response: consultationData,
+            status: r.status,
+            suggestion: "Check Directus logs and collection permissions",
+          },
         },
         { status: 500 }
       );
     }
+    
+    logger.log("Consultation created successfully:", {
+      consultationId,
+      clientId: client_id,
+      type: "express",
+    });
 
     // 4. Запускаем генерацию базового расчета через существующий /api/calc endpoint
     // Это позволяет использовать уже реализованный функционал и создавать полноценный профиль
