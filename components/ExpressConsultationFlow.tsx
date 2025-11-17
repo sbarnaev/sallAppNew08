@@ -136,31 +136,44 @@ export default function ExpressConsultationFlow({
     }
   }
 
-  function handleConsultationComplete(soldProduct: "full" | "partner" | null, importanceRating?: number) {
+  async function handleConsultationComplete(soldProduct: "full" | "partner" | null, importanceRating?: number) {
     setLoading(true);
-    fetch(`/api/consultations/express/${consultationId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        status: "completed",
-        sold_product: soldProduct,
-        importance_rating: importanceRating,
-      }),
-    })
-      .then((res) => {
-        if (res.ok) {
-          router.push(`/consultations/${consultationId}`);
-        } else {
-          alert("Ошибка завершения консультации");
-        }
-      })
-      .catch((error) => {
-        console.error("Error completing consultation:", error);
-        alert("Ошибка завершения консультации");
-      })
-      .finally(() => {
-        setLoading(false);
+    try {
+      // 1. Завершаем консультацию
+      const res = await fetch(`/api/consultations/express/${consultationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "completed",
+          sold_product: soldProduct,
+          importance_rating: importanceRating,
+        }),
       });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData?.message || "Ошибка завершения консультации");
+      }
+
+      // 2. Если продали продукт, генерируем AI-инсайты (в фоне, не блокируем)
+      if (soldProduct) {
+        fetch(`/api/consultations/express/${consultationId}/generate-insights`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }).catch((error) => {
+          logger.warn("Failed to generate insights:", error);
+          // Не блокируем завершение, если генерация не удалась
+        });
+      }
+
+      // 3. Перенаправляем на страницу консультации
+      router.push(`/consultations/${consultationId}`);
+    } catch (error: any) {
+      logger.error("Error completing consultation:", error);
+      alert(error.message || "Ошибка завершения консультации");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const stepTypes: StepType[] = ["point_a", "point_b", "resources", "closing"];
