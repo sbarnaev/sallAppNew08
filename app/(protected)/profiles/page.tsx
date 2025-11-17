@@ -2,6 +2,8 @@ import Link from "next/link";
 import { fetchJson } from "@/lib/fetchers";
 import dynamic from "next/dynamic";
 
+export const dynamic = "force-dynamic";
+
 const ClientSearchButton = dynamic(() => import("./ClientSearchButton").then(mod => ({ default: mod.ClientSearchButton })), {
   ssr: false
 });
@@ -24,14 +26,29 @@ async function getProfiles(searchParams: Record<string, string | string[] | unde
     params.set("offset", String(offset));
     params.set("meta", "filter_count");
 
-    const { status, data } = await fetchJson(`/api/profiles?${params.toString()}`, { cache: 'no-store' });
+    const { status, data } = await fetchJson(`/api/profiles?${params.toString()}`, { 
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10000), // 10 секунд таймаут
+    });
+    
     if (status === 401 || status === 404 || !data) {
-      console.error("API error:", status);
+      console.error("API error:", status, data);
       return { data: [], meta: { filter_count: 0 } };
     }
-    return data as any;
-  } catch (error) {
-    console.error("Error in getProfiles:", error);
+    
+    // Проверяем структуру данных
+    if (!data || typeof data !== 'object') {
+      console.error("Invalid data structure from API:", data);
+      return { data: [], meta: { filter_count: 0 } };
+    }
+    
+    return {
+      data: Array.isArray(data.data) ? data.data : [],
+      meta: data.meta || { filter_count: 0 }
+    };
+  } catch (error: any) {
+    console.error("Error in getProfiles:", error?.message || error);
+    // Возвращаем пустые данные вместо выброса ошибки
     return { data: [], meta: { filter_count: 0 } };
   }
 }
@@ -40,16 +57,25 @@ async function getClientsMap(clientIds: number[]) {
   if (clientIds.length === 0) return {};
   try {
     const ids = clientIds.join(',');
-    const { status, data } = await fetchJson(`/api/clients?filter[id][_in]=${ids}&fields=id,name,birth_date&limit=1000`, { cache: 'no-store' });
-    if (status === 200 && data?.data) {
+    const { status, data } = await fetchJson(`/api/clients?filter[id][_in]=${ids}&fields=id,name,birth_date&limit=1000`, { 
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10000), // 10 секунд таймаут
+    });
+    if (status === 200 && data?.data && Array.isArray(data.data)) {
       const map: Record<number, { name: string; birth_date?: string }> = {};
       (data.data as any[]).forEach((c: any) => {
-        if (c.id) map[c.id] = { name: c.name || '', birth_date: c.birth_date };
+        if (c && c.id) {
+          map[c.id] = { 
+            name: c.name || '', 
+            birth_date: c.birth_date || undefined 
+          };
+        }
       });
       return map;
     }
-  } catch (error) {
-    console.error("Error fetching clients:", error);
+  } catch (error: any) {
+    console.error("Error fetching clients:", error?.message || error);
+    // Возвращаем пустой объект вместо выброса ошибки
   }
   return {};
 }
@@ -60,15 +86,27 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
   
   try {
     const result = await getProfiles(searchParams);
-    profiles = result?.data || [];
-    meta = result?.meta || {};
-  } catch (error) {
-    console.error("Error fetching profiles:", error);
+    profiles = Array.isArray(result?.data) ? result.data : [];
+    meta = result?.meta || { filter_count: 0 };
+  } catch (error: any) {
+    console.error("Error fetching profiles:", error?.message || error);
+    // Продолжаем с пустыми данными
+    profiles = [];
+    meta = { filter_count: 0 };
   }
   
   // Загружаем данные клиентов отдельно
-  const clientIds = profiles.map(p => p.client_id).filter((id): id is number => !!id);
-  const clientsMap = await getClientsMap(clientIds);
+  const clientIds = profiles
+    .map(p => p?.client_id)
+    .filter((id): id is number => typeof id === 'number' && id > 0);
+  
+  let clientsMap: Record<number, { name: string; birth_date?: string }> = {};
+  try {
+    clientsMap = await getClientsMap(clientIds);
+  } catch (error: any) {
+    console.error("Error loading clients map:", error?.message || error);
+    // Продолжаем с пустым маппингом
+  }
   
   const page = Number(searchParams.page || 1);
   const limit = Number(searchParams.limit || 20);
