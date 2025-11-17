@@ -614,7 +614,7 @@ function PointBStep({
       : customText.trim();
     
     onSave(
-      "К чему вы хотите прийти? Какой результат вы хотите получить?",
+      mainQuestion,
       response,
       selectedOptions.length > 0 ? selectedOptions : undefined
     );
@@ -622,12 +622,41 @@ function PointBStep({
 
   return (
     <div className="space-y-4">
-      <p className="text-gray-700 mb-4">
-        Задача - вдохновить человека и показать, что он может прийти к жизни своей мечты.
-      </p>
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+        <p className="text-gray-700 font-medium mb-2">
+          Задача - вдохновить человека и показать, что он может прийти к жизни своей мечты.
+        </p>
+        {salCodes && (
+          <p className="text-sm text-gray-600 mb-3">
+            💡 Персонализация на основе САЛ-кодов: Реализация {salCodes.realization}, Генератор {salCodes.generator}, Миссия {salCodes.mission}
+          </p>
+        )}
+        {phrases.length > 0 && (
+          <div>
+            <button
+              onClick={() => setShowPhrases(!showPhrases)}
+              className="text-sm text-green-600 hover:text-green-700 font-medium mb-2"
+            >
+              {showPhrases ? "▼" : "▶"} Готовые фразы для консультанта ({phrases.length})
+            </button>
+            {showPhrases && (
+              <div className="bg-white rounded-lg border border-green-200 p-3 space-y-2 max-h-60 overflow-y-auto">
+                {phrases.map((phrase, idx) => (
+                  <div key={idx} className="text-sm text-gray-700 p-2 bg-gray-50 rounded border border-gray-200">
+                    "{phrase}"
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       
       <div>
-        <label className="block text-sm font-medium mb-2">Выберите желания (можно несколько):</label>
+        <label className="block text-sm font-medium mb-2">
+          {mainQuestion}
+        </label>
+        <p className="text-xs text-gray-500 mb-2">Выберите желания (можно несколько):</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {options.map((option) => (
             <button
@@ -820,6 +849,13 @@ function ClosingStep({
 
   const pointA = steps.find((s) => s.step_type === "point_a");
   const pointB = steps.find((s) => s.step_type === "point_b");
+  const [showPhrases, setShowPhrases] = useState(false);
+  
+  // Используем персонализированный оффер или базовый
+  const offerText = personalizedContent?.offerTemplate || 
+    "Мы сегодня вскрыли только верхушку айсберга, но уже видно, насколько сильно это влияет на разные сферы.\n\nДальше есть два пути, которые реально помогут поменять ситуацию:\n– Личный разбор — на нём мы детально посмотрим на все твои природные ресурсы и скрытые конфликты. Ты получишь конкретную стратегию, как реализовать сильные стороны и обойти внутренние ограничения.\n– Парная консультация — если важна тема отношений, разберём совместимость с партнёром, выясним, как строить гармоничные отношения или найти подходящего человека.\n\nКакой формат тебе сейчас ближе?";
+  
+  const closingPhrases = personalizedContent?.closingPhrases || [];
 
   function handleComplete() {
     if (!soldProduct) {
@@ -831,22 +867,56 @@ function ClosingStep({
 
   return (
     <div className="space-y-6">
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="font-medium mb-2">Резюме консультации:</h3>
-        <div className="space-y-3 text-sm">
-          <div>
-            <span className="font-medium text-gray-700">Точка А:</span>
-            <div className="mt-1 text-gray-600 whitespace-pre-wrap break-words">
-              {pointA?.response || "Не заполнено"}
+      <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl border border-yellow-200 p-6 mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Резюме консультации</h3>
+        
+        {pointA && (
+          <div className="mb-4">
+            <div className="text-sm font-medium text-gray-700 mb-2">Точка А (текущая ситуация):</div>
+            <div className="text-sm text-gray-600 whitespace-pre-wrap">{pointA.response}</div>
+          </div>
+        )}
+        
+        {pointB && (
+          <div className="mb-4">
+            <div className="text-sm font-medium text-gray-700 mb-2">Точка Б (желания):</div>
+            <div className="text-sm text-gray-600 whitespace-pre-wrap">{pointB.response}</div>
+          </div>
+        )}
+        
+        {salCodes && (
+          <div className="mt-4 pt-4 border-t border-yellow-300">
+            <div className="text-sm font-medium text-gray-700 mb-2">САЛ-коды клиента:</div>
+            <div className="text-xs text-gray-600">
+              Личность {salCodes.personality} · Коннектор {salCodes.connector} · Реализация {salCodes.realization} · Генератор {salCodes.generator} · Миссия {salCodes.mission}
             </div>
           </div>
+        )}
+      </div>
+      
+      {/* Персонализированный оффер */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-3">Персонализированное предложение:</h3>
+        <div className="text-sm text-gray-700 whitespace-pre-wrap mb-3">{offerText}</div>
+        {closingPhrases.length > 0 && (
           <div>
-            <span className="font-medium text-gray-700">Точка Б:</span>
-            <div className="mt-1 text-gray-600 whitespace-pre-wrap break-words">
-              {pointB?.response || "Не заполнено"}
-            </div>
+            <button
+              onClick={() => setShowPhrases(!showPhrases)}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium mb-2"
+            >
+              {showPhrases ? "▼" : "▶"} Готовые фразы для закрытия ({closingPhrases.length})
+            </button>
+            {showPhrases && (
+              <div className="bg-white rounded-lg border border-blue-200 p-3 space-y-2 max-h-60 overflow-y-auto">
+                {closingPhrases.map((phrase, idx) => (
+                  <div key={idx} className="text-sm text-gray-700 p-2 bg-gray-50 rounded border border-gray-200">
+                    "{phrase}"
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
 
       <div>
