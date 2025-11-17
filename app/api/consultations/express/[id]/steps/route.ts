@@ -114,7 +114,9 @@ export async function POST(
       }
     }
 
-    return NextResponse.json(result, { status: 200 });
+    return NextResponse.json({
+      data: result?.data || result,
+    }, { status: 200 });
   } catch (error: any) {
     logger.error("Save consultation step error:", error);
     return NextResponse.json(
