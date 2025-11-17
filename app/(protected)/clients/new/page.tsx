@@ -50,10 +50,10 @@ export default function NewClientPage() {
       });
       
       if (res.ok) {
-        // Используем replace вместо push и добавляем параметр для обновления кеша
-        router.replace(`/clients?fresh=${Date.now()}`);
-        // Дополнительно обновляем данные на странице
-        setTimeout(() => router.refresh(), 100);
+        // Редиректим на список клиентов
+        router.push("/clients");
+        // Принудительно обновляем данные на странице
+        router.refresh();
       } else {
         const data = await res.json().catch(() => ({}));
         console.log("Form error:", { status: res.status, data });
