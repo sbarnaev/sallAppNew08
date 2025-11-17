@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
       { status: resetRes.status }
     );
   } catch (error: any) {
-    console.error("Forgot password error:", error);
+    logger.error("Forgot password error:", error);
     return NextResponse.json(
       { message: "Ошибка сервера" },
       { status: 500 }

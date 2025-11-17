@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 import { cookies } from "next/headers";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Не все обязательные поля заполнены" }, { status: 400 });
     }
 
-    if (!email.includes("@") || email.length < 5) {
+    // Валидация email с помощью регулярного выражения
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
       return NextResponse.json({ message: "Некорректный email" }, { status: 400 });
     }
 
@@ -121,7 +124,7 @@ export async function POST(req: NextRequest) {
 
     if (!createUserRes.ok) {
       const errorData = await createUserRes.json().catch(() => ({}));
-      console.error("Error creating user:", errorData);
+      logger.error("Error creating user:", errorData);
       return NextResponse.json({ 
         message: errorData?.errors?.[0]?.message || "Ошибка создания пользователя" 
       }, { status: createUserRes.status });
@@ -173,7 +176,7 @@ export async function POST(req: NextRequest) {
 
     if (!loginRes.ok) {
       // Пользователь создан, но автологин не удался - это не критично
-      console.warn("User created but auto-login failed");
+      logger.warn("User created but auto-login failed");
       return NextResponse.json({ 
         message: "Регистрация успешна, но автоматический вход не удался. Пожалуйста, войдите вручную.",
         userId 
@@ -215,7 +218,7 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error: any) {
-    console.error("Registration error:", error);
+    logger.error("Registration error:", error);
     return NextResponse.json({ 
       message: error?.message || "Ошибка регистрации" 
     }, { status: 500 });

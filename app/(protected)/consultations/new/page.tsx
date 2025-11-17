@@ -31,7 +31,9 @@ export default function NewConsultationPage() {
         const res = await fetch("/api/clients?limit=1000", { cache: "no-store" });
         const data = await res.json().catch(() => ({ data: [] }));
         setClients(data?.data || []);
-      } catch {}
+      } catch (error) {
+        console.error("Error loading partner profiles:", error);
+      }
     }
     loadClients();
   }, []);
@@ -47,7 +49,9 @@ export default function NewConsultationPage() {
         const res = await fetch(`/api/profiles?filter[client_id][_eq]=${clientId}&limit=1000`, { cache: "no-store" });
         const data = await res.json().catch(() => ({ data: [] }));
         setProfiles(data?.data || []);
-      } catch {}
+      } catch (error) {
+        console.error("Error loading partner profiles:", error);
+      }
     }
     loadProfiles();
   }, [clientId]);
@@ -63,7 +67,9 @@ export default function NewConsultationPage() {
         const res = await fetch(`/api/profiles?filter[client_id][_eq]=${partnerClientId}&limit=1000`, { cache: "no-store" });
         const data = await res.json().catch(() => ({ data: [] }));
         setPartnerProfiles(data?.data || []);
-      } catch {}
+      } catch (error) {
+        console.error("Error loading partner profiles:", error);
+      }
     }
     loadPartnerProfiles();
   }, [partnerClientId]);

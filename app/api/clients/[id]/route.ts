@@ -7,6 +7,11 @@ export async function GET(_req: Request, ctx: { params: { id: string }}) {
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ data: null }, { status: 401 });
   const { id } = ctx.params;
+  
+  // Валидация ID
+  if (!id || isNaN(Number(id)) || Number(id) <= 0) {
+    return NextResponse.json({ data: null, message: "Invalid client ID" }, { status: 400 });
+  }
 
   const url = `${baseUrl}/items/clients/${id}?fields=id,name,birth_date,email,phone,source,communication_method,notes,created_at,owner_user`;
   const r = await fetch(url, {
