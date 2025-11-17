@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getDirectusUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { internalApiFetch } from "@/lib/fetchers";
 
 export const dynamic = "force-dynamic";
 
@@ -157,113 +158,92 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const consultationId = consultationData?.data?.id;
+    // Directus может вернуть ID в разных форматах
+    const consultationId = consultationData?.data?.id 
+      || consultationData?.id 
+      || consultationData?.data?.data?.id;
+      
     if (!consultationId) {
-      logger.error("Consultation created but no ID returned:", consultationData);
+      logger.error("Consultation created but no ID returned:", {
+        fullResponse: consultationData,
+        keys: Object.keys(consultationData || {}),
+      });
       return NextResponse.json(
-        { message: "Consultation created but no ID returned" },
+        { 
+          message: "Consultation created but no ID returned",
+          details: consultationData,
+        },
         { status: 500 }
       );
     }
 
-    // 4. Запускаем генерацию профиля через n8n в фоне (не блокируем ответ)
-    // Это позволяет начать консультацию даже если профиль еще генерируется
+    // 4. Запускаем генерацию базового расчета через существующий /api/calc endpoint
+    // Это позволяет использовать уже реализованный функционал и создавать полноценный профиль
     (async () => {
       try {
-        // Создаем пустой профиль для получения profileId
-        let profileId: number | null = null;
-        try {
-          const profileRes = await fetch(`${baseUrl}/items/profiles`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            body: JSON.stringify({
-              client_id: Number(client_id),
-              owner_user: ownerUserId,
-            }),
-            cache: "no-store",
-          });
-
-          if (profileRes.ok) {
-            const profileData = await profileRes.json().catch(() => ({}));
-            profileId = profileData?.data?.id || null;
-          }
-        } catch (error) {
-          logger.warn("Failed to create profile placeholder:", error);
-        }
-
-        // Вызываем n8n для генерации базового расчета
-        const n8nPayload = {
-          name: client.name || "Клиент",
-          birthday: client.birth_date,
-          clientId: Number(client_id),
-          type: "base", // Базовый расчет для экспресс-консультации
-          profileId,
-          gender: client.gender || null,
-          directusUrl: baseUrl.replace(/\/+$/, ''),
-          token: token,
-          refreshToken: refreshToken,
-        };
-
-        logger.log("Calling n8n for express consultation profile generation...");
+        logger.log("Starting base calculation via /api/calc for express consultation...");
         
-        const n8nResponse = await fetch(n8nUrl, {
+        // Вызываем существующий endpoint для создания базового расчета
+        // Он сам создаст профиль, вызовет n8n и вернет profileId
+        // Используем internalApiFetch для правильной передачи cookies
+        const calcResponse = await internalApiFetch("/api/calc", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(n8nPayload),
-          signal: AbortSignal.timeout(60000), // 60 секунд
+          body: JSON.stringify({
+            clientId: Number(client_id),
+            name: client.name || "Клиент",
+            birthday: client.birth_date,
+            type: "base", // Базовый расчет
+            gender: client.gender || null,
+          }),
+          signal: AbortSignal.timeout(90000), // 90 секунд для генерации
         });
 
-        let finalProfileId = profileId;
-        
-        if (n8nResponse.ok) {
-          const n8nData = await n8nResponse.json().catch(() => ({}));
-          // n8n может вернуть profileId или обновить существующий
-          if (n8nData?.profileId) {
-            finalProfileId = n8nData.profileId;
+        if (calcResponse.ok) {
+          const calcData = await calcResponse.json().catch(() => ({}));
+          const profileId = calcData?.profileId;
+          
+          if (profileId) {
+            // Обновляем консультацию с profile_id
+            try {
+              await fetch(`${baseUrl}/items/consultations/${consultationId}`, {
+                method: "PATCH",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                  Accept: "application/json",
+                },
+                body: JSON.stringify({ profile_id: Number(profileId) }),
+                cache: "no-store",
+              });
+              logger.log(`Consultation ${consultationId} updated with profile_id ${profileId}`);
+            } catch (updateError) {
+              logger.warn("Failed to update consultation with profile_id:", updateError);
+            }
+          } else {
+            logger.warn("Base calculation completed but no profileId returned:", calcData);
           }
-          logger.log("Profile generated successfully via n8n");
         } else {
-          const n8nError = await n8nResponse.text().catch(() => "");
-          logger.warn("n8n profile generation failed:", {
-            status: n8nResponse.status,
-            error: n8nError.substring(0, 200),
+          const calcError = await calcResponse.text().catch(() => "");
+          logger.warn("Base calculation failed:", {
+            status: calcResponse.status,
+            error: calcError.substring(0, 300),
           });
         }
-
-        // Обновляем консультацию с profile_id если он был создан
-        if (finalProfileId) {
-          try {
-            await fetch(`${baseUrl}/items/consultations/${consultationId}`, {
-              method: "PATCH",
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-                Accept: "application/json",
-              },
-              body: JSON.stringify({ profile_id: finalProfileId }),
-              cache: "no-store",
-            });
-            logger.log(`Consultation ${consultationId} updated with profile_id ${finalProfileId}`);
-          } catch (updateError) {
-            logger.warn("Failed to update consultation with profile_id:", updateError);
-          }
-        }
       } catch (error: any) {
-        logger.error("Background profile generation error:", error);
+        logger.error("Background base calculation error:", error);
         // Не блокируем - консультация уже создана
       }
     })(); // Запускаем асинхронно, не ждем завершения
 
     return NextResponse.json({
-      ...consultationData,
-      profileId: null, // Профиль еще генерируется
+      data: {
+        id: consultationId,
+        ...consultationData?.data,
+      },
+      profileId: null, // Профиль генерируется в фоне через /api/calc
     }, { status: 200 });
   } catch (error: any) {
     logger.error("Express consultation start error:", error);
