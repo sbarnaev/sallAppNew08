@@ -798,11 +798,25 @@ function ResourcesStep({
     );
   }
 
+  // Анализ ресурсов с точки зрения САЛ
+  const resourcesAnalysis = personalizedContent?.resourcesAnalysis || 
+    "С точки зрения САЛ, у вас есть все необходимые ресурсы для достижения цели. Важно правильно их активировать.";
+
   return (
     <div className="space-y-4">
-      <p className="text-gray-700 mb-4">
-        На этом этапе человек понимает, что ресурсы есть, но либо не понимает как их реализовать, либо видит, что чего-то не хватает.
-      </p>
+      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+        <p className="text-gray-700 font-medium mb-2">
+          На этом этапе человек понимает, что ресурсы есть, но либо не понимает как их реализовать, либо видит, что чего-то не хватает.
+        </p>
+        {salCodes && (
+          <div className="mt-3">
+            <p className="text-sm font-semibold text-gray-700 mb-2">💡 Анализ с точки зрения САЛ:</p>
+            <div className="bg-white rounded-lg border border-purple-200 p-3">
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">{resourcesAnalysis}</p>
+            </div>
+          </div>
+        )}
+      </div>
       
       <div>
         <label className="block text-sm font-medium mb-2">Какие ресурсы есть у клиента:</label>
