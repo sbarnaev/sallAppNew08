@@ -265,6 +265,28 @@ export default function ExpressConsultationFlow({
 
   return (
     <div className="space-y-4">
+      {/* Opener - краткое описание профиля для установления связи */}
+      {personalizedContent?.opener && (
+        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Начало консультации</h3>
+          <p className="text-gray-700 whitespace-pre-wrap">{personalizedContent.opener}</p>
+        </div>
+      )}
+      
+      {/* Фразы для установления контакта */}
+      {personalizedContent?.contactPhrases && personalizedContent.contactPhrases.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <h4 className="text-sm font-semibold text-gray-900 mb-2">💬 Фразы для установления контакта:</h4>
+          <div className="flex flex-wrap gap-2">
+            {personalizedContent.contactPhrases.slice(0, 3).map((phrase, idx) => (
+              <div key={idx} className="text-xs bg-white rounded px-3 py-2 border border-yellow-200 text-gray-700">
+                &quot;{phrase}&quot;
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
       {/* Информация о клиенте и САЛ коды */}
       {clientData && (
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-6">
