@@ -69,8 +69,9 @@ export default function ExpressConsultationFlow({
         
         setCurrentStep(nextStep);
       }
-    } catch (error) {
-      console.error("Error loading steps:", error);
+    } catch (error: any) {
+      logger.error("Error loading steps:", error);
+      // Не показываем ошибку пользователю, просто не загружаем шаги
     }
   }
 
@@ -120,9 +121,10 @@ export default function ExpressConsultationFlow({
         );
         return [...filtered, newStep].sort((a, b) => a.step_order - b.step_order);
       });
-    } catch (error) {
-      console.error("Error saving step:", error);
-      alert("Ошибка сохранения шага");
+    } catch (error: any) {
+      logger.error("Error saving step:", error);
+      const errorMessage = error?.message || "Ошибка сохранения шага";
+      alert(errorMessage);
     } finally {
       setSaving(false);
     }

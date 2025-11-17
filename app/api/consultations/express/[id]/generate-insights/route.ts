@@ -193,6 +193,19 @@ export async function POST(
     };
 
     // 5. Вызываем n8n workflow
+    if (!codes || codes.length === 0) {
+      logger.warn("No SAL codes available for insights generation");
+      return NextResponse.json(
+        { 
+          message: "Не удалось получить коды САЛ для генерации инсайтов",
+          suggestion: "Убедитесь, что у клиента указана дата рождения или создан профиль"
+        },
+        { status: 400 }
+      );
+    }
+
+    logger.log("Calling n8n for insights generation with codes:", codes.map((c: any) => c.num));
+    
     const n8nResponse = await fetch(n8nUrl, {
       method: "POST",
       headers: {
@@ -200,15 +213,23 @@ export async function POST(
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(n8nPayload),
-      signal: AbortSignal.timeout(60000), // 60 секунд для генерации
+      signal: AbortSignal.timeout(90000), // 90 секунд для генерации
     });
 
     if (!n8nResponse.ok) {
       const errorText = await n8nResponse.text().catch(() => "");
-      logger.error("N8N error:", { status: n8nResponse.status, error: errorText });
+      logger.error("N8N error:", { 
+        status: n8nResponse.status, 
+        statusText: n8nResponse.statusText,
+        error: errorText.substring(0, 500) 
+      });
       return NextResponse.json(
-        { message: "Ошибка генерации инсайтов", error: errorText.substring(0, 200) },
-        { status: n8nResponse.status }
+        { 
+          message: "Ошибка генерации инсайтов через n8n", 
+          error: errorText.substring(0, 500),
+          status: n8nResponse.status
+        },
+        { status: n8nResponse.status >= 500 ? 502 : n8nResponse.status }
       );
     }
 
