@@ -16,6 +16,7 @@ export default function NewClientPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,13 +50,17 @@ export default function NewClientPage() {
         }),
       });
       
+      const responseData = await res.json().catch(() => ({}));
+      
       if (res.ok) {
-        // Редиректим на список клиентов с параметром для обновления кеша
-        router.push(`/clients?fresh=${Date.now()}`);
-        // Обновляем данные после небольшой задержки, чтобы навигация успела завершиться
-        setTimeout(() => router.refresh(), 200);
+        // Используем startTransition для правильной обработки навигации и обновления
+        // Это гарантирует, что router.refresh() вызовется после завершения навигации
+        startTransition(() => {
+          router.push("/clients");
+          router.refresh();
+        });
       } else {
-        const data = await res.json().catch(() => ({}));
+        const data = responseData;
         console.log("Form error:", { status: res.status, data });
         
         // Если токен истек или нет авторизации, перенаправляем на логин
