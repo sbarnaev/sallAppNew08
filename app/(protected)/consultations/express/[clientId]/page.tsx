@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import ExpressConsultationFlow from "@/components/ExpressConsultationFlow";
+import { logger } from "@/lib/logger";
 
 export default function ExpressConsultationPage() {
   const params = useParams();
@@ -56,9 +57,12 @@ export default function ExpressConsultationPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center space-y-4">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Создание консультации...</p>
+          <div>
+            <p className="text-gray-700 font-medium">Создание консультации...</p>
+            <p className="text-sm text-gray-500 mt-2">Генерация базового профиля через n8n</p>
+          </div>
         </div>
       </div>
     );
