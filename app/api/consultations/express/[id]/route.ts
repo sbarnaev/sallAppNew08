@@ -69,12 +69,13 @@ export async function GET(
       }
     });
 
-    // Получаем трактовки из профиля, если есть profile_id
+    // Получаем трактовки и opener из профиля, если есть profile_id
     let bookInformation = null;
+    let profileOpener = null;
     const consultation = consultationData?.data;
     if (consultation?.profile_id) {
       try {
-        const profileUrl = `${baseUrl}/items/profiles/${consultation.profile_id}?fields=book_information`;
+        const profileUrl = `${baseUrl}/items/profiles/${consultation.profile_id}?fields=book_information,raw_json`;
         const profileRes = await fetch(profileUrl, {
           headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
           cache: "no-store",
@@ -83,9 +84,20 @@ export async function GET(
         if (profileRes.ok) {
           const profileData = await profileRes.json().catch(() => ({}));
           bookInformation = profileData?.data?.book_information || null;
+          
+          // Извлекаем opener из raw_json
+          try {
+            const rawJson = profileData?.data?.raw_json;
+            if (rawJson) {
+              const parsed = typeof rawJson === 'string' ? JSON.parse(rawJson) : rawJson;
+              profileOpener = parsed?.opener || null;
+            }
+          } catch {
+            // Игнорируем ошибки парсинга
+          }
         }
       } catch (error) {
-        logger.error("Error fetching book_information:", error);
+        logger.error("Error fetching profile data:", error);
       }
     }
 
@@ -93,6 +105,7 @@ export async function GET(
       consultation: consultation,
       steps,
       bookInformation,
+      profileOpener,
     }, { status: 200 });
   } catch (error: any) {
     logger.error("Get express consultation error:", error);

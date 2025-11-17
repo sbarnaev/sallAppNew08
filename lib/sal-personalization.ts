@@ -1,6 +1,6 @@
 /**
- * Персонализация экспресс-консультации на основе САЛ-кодов и их трактовок
- * Использует реальные трактовки из book_information для максимальной персонализации
+ * Глубокая персонализация экспресс-консультации на основе САЛ-кодов
+ * Учитывает синтез всех кодов, доминирующие характеристики и стиль общения
  */
 
 import { SALCodes } from "./sal-codes";
@@ -13,23 +13,132 @@ export interface CodeInterpretations {
   mission?: string;
 }
 
+export interface ProfileSynthesis {
+  dominantCodes: number[]; // Доминирующие коды (например, [4, 4, 4, 4, 4])
+  communicationStyle: "direct" | "soft" | "balanced"; // Стиль общения на основе коннектора
+  keyResources: string[]; // Ключевые ресурсы из всех кодов
+  keyDistortions: string[]; // Ключевые искажения
+  keyChallenges: string[]; // Ключевые задачи развития
+  archetypes: string[]; // Архетипы всех кодов
+}
+
 export interface PersonalizedContent {
-  // Вопросы для Точки А (текущая ситуация)
+  // Установление контакта
+  contactPhrases: string[]; // Динамичные фразы для установления контакта
+  
+  // Начало консультации
+  opener: string; // Краткое описание профиля (из базового расчета или сгенерированное)
+  
+  // Точка А
   pointAQuestions: string[];
   pointAOptions: string[];
-  pointAPhrases: string[]; // Готовые фразы для консультанта
+  pointAPhrases: string[];
   
-  // Вопросы для Точки Б (желания)
+  // Точка Б
   pointBQuestions: string[];
   pointBOptions: string[];
   pointBPhrases: string[];
   
   // Ресурсы
+  resourcesAnalysis: string; // Анализ: может ли прийти к точке Б и за счет чего
   resourcesPhrases: string[];
   
   // Закрытие и продажа
   closingPhrases: string[];
-  offerTemplate: string; // Шаблон оффера с плейсхолдерами
+  offerTemplate: string;
+}
+
+/**
+ * Определяет доминирующие коды
+ */
+function getDominantCodes(codes: SALCodes): number[] {
+  const codeValues = [
+    codes.personality,
+    codes.connector,
+    codes.realization,
+    codes.generator,
+    codes.mission,
+  ];
+  
+  // Подсчитываем частоту каждого кода
+  const frequency: Record<number, number> = {};
+  codeValues.forEach(code => {
+    frequency[code] = (frequency[code] || 0) + 1;
+  });
+  
+  // Находим максимальную частоту
+  const maxFreq = Math.max(...Object.values(frequency));
+  
+  // Если есть код, который встречается 3+ раза - это доминация
+  if (maxFreq >= 3) {
+    return Object.keys(frequency)
+      .filter(k => frequency[Number(k)] === maxFreq)
+      .map(k => Number(k));
+  }
+  
+  // Если нет явной доминации, возвращаем все уникальные коды
+  return Array.from(new Set(codeValues));
+}
+
+/**
+ * Определяет стиль общения на основе коннектора
+ */
+function getCommunicationStyle(connectorCode: number): "direct" | "soft" | "balanced" {
+  // Коды 1, 3, 5, 7, 9 - более прямые, активные
+  if ([1, 3, 5, 7, 9].includes(connectorCode)) {
+    return "direct";
+  }
+  // Коды 2, 4, 6, 8 - более мягкие, дипломатичные
+  if ([2, 4, 6, 8].includes(connectorCode)) {
+    return "soft";
+  }
+  // Мастер-числа 11, 22 - сбалансированные
+  return "balanced";
+}
+
+/**
+ * Создает синтез профиля на основе всех кодов и трактовок
+ */
+export function createProfileSynthesis(
+  codes: SALCodes,
+  interpretations: CodeInterpretations
+): ProfileSynthesis {
+  const dominantCodes = getDominantCodes(codes);
+  const communicationStyle = getCommunicationStyle(codes.connector);
+  
+  const keyResources: string[] = [];
+  const keyDistortions: string[] = [];
+  const keyChallenges: string[] = [];
+  const archetypes: string[] = [];
+  
+  // Извлекаем характеристики из всех трактовок
+  Object.entries(interpretations).forEach(([key, interpretation]) => {
+    if (!interpretation) return;
+    
+    const characteristics = extractKeyCharacteristics(interpretation);
+    
+    if (characteristics.archetype) {
+      archetypes.push(`${key}: ${characteristics.archetype}`);
+    }
+    
+    // Если код доминирующий, приоритет его характеристикам
+    const codeValue = codes[key as keyof SALCodes];
+    const isDominant = dominantCodes.includes(codeValue);
+    const weight = isDominant ? 2 : 1;
+    
+    keyResources.push(...characteristics.resources.slice(0, weight));
+    keyDistortions.push(...characteristics.distortions.slice(0, weight));
+    keyChallenges.push(...characteristics.challenges.slice(0, weight));
+  });
+  
+  return {
+    dominantCodes,
+    communicationStyle,
+    keyResources: Array.from(new Set(keyResources)).slice(0, 5),
+    keyDistortions: Array.from(new Set(keyDistortions)).slice(0, 5),
+    keyChallenges: Array.from(new Set(keyChallenges)).slice(0, 5),
+    archetypes,
+  };
 }
 
 /**
@@ -54,18 +163,17 @@ function extractKeyCharacteristics(interpretation: string): {
     result.archetype = archetypeMatch[1].trim();
   }
 
-  // Извлекаем ресурсы (ищем фразы типа "В ресурсе", "Ресурсное проявление", "Что работает")
+  // Извлекаем ресурсы
   const resourceSection = interpretation.match(/(?:Ресурсное проявление|В ресурсе|Что работает|ресурсная форма)[\s\S]*?(?=Искажённое|Что не работает|искажение|$)/i);
   if (resourceSection) {
     const resourceText = resourceSection[0];
-    // Извлекаем ключевые фразы
     const resourceMatches = resourceText.match(/(?:—|•|-)\s*([^\.\n]+)/g);
     if (resourceMatches) {
       result.resources = resourceMatches.map(m => m.replace(/^[—•-]\s*/, "").trim()).slice(0, 5);
     }
   }
 
-  // Извлекаем искажения (ищем фразы типа "Искажённое проявление", "Что не работает", "искажение")
+  // Извлекаем искажения
   const distortionSection = interpretation.match(/(?:Искажённое проявление|Что не работает|искажение|искажения)[\s\S]*?(?=Задача развития|Рекомендация|Что мешает|$)/i);
   if (distortionSection) {
     const distortionText = distortionSection[0];
@@ -75,7 +183,7 @@ function extractKeyCharacteristics(interpretation: string): {
     }
   }
 
-  // Извлекаем задачи/вызовы (ищем фразы типа "Задача развития", "Испытание", "Что мешает")
+  // Извлекаем задачи/вызовы
   const challengeSection = interpretation.match(/(?:Задача развития|Испытание|Что мешает|вызов)[\s\S]*?$/i);
   if (challengeSection) {
     const challengeText = challengeSection[0];
@@ -89,90 +197,147 @@ function extractKeyCharacteristics(interpretation: string): {
 }
 
 /**
- * Генерирует персонализированные вопросы для Точки А на основе трактовок
+ * Генерирует динамичные фразы для установления контакта
+ */
+function generateContactPhrases(
+  synthesis: ProfileSynthesis
+): string[] {
+  const phrases: string[] = [];
+  
+  // Базовые актуальные фразы
+  const now = new Date();
+  const month = now.getMonth();
+  const day = now.getDate();
+  
+  // Сезонные фразы
+  if (month >= 2 && month <= 4) {
+    phrases.push("Как ваш день? Уже чувствуется весна!");
+    phrases.push("Видели, какая погода сегодня? Весна наконец-то пришла!");
+  } else if (month >= 5 && month <= 7) {
+    phrases.push("Как ваш день? Лето в разгаре!");
+    phrases.push("Как настроение? Погода отличная для работы!");
+  } else if (month >= 8 && month <= 10) {
+    phrases.push("Как ваш день? Осень - время перемен!");
+    phrases.push("Видели, какая погода? Осень вступила в права!");
+  } else {
+    phrases.push("Как ваш день? Зима - время подводить итоги!");
+    phrases.push("У вас снег уже выпал? Зима наконец-то пришла!");
+  }
+  
+  // Персонализация на основе стиля общения
+  if (synthesis.communicationStyle === "direct") {
+    phrases.push("Привет! Готовы начать? Давайте сразу к делу.");
+    phrases.push("Как дела? Настроены на продуктивную работу?");
+  } else if (synthesis.communicationStyle === "soft") {
+    phrases.push("Привет! Как настроение? Готовы к разговору?");
+    phrases.push("Как ваш день? Надеюсь, всё хорошо!");
+  } else {
+    phrases.push("Привет! Как дела? Готовы к консультации?");
+    phrases.push("Как настроение? Давайте начнем!");
+  }
+  
+  // Универсальные фразы
+  phrases.push("Как ваш день? Что интересного происходит?");
+  phrases.push("Ого, а что это у вас на фоне? Интересное место!");
+  phrases.push("Класс, видели что было вчера? [актуальная тема]");
+  
+  return phrases.slice(0, 8);
+}
+
+/**
+ * Генерирует opener на основе синтеза профиля
+ */
+function generateOpener(
+  codes: SALCodes,
+  synthesis: ProfileSynthesis,
+  profileOpener?: string
+): string {
+  // Если есть opener из базового расчета - используем его
+  if (profileOpener) {
+    return profileOpener;
+  }
+  
+  // Иначе генерируем на основе синтеза
+  const parts: string[] = [];
+  
+  // Упоминаем доминирующие коды
+  if (synthesis.dominantCodes.length > 0 && synthesis.dominantCodes.length < 5) {
+    const dominant = synthesis.dominantCodes[0];
+    parts.push(`У вас доминирующий код ${dominant}, что говорит о вашей природной силе в этой области.`);
+  }
+  
+  // Упоминаем архетипы
+  if (synthesis.archetypes.length > 0) {
+    const mainArchetype = synthesis.archetypes[0].split(": ")[1];
+    parts.push(`Ваш профиль показывает архетип ${mainArchetype}, что определяет ваш уникальный стиль.`);
+  }
+  
+  // Упоминаем ключевые ресурсы
+  if (synthesis.keyResources.length > 0) {
+    parts.push(`Ваши природные ресурсы: ${synthesis.keyResources.slice(0, 2).join(", ")}.`);
+  }
+  
+  // Базовый opener, если ничего не сгенерировалось
+  if (parts.length === 0) {
+    return `Привет! Я вижу ваш профиль САЛ: Личность ${codes.personality}, Коннектор ${codes.connector}, Реализация ${codes.realization}, Генератор ${codes.generator}, Миссия ${codes.mission}. Давайте разберем, что это значит для вас.`;
+  }
+  
+  return parts.join(" ") + " Давайте разберем, как это влияет на вашу жизнь.";
+}
+
+/**
+ * Генерирует персонализированные вопросы для Точки А
  */
 function generatePointAQuestions(
   codes: SALCodes,
+  synthesis: ProfileSynthesis,
   interpretations: CodeInterpretations
 ): string[] {
   const questions: string[] = [];
   
-  // Используем трактовку Личности для вопросов
-  if (interpretations.personality) {
-    const personality = extractKeyCharacteristics(interpretations.personality);
-    
-    // Вопросы на основе искажений
-    if (personality.distortions.length > 0) {
-      const distortion = personality.distortions[0];
+  // Вопросы на основе доминирующих искажений
+  if (synthesis.keyDistortions.length > 0) {
+    const distortion = synthesis.keyDistortions[0];
+    if (synthesis.communicationStyle === "direct") {
       questions.push(`Где ты замечаешь, что ${distortion.toLowerCase()}?`);
-      questions.push(`В каких ситуациях ты чувствуешь, что ${distortion.toLowerCase()}?`);
-    }
-    
-    // Вопросы на основе вызовов
-    if (personality.challenges.length > 0) {
-      const challenge = personality.challenges[0];
-      questions.push(`Что мешает тебе ${challenge.toLowerCase()}?`);
+      questions.push(`В каких ситуациях это проявляется?`);
+    } else {
+      questions.push(`Где вы чувствуете, что ${distortion.toLowerCase()}?`);
+      questions.push(`В каких ситуациях это происходит?`);
     }
   }
   
-  // Используем трактовку Коннектора
-  if (interpretations.connector) {
-    const connector = extractKeyCharacteristics(interpretations.connector);
-    if (connector.distortions.length > 0) {
-      const distortion = connector.distortions[0];
-      questions.push(`Как ты чувствуешь себя в общении, когда ${distortion.toLowerCase()}?`);
-    }
+  // Вопросы на основе стиля общения
+  if (synthesis.communicationStyle === "direct") {
+    questions.push("Какой сейчас есть запрос? Что не получается?");
+    questions.push("Что не устраивает в текущей ситуации?");
+  } else {
+    questions.push("Какой у вас сейчас есть запрос? Что не получается?");
+    questions.push("Что вас не устраивает в текущей ситуации?");
   }
   
-  // Используем трактовку Реализации
-  if (interpretations.realization) {
-    const realization = extractKeyCharacteristics(interpretations.realization);
-    if (realization.distortions.length > 0) {
-      const distortion = realization.distortions[0];
-      questions.push(`Где ты видишь, что не получается реализоваться из-за ${distortion.toLowerCase()}?`);
-    }
-  }
-  
-  // Базовые вопросы, если персонализированных мало
+  // Базовые вопросы
   if (questions.length < 3) {
     questions.push("Что не получается? Что вас не устраивает в текущей ситуации?");
     questions.push("В какой области сейчас чувствуете самый большой затык?");
-    questions.push("Что именно не получается, в чем сложности?");
   }
   
   return questions.slice(0, 5);
 }
 
 /**
- * Генерирует персонализированные опции для Точки А
+ * Генерирует опции для Точки А на основе синтеза
  */
 function generatePointAOptions(
   codes: SALCodes,
-  interpretations: CodeInterpretations
+  synthesis: ProfileSynthesis
 ): string[] {
   const options: string[] = [];
   
-  // Используем искажения из трактовок
-  if (interpretations.personality) {
-    const personality = extractKeyCharacteristics(interpretations.personality);
-    personality.distortions.slice(0, 2).forEach(d => {
-      if (d.length < 50) options.push(d);
-    });
-  }
-  
-  if (interpretations.connector) {
-    const connector = extractKeyCharacteristics(interpretations.connector);
-    connector.distortions.slice(0, 2).forEach(d => {
-      if (d.length < 50) options.push(d);
-    });
-  }
-  
-  if (interpretations.realization) {
-    const realization = extractKeyCharacteristics(interpretations.realization);
-    realization.distortions.slice(0, 2).forEach(d => {
-      if (d.length < 50) options.push(d);
-    });
-  }
+  // Используем ключевые искажения
+  synthesis.keyDistortions.slice(0, 3).forEach(d => {
+    if (d.length < 50) options.push(d);
+  });
   
   // Базовые опции
   const baseOptions = [
@@ -192,204 +357,183 @@ function generatePointAOptions(
 }
 
 /**
- * Генерирует готовые фразы для консультанта в Точке А
+ * Генерирует фразы для Точки А с учетом стиля общения
  */
 function generatePointAPhrases(
   codes: SALCodes,
+  synthesis: ProfileSynthesis,
   interpretations: CodeInterpretations
 ): string[] {
   const phrases: string[] = [];
   
-  // Фразы на основе трактовки Личности
-  if (interpretations.personality) {
-    const personality = extractKeyCharacteristics(interpretations.personality);
-    
-    if (personality.archetype) {
-      phrases.push(`Я вижу, что у тебя код Личности ${codes.personality} - это ${personality.archetype}. Расскажи, где ты замечаешь это в своей жизни?`);
-    }
-    
-    if (personality.distortions.length > 0) {
-      const distortion = personality.distortions[0];
-      phrases.push(`Давай по-честному, где ты чувствуешь, что ${distortion.toLowerCase()}?`);
-      phrases.push(`В каких ситуациях это проявляется - ${distortion.toLowerCase()}?`);
-    }
-    
-    if (personality.challenges.length > 0) {
-      const challenge = personality.challenges[0];
-      phrases.push(`Что мешает тебе ${challenge.toLowerCase()}?`);
-    }
+  // Фразы в зависимости от стиля общения
+  if (synthesis.communicationStyle === "direct") {
+    phrases.push("Давай по-честному, какой у тебя сейчас запрос?");
+    phrases.push("Что не получается? Где затык?");
+    phrases.push("Расскажи про свою текущую ситуацию. Что работает, а что нет?");
+  } else if (synthesis.communicationStyle === "soft") {
+    phrases.push("Расскажите, какой у вас сейчас запрос?");
+    phrases.push("Что вас беспокоит в текущей ситуации?");
+    phrases.push("Где вы чувствуете, что что-то не получается?");
+  } else {
+    phrases.push("Какой у вас сейчас запрос?");
+    phrases.push("Что не получается в текущей ситуации?");
+    phrases.push("Расскажите, что вас не устраивает?");
   }
   
-  // Фразы на основе трактовки Коннектора
-  if (interpretations.connector) {
-    const connector = extractKeyCharacteristics(interpretations.connector);
-    if (connector.distortions.length > 0) {
-      const distortion = connector.distortions[0];
-      phrases.push(`Как ты чувствуешь себя в общении, когда ${distortion.toLowerCase()}?`);
-      phrases.push(`Где ты замечаешь, что тебя неправильно понимают из-за ${distortion.toLowerCase()}?`);
-    }
-  }
-  
-  // Фразы на основе трактовки Реализации
-  if (interpretations.realization) {
-    const realization = extractKeyCharacteristics(interpretations.realization);
-    if (realization.distortions.length > 0) {
-      const distortion = realization.distortions[0];
-      phrases.push(`Где ты видишь, что не получается зарабатывать из-за ${distortion.toLowerCase()}?`);
-    }
+  // Фразы на основе искажений
+  if (synthesis.keyDistortions.length > 0) {
+    const distortion = synthesis.keyDistortions[0];
+    phrases.push(`Где ты замечаешь, что ${distortion.toLowerCase()}?`);
   }
   
   // Универсальные фразы
-  phrases.push("Расскажи про свою текущую ситуацию. Что получается и что не получается?");
   phrases.push("Уже пробовала как-то решить? Если да, то что мешало достичь результата?");
   phrases.push("Что хорошо работает сейчас?");
   phrases.push("Почему ты вообще пришла на разбор?");
-  phrases.push("Давай по-честному, если ты пришла на разбор - тебя явно что-то не устраивает. Расскажи что?");
-  phrases.push("Как думаешь, почему у тебя не получается?");
-  phrases.push("Устраивает ли тебя твой уровень жизни сейчас? Окей, чего еще не хватает?");
   
   return phrases;
 }
 
 /**
- * Генерирует вопросы для Точки Б
+ * Генерирует вопросы для Точки Б (универсальные, не только про деньги)
  */
 function generatePointBQuestions(
   codes: SALCodes,
+  synthesis: ProfileSynthesis,
   interpretations: CodeInterpretations
 ): string[] {
   const questions: string[] = [];
   
-  // Используем трактовку Реализации
-  if (interpretations.realization) {
-    const realization = extractKeyCharacteristics(interpretations.realization);
-    if (realization.resources.length > 0) {
-      const resource = realization.resources[0];
-      questions.push(`Как ты видишь себя, когда ${resource.toLowerCase()}?`);
-    }
-    
-    // Ищем формулу дохода в трактовке
-    const formulaMatch = interpretations.realization.match(/Формула[:\s]+([^\.]+)/i);
-    if (formulaMatch) {
-      questions.push(`Сколько ты хочешь зарабатывать? ${formulaMatch[1]} - это твоя формула успеха.`);
-    }
+  // Вопросы на основе стиля общения
+  if (synthesis.communicationStyle === "direct") {
+    questions.push("Как хочется? К чему ты хочешь прийти?");
+    questions.push("Какой результат тебе нужен? Что ты хочешь получить?");
+    questions.push("Представь идеальную ситуацию. Как это выглядит?");
+  } else {
+    questions.push("Как вам хочется? К чему вы хотите прийти?");
+    questions.push("Какой результат вам нужен? Что вы хотите получить?");
+    questions.push("Представьте идеальную ситуацию. Как это выглядит?");
   }
   
-  // Используем трактовку Генератора
-  if (interpretations.generator) {
-    const generator = extractKeyCharacteristics(interpretations.generator);
-    if (generator.resources.length > 0) {
-      const resource = generator.resources[0];
-      questions.push(`Что заряжает тебя энергией? ${resource} - это твой источник силы.`);
-    }
+  // Вопросы на основе ресурсов
+  if (synthesis.keyResources.length > 0) {
+    const resource = synthesis.keyResources[0];
+    questions.push(`Как ты видишь себя, когда используешь ${resource.toLowerCase()}?`);
   }
   
-  // Используем трактовку Миссии
-  if (interpretations.mission) {
-    const missionMatch = interpretations.mission.match(/Суть миссии[:\s]+([^\.]+)/i);
-    if (missionMatch) {
-      questions.push(`${missionMatch[1]} - это твоя миссия. Как ты видишь себя, когда она реализована?`);
-    }
-  }
+  // Универсальные вопросы для любых запросов
+  questions.push("Что для тебя важно? Что ты хочешь изменить?");
+  questions.push("Какой результат ты хочешь получить? За какой срок?");
   
-  // Базовые вопросы
-  if (questions.length < 3) {
-    questions.push("К чему вы хотите прийти? Какой результат хотите получить?");
-    questions.push("Сколько вы хотите зарабатывать? Сколько будет комфортно для жизни?");
-    questions.push("Какой вы себя видите через 5-10 лет?");
-  }
-  
-  return questions.slice(0, 5);
+  return questions.slice(0, 6);
 }
 
 /**
- * Генерирует опции для Точки Б
+ * Генерирует опции для Точки Б (универсальные, для любых запросов)
  */
 function generatePointBOptions(
   codes: SALCodes,
-  interpretations: CodeInterpretations
+  synthesis: ProfileSynthesis
 ): string[] {
   const options: string[] = [];
   
-  // Используем ресурсы из трактовки Реализации
-  if (interpretations.realization) {
-    const realization = extractKeyCharacteristics(interpretations.realization);
-    realization.resources.slice(0, 3).forEach(r => {
-      if (r.length < 50) options.push(r);
-    });
-  }
+  // Используем ключевые ресурсы
+  synthesis.keyResources.slice(0, 3).forEach(r => {
+    if (r.length < 50) options.push(r);
+  });
   
-  // Используем ресурсы из трактовки Генератора
-  if (interpretations.generator) {
-    const generator = extractKeyCharacteristics(interpretations.generator);
-    generator.resources.slice(0, 2).forEach(r => {
-      if (r.length < 50) options.push(r);
-    });
-  }
-  
-  // Базовые опции
+  // Универсальные опции для разных сфер жизни
   const baseOptions = [
-    "Зарабатывать больше денег",
-    "Жить в теплой стране",
-    "Признание и медийность",
-    "Написать книгу",
-    "Выступать на сцене",
-    "Создать семью",
+    "Улучшить отношения в семье",
+    "Найти партнера / построить отношения",
+    "Развить свой бизнес",
+    "Найти свое призвание",
+    "Улучшить отношения с детьми",
+    "Повысить доход",
+    "Достичь финансовой свободы",
     "Реализовать творческий потенциал",
+    "Получить признание",
+    "Создать гармонию в жизни",
+    "Решить проблемы со здоровьем",
+    "Найти баланс между работой и личной жизнью",
+    "Развить навыки и компетенции",
     "Помогать другим",
+    "Достичь внутренней гармонии",
   ];
   
   options.push(...baseOptions);
   
-  return Array.from(new Set(options)).slice(0, 10);
+  return Array.from(new Set(options)).slice(0, 12);
 }
 
 /**
- * Генерирует фразы для Точки Б
+ * Генерирует фразы для Точки Б (универсальные)
  */
 function generatePointBPhrases(
   codes: SALCodes,
-  interpretations: CodeInterpretations
+  synthesis: ProfileSynthesis
 ): string[] {
   const phrases: string[] = [];
   
-  // Фразы на основе трактовки Реализации
-  if (interpretations.realization) {
-    const realization = extractKeyCharacteristics(interpretations.realization);
-    const formulaMatch = interpretations.realization.match(/Формула[:\s]+([^\.]+)/i);
-    if (formulaMatch) {
-      phrases.push(`Сколько ты хочешь зарабатывать? ${formulaMatch[1]} - это твоя формула успеха.`);
-    }
-    
-    if (realization.resources.length > 0) {
-      phrases.push(`Ты реализуешься через ${realization.resources[0].toLowerCase()}. Как ты видишь себя, когда это работает?`);
-    }
+  if (synthesis.communicationStyle === "direct") {
+    phrases.push("Как хочется? К чему ты хочешь прийти?");
+    phrases.push("Какой результат тебе нужен? Что ты хочешь получить?");
+    phrases.push("Представь идеальную ситуацию. Как это выглядит?");
+  } else {
+    phrases.push("Как вам хочется? К чему вы хотите прийти?");
+    phrases.push("Какой результат вам нужен? Что вы хотите получить?");
+    phrases.push("Представьте идеальную ситуацию. Как это выглядит?");
   }
   
-  // Фразы на основе трактовки Генератора
-  if (interpretations.generator) {
-    const generator = extractKeyCharacteristics(interpretations.generator);
-    if (generator.resources.length > 0) {
-      phrases.push(`Что заряжает тебя энергией? ${generator.resources[0]} - это твой источник силы.`);
-    }
-  }
-  
-  // Фразы на основе трактовки Миссии
-  if (interpretations.mission) {
-    const missionMatch = interpretations.mission.match(/Суть миссии[:\s]+([^\.]+)/i);
-    if (missionMatch) {
-      phrases.push(`${missionMatch[1]} - это твоя миссия. Как ты видишь себя, когда она реализована?`);
-    }
-  }
-  
-  // Универсальные фразы
-  phrases.push("Сколько ты хочешь зарабатывать? Сколько тебе будет комфортно для жизни, чтобы прям по кайфу?");
-  phrases.push("К чему ты хочешь прийти? Какой результат ты хочешь получить? За какой срок?");
   phrases.push("Хорошо, представь что это всё уже есть, что дальше?");
-  phrases.push("Какой ты себя видишь через 5-10 лет? Как ты себя чувствуешь? Что на тебе надето? Где ты?");
+  phrases.push("Какой ты себя видишь через 5-10 лет?");
   phrases.push("Закрой глаза и представь картинку мечты. Что ты видишь?");
+  phrases.push("Что для тебя важно? Что ты хочешь изменить в своей жизни?");
+  phrases.push("Опиши свою мечту. Как она выглядит?");
   
   return phrases;
+}
+
+/**
+ * Анализирует ресурсы: может ли прийти к точке Б и за счет чего (универсально для любых запросов)
+ */
+function generateResourcesAnalysis(
+  codes: SALCodes,
+  synthesis: ProfileSynthesis,
+  pointAProblems?: string[],
+  pointBGoals?: string[]
+): string {
+  const parts: string[] = [];
+  
+  // Анализ на основе ресурсов
+  if (synthesis.keyResources.length > 0) {
+    parts.push(`С точки зрения САЛ, у вас есть ресурсы: ${synthesis.keyResources.slice(0, 3).join(", ")}.`);
+  }
+  
+  // Анализ на основе доминирующих кодов
+  if (synthesis.dominantCodes.length > 0 && synthesis.dominantCodes.length < 5) {
+    parts.push(`Ваш доминирующий код ${synthesis.dominantCodes[0]} дает вам природную силу в этой области.`);
+  }
+  
+  // Анализ возможности достижения цели (универсально)
+  if (pointBGoals && pointBGoals.length > 0) {
+    parts.push(`Вы можете прийти к своей цели "${pointBGoals[0]}" за счет ваших природных ресурсов.`);
+  } else {
+    parts.push("Вы можете достичь своей цели за счет ваших природных ресурсов.");
+  }
+  
+  // Упоминание искажений, которые могут мешать
+  if (synthesis.keyDistortions.length > 0) {
+    parts.push(`Важно учесть, что ${synthesis.keyDistortions[0].toLowerCase()} может мешать, но это решаемо.`);
+  }
+  
+  // Базовый анализ
+  if (parts.length === 0) {
+    return "С точки зрения САЛ, у вас есть все необходимые ресурсы для достижения цели. Важно правильно их активировать.";
+  }
+  
+  return parts.join(" ") + " Это коротко и тезисно - подробности узнаете в полном разборе.";
 }
 
 /**
@@ -397,29 +541,16 @@ function generatePointBPhrases(
  */
 function generateResourcesPhrases(
   codes: SALCodes,
-  interpretations: CodeInterpretations
+  synthesis: ProfileSynthesis
 ): string[] {
   const phrases: string[] = [];
   
-  // Фразы на основе ресурсов из трактовок
-  if (interpretations.realization) {
-    const realization = extractKeyCharacteristics(interpretations.realization);
-    if (realization.resources.length > 0) {
-      phrases.push(`У тебя есть ресурс - ${realization.resources[0].toLowerCase()}. Как ты можешь его использовать?`);
-    }
+  if (synthesis.keyResources.length > 0) {
+    phrases.push(`У тебя есть ресурс - ${synthesis.keyResources[0].toLowerCase()}. Как ты можешь его использовать?`);
   }
   
-  if (interpretations.generator) {
-    const generator = extractKeyCharacteristics(interpretations.generator);
-    if (generator.resources.length > 0) {
-      phrases.push(`Твой источник энергии - ${generator.resources[0].toLowerCase()}. Как ты можешь его активировать?`);
-    }
-  }
-  
-  // Универсальные фразы
-  phrases.push("Какие есть ресурсы, которые помогут прийти в точку «Б»? (время, деньги, люди, навыки, социальные сети и охваты в них и тд)");
-  phrases.push("Отлично, что есть такие ресурсы, но я бы ещё добавила вот это: [перечисляем что он получит от нас]");
-  phrases.push("Смотри, если у тебя будут все необходимые ресурсы, технологии, пошаговый план, поддержка и прочие ресурсы, которых тебе не хватает, ты быстрее придёшь в свою точку «Б»?");
+  phrases.push("Какие есть ресурсы, которые помогут прийти в точку «Б»?");
+  phrases.push("Смотри, если у тебя будут все необходимые ресурсы, технологии, пошаговый план, поддержка, ты быстрее придёшь в свою точку «Б»?");
   
   return phrases;
 }
@@ -429,98 +560,98 @@ function generateResourcesPhrases(
  */
 function generateClosingPhrases(
   codes: SALCodes,
-  interpretations: CodeInterpretations,
+  synthesis: ProfileSynthesis,
   pointAProblems?: string[],
   pointBGoals?: string[]
 ): string[] {
   const phrases: string[] = [];
   
-  // Персонализированные фразы на основе проблем и целей
+  // Персонализированные фразы
   if (pointAProblems && pointAProblems.length > 0 && pointBGoals && pointBGoals.length > 0) {
-    const problem = pointAProblems[0];
-    const goal = pointBGoals[0];
-    phrases.push(`Смотри, у тебя есть проблема: ${problem}. И ты хочешь прийти к: ${goal}. Все верно?`);
+    if (synthesis.communicationStyle === "direct") {
+      phrases.push(`Смотри, у тебя есть проблема: ${pointAProblems[0]}. И ты хочешь прийти к: ${pointBGoals[0]}. Все верно?`);
+    } else {
+      phrases.push(`У вас есть проблема: ${pointAProblems[0]}. И вы хотите прийти к: ${pointBGoals[0]}. Все верно?`);
+    }
   }
   
-  // Фразы на основе трактовок
-  if (interpretations.personality) {
-    const personality = extractKeyCharacteristics(interpretations.personality);
-    if (personality.challenges.length > 0) {
-      phrases.push(`Твоя задача развития - ${personality.challenges[0].toLowerCase()}. Мы поможем тебе с этим.`);
-    }
+  // Фразы на основе задач развития
+  if (synthesis.keyChallenges.length > 0) {
+    phrases.push(`Твоя задача развития - ${synthesis.keyChallenges[0].toLowerCase()}. Мы поможем тебе с этим.`);
   }
   
   // Универсальные фразы
   phrases.push("Супер, а на сколько для тебя это важно от 1 до 10?");
   phrases.push("Супер, когда для человека действительно важно, всё обязательно получается");
-  phrases.push("Смотри, я могу помочь точечно (прокачать продажи) или комплексно (простроить запуск и помочь заработать [сумма] на твоих ресурсах), что интересней?");
+  phrases.push("Смотри, я могу помочь точечно или комплексно, что интересней?");
   phrases.push("Когда готов начинать? Супер, смотри, я начинаю работать только после оплаты.");
   
   return phrases;
 }
 
 /**
- * Генерирует персонализированный оффер
+ * Генерирует персонализированный оффер (универсально для любых запросов)
  */
 function generateOfferTemplate(
   codes: SALCodes,
-  interpretations: CodeInterpretations,
+  synthesis: ProfileSynthesis,
   pointAProblems?: string[],
   pointBGoals?: string[]
 ): string {
   let template = "Мы сегодня вскрыли только верхушку айсберга, но уже видно, насколько сильно это влияет на разные сферы.\n\n";
   
-  // Используем проблемы из Точки А
+  // Используем проблемы и цели (универсально)
   if (pointAProblems && pointAProblems.length > 0) {
     template += `Ты видишь, что у тебя есть проблемы: ${pointAProblems.slice(0, 2).join(", ")}. `;
   }
   
-  // Используем цели из Точки Б
   if (pointBGoals && pointBGoals.length > 0) {
     template += `И ты хочешь прийти к: ${pointBGoals.slice(0, 2).join(", ")}. `;
   }
   
-  // Используем трактовки для персонализации
-  if (interpretations.personality) {
-    const personality = extractKeyCharacteristics(interpretations.personality);
-    if (personality.challenges.length > 0) {
-      template += `Твоя задача развития - ${personality.challenges[0].toLowerCase()}. `;
-    }
+  // Используем синтез
+  if (synthesis.keyChallenges.length > 0) {
+    template += `Твоя задача развития - ${synthesis.keyChallenges[0].toLowerCase()}. `;
   }
   
-  if (interpretations.realization) {
-    const realization = extractKeyCharacteristics(interpretations.realization);
-    if (realization.resources.length > 0) {
-      template += `Ты можешь реализоваться через ${realization.resources[0].toLowerCase()}, но что-то мешает. `;
-    }
+  if (synthesis.keyResources.length > 0) {
+    template += `Ты можешь реализоваться через ${synthesis.keyResources[0].toLowerCase()}, но что-то мешает. `;
   }
   
   template += "\nДальше есть два пути, которые реально помогут поменять ситуацию:\n";
-  template += "– Личный разбор — на нём мы детально посмотрим на все твои природные ресурсы и скрытые конфликты. Ты получишь конкретную стратегию, как реализовать сильные стороны и обойти внутренние ограничения.\n";
-  template += "– Парная консультация — если важна тема отношений, разберём совместимость с партнёром, выясним, как строить гармоничные отношения или найти подходящего человека.\n\n";
+  template += "– Личный разбор — на нём мы детально посмотрим на все твои природные ресурсы и скрытые конфликты. Ты получишь конкретную стратегию, как реализовать сильные стороны и обойти внутренние ограничения. Это поможет тебе достичь своей цели.\n";
+  template += "– Парная консультация — если важна тема отношений (семья, партнер, дети), разберём совместимость, выясним, как строить гармоничные отношения или найти подходящего человека.\n\n";
   template += "Какой формат тебе сейчас ближе?";
   
   return template;
 }
 
 /**
- * Получает персонализированный контент на основе САЛ-кодов и их трактовок
+ * Получает персонализированный контент на основе синтеза всех кодов
  */
 export function getPersonalizedContent(
   codes: SALCodes,
   interpretations: CodeInterpretations,
   pointAProblems?: string[],
-  pointBGoals?: string[]
+  pointBGoals?: string[],
+  profileOpener?: string
 ): PersonalizedContent {
+  // Создаем синтез профиля
+  const synthesis = createProfileSynthesis(codes, interpretations);
+  
   return {
-    pointAQuestions: generatePointAQuestions(codes, interpretations),
-    pointAOptions: generatePointAOptions(codes, interpretations),
-    pointAPhrases: generatePointAPhrases(codes, interpretations),
-    pointBQuestions: generatePointBQuestions(codes, interpretations),
-    pointBOptions: generatePointBOptions(codes, interpretations),
-    pointBPhrases: generatePointBPhrases(codes, interpretations),
-    resourcesPhrases: generateResourcesPhrases(codes, interpretations),
-    closingPhrases: generateClosingPhrases(codes, interpretations, pointAProblems, pointBGoals),
-    offerTemplate: generateOfferTemplate(codes, interpretations, pointAProblems, pointBGoals),
+    contactPhrases: generateContactPhrases(synthesis),
+    opener: generateOpener(codes, synthesis, profileOpener),
+    pointAQuestions: generatePointAQuestions(codes, synthesis, interpretations),
+    pointAOptions: generatePointAOptions(codes, synthesis),
+    pointAPhrases: generatePointAPhrases(codes, synthesis, interpretations),
+    pointBQuestions: generatePointBQuestions(codes, synthesis, interpretations),
+    pointBOptions: generatePointBOptions(codes, synthesis),
+    pointBPhrases: generatePointBPhrases(codes, synthesis),
+    resourcesAnalysis: generateResourcesAnalysis(codes, synthesis, pointAProblems, pointBGoals),
+    resourcesPhrases: generateResourcesPhrases(codes, synthesis),
+    closingPhrases: generateClosingPhrases(codes, synthesis, pointAProblems, pointBGoals),
+    offerTemplate: generateOfferTemplate(codes, synthesis, pointAProblems, pointBGoals),
   };
 }
+

@@ -49,6 +49,7 @@ export default function ExpressConsultationFlow({
   const [salCodes, setSalCodes] = useState<ReturnType<typeof calculateSALCodes> | null>(null);
   const [personalizedContent, setPersonalizedContent] = useState<PersonalizedContent | null>(null);
   const [bookInformation, setBookInformation] = useState<CodeInterpretations | null>(null);
+  const [profileOpener, setProfileOpener] = useState<string | null>(null);
 
   // Загружаем данные клиента и САЛ коды
   useEffect(() => {
@@ -91,9 +92,14 @@ export default function ExpressConsultationFlow({
       const res = await fetch(`/api/consultations/express/${consultationId}`);
       const data = await res.json().catch(() => ({}));
       
-      // Загружаем трактовки из book_information
+      // Загружаем трактовки из book_information и opener
       if (data?.bookInformation) {
         setBookInformation(data.bookInformation);
+      }
+      
+      // Сохраняем opener для использования в персонализации
+      if (data?.profileOpener) {
+        setProfileOpener(data.profileOpener);
       }
       
       if (data?.steps && Array.isArray(data.steps) && data.steps.length > 0) {
@@ -138,15 +144,16 @@ export default function ExpressConsultationFlow({
         salCodes,
         bookInformation,
         pointAProblems,
-        pointBGoals
+        pointBGoals,
+        profileOpener || undefined
       );
       setPersonalizedContent(personalized);
     } else if (salCodes) {
       // Если трактовок еще нет, используем только коды
-      const personalized = getPersonalizedContent(salCodes, {});
+      const personalized = getPersonalizedContent(salCodes, {}, undefined, undefined, profileOpener || undefined);
       setPersonalizedContent(personalized);
     }
-  }, [salCodes, bookInformation, steps]);
+  }, [salCodes, bookInformation, steps, profileOpener]);
 
   async function saveStep(
     stepType: StepType,
