@@ -42,15 +42,29 @@ export async function POST(
     });
 
     if (!consultationRes.ok) {
-      return NextResponse.json({ message: "Consultation not found" }, { status: 404 });
+      const errorData = await consultationRes.json().catch(() => ({}));
+      logger.error("Failed to fetch consultation:", errorData);
+      return NextResponse.json(
+        { message: "Consultation not found", details: errorData },
+        { status: 404 }
+      );
     }
 
     const consultationData = await consultationRes.json().catch(() => ({}));
     const consultation = consultationData?.data;
+    
+    if (!consultation) {
+      return NextResponse.json({ message: "Consultation data is empty" }, { status: 404 });
+    }
+    
     const client = consultation?.client_id;
 
     if (!client) {
-      return NextResponse.json({ message: "Client not found" }, { status: 404 });
+      logger.error("Client not found in consultation:", { consultationId: id, consultation });
+      return NextResponse.json(
+        { message: "Client not found in consultation data" },
+        { status: 404 }
+      );
     }
 
     // 2. Получаем шаги консультации

@@ -32,18 +32,21 @@ export default function ExpressConsultationPage() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-          throw new Error(data?.message || "Не удалось создать консультацию");
+          const errorMessage = data?.message || data?.details?.errors?.[0]?.message || "Не удалось создать консультацию";
+          const errorDetails = data?.details ? `\n\nДетали: ${JSON.stringify(data.details, null, 2)}` : "";
+          throw new Error(errorMessage + errorDetails);
         }
 
         const consultationId = data?.data?.id || null;
-        const profileId = data?.profileId || null;
+        
+        if (!consultationId) {
+          throw new Error("Консультация создана, но ID не получен");
+        }
         
         setConsultationId(consultationId);
         
-        // Если профиль еще генерируется, показываем индикатор
-        if (!profileId) {
-          logger.warn("Profile generation may be in progress");
-        }
+        // Профиль генерируется в фоне через n8n
+        logger.log("Consultation created, profile generation in progress");
       } catch (err: any) {
         setError(err.message || "Ошибка создания консультации");
       } finally {
