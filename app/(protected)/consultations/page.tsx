@@ -41,7 +41,7 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Консультации</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Link href="/consultations/new" className="rounded-2xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700">Новая консультация</Link>
           <Link href="/profiles/new" className="rounded-2xl border px-4 py-2 hover:bg-gray-50">Новый расчёт</Link>
         </div>
