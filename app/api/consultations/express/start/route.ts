@@ -215,7 +215,7 @@ export async function POST(req: NextRequest) {
         logger.error("Could not retrieve consultation ID after 204 response", {
           clientId: client_id,
           ownerUserId,
-          searchUrl: simpleUrl,
+          method: "internal API /api/consultations",
         });
         return NextResponse.json(
           { 
