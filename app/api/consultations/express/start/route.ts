@@ -135,83 +135,124 @@ export async function POST(req: NextRequest) {
       cache: "no-store",
     });
 
-    // Сначала получаем текст ответа для диагностики
-    const responseText = await r.text().catch(() => "");
+    // Обрабатываем разные статусы ответа от Directus
+    let consultationId: number | null = null;
     let consultationData: any = {};
-    
-    try {
-      consultationData = JSON.parse(responseText);
-    } catch {
-      logger.error("Failed to parse Directus response as JSON:", {
-        status: r.status,
-        statusText: r.statusText,
-        responseText: responseText.substring(0, 500),
-      });
-      return NextResponse.json(
-        { 
-          message: "Invalid response from Directus",
-          details: { status: r.status, responseText: responseText.substring(0, 500) },
-        },
-        { status: 500 }
-      );
-    }
 
-    if (!r.ok) {
-      logger.error("Error creating express consultation:", {
-        status: r.status,
-        statusText: r.statusText,
-        errors: consultationData?.errors,
-        data: consultationData,
-        responseText: responseText.substring(0, 500),
-      });
+    // Статус 204 (No Content) - успешное создание без тела ответа
+    if (r.status === 204) {
+      logger.log("Directus returned 204 (No Content), fetching created consultation...");
       
-      // Детальное сообщение об ошибке
-      const errorMessage = consultationData?.errors?.[0]?.message 
-        || consultationData?.message 
-        || `Failed to create consultation (${r.status})`;
+      // Запрашиваем последнюю созданную консультацию для этого клиента
+      // Используем фильтр по client_id, owner_user и type для точности
+      const fetchUrl = `${baseUrl}/items/consultations?filter[client_id][_eq]=${client_id}&filter[owner_user][_eq]=${ownerUserId}&filter[type][_eq]=express&sort=-created_at&limit=1&fields=id,client_id,type,status,scheduled_at,owner_user`;
       
-      return NextResponse.json(
-        { 
-          message: errorMessage,
-          details: consultationData?.errors || consultationData,
-        },
-        { status: r.status }
-      );
-    }
-
-    // Directus возвращает данные в формате { data: { id: ... } }
-    // Проверяем все возможные варианты
-    const consultationId = consultationData?.data?.id 
-      || consultationData?.id 
-      || consultationData?.data?.data?.id
-      || (Array.isArray(consultationData?.data) && consultationData.data[0]?.id)
-      || (Array.isArray(consultationData) && consultationData[0]?.id);
-      
-    if (!consultationId) {
-      logger.error("Consultation created but no ID returned:", {
-        status: r.status,
-        statusText: r.statusText,
-        fullResponse: consultationData,
-        responseText: responseText.substring(0, 1000),
-        keys: Object.keys(consultationData || {}),
-        dataKeys: consultationData?.data ? Object.keys(consultationData.data) : [],
-        isArray: Array.isArray(consultationData?.data),
-        isDataArray: Array.isArray(consultationData),
-      });
-      
-      // Попробуем получить ID через отдельный запрос, если консультация была создана
-      // Но это не идеально, лучше исправить проблему с ответом
-      return NextResponse.json(
-        { 
-          message: "Consultation created but no ID returned",
-          details: {
-            response: consultationData,
-            status: r.status,
-            suggestion: "Check Directus logs and collection permissions",
+      try {
+        const fetchRes = await fetch(fetchUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
           },
-        },
-        { status: 500 }
-      );
+          cache: "no-store",
+        });
+
+        if (fetchRes.ok) {
+          const fetchData = await fetchRes.json().catch(() => ({}));
+          if (fetchData?.data && Array.isArray(fetchData.data) && fetchData.data.length > 0) {
+            consultationId = fetchData.data[0]?.id;
+            consultationData = { data: fetchData.data[0] };
+            logger.log("Successfully fetched consultation ID after 204:", consultationId);
+          }
+        }
+      } catch (fetchError: any) {
+        logger.error("Failed to fetch consultation after 204:", fetchError);
+      }
+
+      // Если не удалось получить ID, возвращаем ошибку
+      if (!consultationId) {
+        logger.error("Could not retrieve consultation ID after 204 response");
+        return NextResponse.json(
+          { 
+            message: "Consultation created but could not retrieve ID",
+            details: { status: 204, suggestion: "Try refreshing the page" },
+          },
+          { status: 500 }
+        );
+      }
+    } else {
+      // Для других статусов пытаемся парсить JSON
+      const responseText = await r.text().catch(() => "");
+      
+      if (responseText) {
+        try {
+          consultationData = JSON.parse(responseText);
+        } catch (parseError) {
+          logger.error("Failed to parse Directus response as JSON:", {
+            status: r.status,
+            statusText: r.statusText,
+            responseText: responseText.substring(0, 500),
+          });
+          
+          if (r.ok) {
+            // Если статус успешный, но не можем распарсить - пробуем получить через запрос
+            return NextResponse.json(
+              { 
+                message: "Invalid response format from Directus",
+                details: { status: r.status, responseText: responseText.substring(0, 500) },
+              },
+              { status: 500 }
+            );
+          }
+        }
+      }
+
+      if (!r.ok) {
+        logger.error("Error creating express consultation:", {
+          status: r.status,
+          statusText: r.statusText,
+          errors: consultationData?.errors,
+          data: consultationData,
+        });
+        
+        const errorMessage = consultationData?.errors?.[0]?.message 
+          || consultationData?.message 
+          || `Failed to create consultation (${r.status})`;
+        
+        return NextResponse.json(
+          { 
+            message: errorMessage,
+            details: consultationData?.errors || consultationData,
+          },
+          { status: r.status }
+        );
+      }
+
+      // Извлекаем ID из ответа
+      consultationId = consultationData?.data?.id 
+        || consultationData?.id 
+        || consultationData?.data?.data?.id
+        || (Array.isArray(consultationData?.data) && consultationData.data[0]?.id)
+        || (Array.isArray(consultationData) && consultationData[0]?.id);
+        
+      if (!consultationId) {
+        logger.error("Consultation created but no ID in response:", {
+          status: r.status,
+          statusText: r.statusText,
+          fullResponse: consultationData,
+          keys: Object.keys(consultationData || {}),
+        });
+        
+        return NextResponse.json(
+          { 
+            message: "Consultation created but no ID returned",
+            details: {
+              response: consultationData,
+              status: r.status,
+            },
+          },
+          { status: 500 }
+        );
+      }
     }
     
     logger.log("Consultation created successfully:", {
