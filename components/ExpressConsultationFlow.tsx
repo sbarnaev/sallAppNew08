@@ -487,7 +487,7 @@ function PointAStep({
               <div className="bg-white rounded-lg border border-blue-200 p-3 space-y-2 max-h-60 overflow-y-auto">
                 {phrases.map((phrase, idx) => (
                   <div key={idx} className="text-sm text-gray-700 p-2 bg-gray-50 rounded border border-gray-200">
-                    "{phrase}"
+                    &quot;{phrase}&quot;
                   </div>
                 ))}
               </div>
@@ -643,7 +643,7 @@ function PointBStep({
               <div className="bg-white rounded-lg border border-green-200 p-3 space-y-2 max-h-60 overflow-y-auto">
                 {phrases.map((phrase, idx) => (
                   <div key={idx} className="text-sm text-gray-700 p-2 bg-gray-50 rounded border border-gray-200">
-                    "{phrase}"
+                    &quot;{phrase}&quot;
                   </div>
                 ))}
               </div>
