@@ -175,12 +175,13 @@ export async function POST(req: NextRequest) {
       // Продолжаем без профиля, но это не критично для начала консультации
     }
 
-    // 5. Создаем экспресс-консультацию (без scheduled_at - это необязательное поле)
+    // 5. Создаем экспресс-консультацию
     const consultationPayload: any = {
       client_id: Number(client_id),
       owner_user: ownerUserId,
       type: "express",
       status: "in_progress",
+      scheduled_at: new Date().toISOString(), // Текущая дата/время для обязательного поля
     };
 
     // Добавляем profile_id если есть
