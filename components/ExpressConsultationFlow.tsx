@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { logger } from "@/lib/logger";
-import { calculateSALCodes, getCodeShortLabel } from "@/lib/sal-codes";
+import { calculateSALCodes, getCodeShortLabel, SALCodes } from "@/lib/sal-codes";
+import { getPersonalizedContent, PersonalizedContent, CodeInterpretations } from "@/lib/sal-personalization";
 
 interface ConsultationStep {
   id?: number;
@@ -46,6 +47,8 @@ export default function ExpressConsultationFlow({
   const [saving, setSaving] = useState(false);
   const [clientData, setClientData] = useState<ClientData | null>(null);
   const [salCodes, setSalCodes] = useState<ReturnType<typeof calculateSALCodes> | null>(null);
+  const [personalizedContent, setPersonalizedContent] = useState<PersonalizedContent | null>(null);
+  const [bookInformation, setBookInformation] = useState<CodeInterpretations | null>(null);
 
   // Загружаем данные клиента и САЛ коды
   useEffect(() => {
@@ -61,6 +64,12 @@ export default function ExpressConsultationFlow({
           if (client.birth_date) {
             const codes = calculateSALCodes(client.birth_date);
             setSalCodes(codes);
+            
+            // Генерируем персонализированный контент на основе кодов
+            if (codes) {
+              const personalized = getPersonalizedContent(codes);
+              setPersonalizedContent(personalized);
+            }
           }
         }
       } catch (error: any) {
@@ -81,6 +90,12 @@ export default function ExpressConsultationFlow({
     try {
       const res = await fetch(`/api/consultations/express/${consultationId}`);
       const data = await res.json().catch(() => ({}));
+      
+      // Загружаем трактовки из book_information
+      if (data?.bookInformation) {
+        setBookInformation(data.bookInformation);
+      }
+      
       if (data?.steps && Array.isArray(data.steps) && data.steps.length > 0) {
         setSteps(data.steps);
         // Определяем текущий шаг на основе сохраненных данных
@@ -108,6 +123,30 @@ export default function ExpressConsultationFlow({
       // Не показываем ошибку пользователю, просто не загружаем шаги
     }
   }
+  
+  // Обновляем персонализированный контент при изменении кодов, трактовок или шагов
+  useEffect(() => {
+    if (salCodes && bookInformation) {
+      // Извлекаем проблемы из Точки А и цели из Точки Б
+      const pointAStep = steps.find(s => s.step_type === "point_a");
+      const pointBStep = steps.find(s => s.step_type === "point_b");
+      
+      const pointAProblems = pointAStep?.selected_options || [];
+      const pointBGoals = pointBStep?.selected_options || [];
+      
+      const personalized = getPersonalizedContent(
+        salCodes,
+        bookInformation,
+        pointAProblems,
+        pointBGoals
+      );
+      setPersonalizedContent(personalized);
+    } else if (salCodes) {
+      // Если трактовок еще нет, используем только коды
+      const personalized = getPersonalizedContent(salCodes, {});
+      setPersonalizedContent(personalized);
+    }
+  }, [salCodes, bookInformation, steps]);
 
   async function saveStep(
     stepType: StepType,
@@ -299,6 +338,8 @@ export default function ExpressConsultationFlow({
                 {stepType === "point_a" && (
                   <PointAStep
                     stepData={stepData}
+                    personalizedContent={personalizedContent}
+                    salCodes={salCodes}
                     onSave={(question, response, options) => {
                       saveStep("point_a", question, response, options);
                       handleStepComplete("point_a");
@@ -309,6 +350,8 @@ export default function ExpressConsultationFlow({
                 {stepType === "point_b" && (
                   <PointBStep
                     stepData={stepData}
+                    personalizedContent={personalizedContent}
+                    salCodes={salCodes}
                     onSave={(question, response, options) => {
                       saveStep("point_b", question, response, options);
                       handleStepComplete("point_b");
@@ -319,6 +362,8 @@ export default function ExpressConsultationFlow({
                 {stepType === "resources" && (
                   <ResourcesStep
                     stepData={stepData}
+                    personalizedContent={personalizedContent}
+                    salCodes={salCodes}
                     onSave={(question, response, options) => {
                       saveStep("resources", question, response, options);
                       handleStepComplete("resources");
@@ -329,6 +374,8 @@ export default function ExpressConsultationFlow({
                 {stepType === "closing" && (
                   <ClosingStep
                     steps={steps}
+                    personalizedContent={personalizedContent}
+                    salCodes={salCodes}
                     onComplete={handleConsultationComplete}
                     loading={loading}
                   />
@@ -345,15 +392,20 @@ export default function ExpressConsultationFlow({
 // Компоненты для каждого шага будут добавлены ниже
 function PointAStep({
   stepData,
+  personalizedContent,
+  salCodes,
   onSave,
   saving,
 }: {
   stepData?: ConsultationStep;
+  personalizedContent: PersonalizedContent | null;
+  salCodes: SALCodes | null;
   onSave: (question: string, response: string, options?: string[]) => void;
   saving: boolean;
 }) {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [customText, setCustomText] = useState("");
+  const [showPhrases, setShowPhrases] = useState(false);
 
   // Восстанавливаем состояние из сохраненных данных
   useEffect(() => {
@@ -375,7 +427,8 @@ function PointAStep({
     }
   }, [stepData]);
 
-  const options = [
+  // Используем персонализированные опции или базовые
+  const options = personalizedContent?.pointAOptions || [
     "Не получается найти клиентов",
     "Низкий доход",
     "Нет мотивации",
@@ -385,6 +438,15 @@ function PointAStep({
     "Постоянные сомнения",
     "Упадок сил",
   ];
+  
+  // Персонализированные вопросы
+  const questions = personalizedContent?.pointAQuestions || [
+    "Что не получается? Что вас не устраивает в текущей ситуации?",
+  ];
+  const mainQuestion = questions[0];
+  
+  // Готовые фразы для консультанта
+  const phrases = personalizedContent?.pointAPhrases || [];
 
   function handleSave() {
     if (selectedOptions.length === 0 && !customText.trim()) {
@@ -396,7 +458,7 @@ function PointAStep({
       : customText.trim();
     
     onSave(
-      "Что не получается? Что вас не устраивает в текущей ситуации?",
+      mainQuestion,
       response,
       selectedOptions.length > 0 ? selectedOptions : undefined
     );
@@ -404,12 +466,41 @@ function PointAStep({
 
   return (
     <div className="space-y-4">
-      <p className="text-gray-700 mb-4">
-        Задача - столкнуть человека с реальностью, чтобы он осознал, что его так больше не устраивает.
-      </p>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <p className="text-gray-700 font-medium mb-2">
+          Задача - столкнуть человека с реальностью, чтобы он осознал, что его так больше не устраивает.
+        </p>
+        {salCodes && (
+          <p className="text-sm text-gray-600 mb-3">
+            💡 Персонализация на основе САЛ-кодов: Личность {salCodes.personality}, Коннектор {salCodes.connector}, Реализация {salCodes.realization}
+          </p>
+        )}
+        {phrases.length > 0 && (
+          <div>
+            <button
+              onClick={() => setShowPhrases(!showPhrases)}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium mb-2"
+            >
+              {showPhrases ? "▼" : "▶"} Готовые фразы для консультанта ({phrases.length})
+            </button>
+            {showPhrases && (
+              <div className="bg-white rounded-lg border border-blue-200 p-3 space-y-2 max-h-60 overflow-y-auto">
+                {phrases.map((phrase, idx) => (
+                  <div key={idx} className="text-sm text-gray-700 p-2 bg-gray-50 rounded border border-gray-200">
+                    "{phrase}"
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       
       <div>
-        <label className="block text-sm font-medium mb-2">Выберите проблемы (можно несколько):</label>
+        <label className="block text-sm font-medium mb-2">
+          {mainQuestion}
+        </label>
+        <p className="text-xs text-gray-500 mb-2">Выберите проблемы (можно несколько):</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {options.map((option) => (
             <button
@@ -457,15 +548,20 @@ function PointAStep({
 
 function PointBStep({
   stepData,
+  personalizedContent,
+  salCodes,
   onSave,
   saving,
 }: {
   stepData?: ConsultationStep;
+  personalizedContent: PersonalizedContent | null;
+  salCodes: SALCodes | null;
   onSave: (question: string, response: string, options?: string[]) => void;
   saving: boolean;
 }) {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [customText, setCustomText] = useState("");
+  const [showPhrases, setShowPhrases] = useState(false);
 
   // Восстанавливаем состояние из сохраненных данных
   useEffect(() => {
@@ -487,7 +583,8 @@ function PointBStep({
     }
   }, [stepData]);
 
-  const options = [
+  // Используем персонализированные опции или базовые
+  const options = personalizedContent?.pointBOptions || [
     "Зарабатывать больше денег",
     "Жить в теплой стране",
     "Признание и медийность",
@@ -497,6 +594,15 @@ function PointBStep({
     "Реализовать творческий потенциал",
     "Помогать другим",
   ];
+  
+  // Персонализированные вопросы
+  const questions = personalizedContent?.pointBQuestions || [
+    "К чему вы хотите прийти? Какой результат хотите получить?",
+  ];
+  const mainQuestion = questions[0];
+  
+  // Готовые фразы для консультанта
+  const phrases = personalizedContent?.pointBPhrases || [];
 
   function handleSave() {
     if (selectedOptions.length === 0 && !customText.trim()) {
@@ -569,10 +675,14 @@ function PointBStep({
 
 function ResourcesStep({
   stepData,
+  personalizedContent,
+  salCodes,
   onSave,
   saving,
 }: {
   stepData?: ConsultationStep;
+  personalizedContent: PersonalizedContent | null;
+  salCodes: SALCodes | null;
   onSave: (question: string, response: string, options?: string[]) => void;
   saving: boolean;
 }) {
@@ -694,10 +804,14 @@ function ResourcesStep({
 
 function ClosingStep({
   steps,
+  personalizedContent,
+  salCodes,
   onComplete,
   loading,
 }: {
   steps: ConsultationStep[];
+  personalizedContent: PersonalizedContent | null;
+  salCodes: SALCodes | null;
   onComplete: (soldProduct: "full" | "partner" | null, importanceRating?: number) => void;
   loading: boolean;
 }) {

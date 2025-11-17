@@ -69,9 +69,30 @@ export async function GET(
       }
     });
 
+    // Получаем трактовки из профиля, если есть profile_id
+    let bookInformation = null;
+    const consultation = consultationData?.data;
+    if (consultation?.profile_id) {
+      try {
+        const profileUrl = `${baseUrl}/items/profiles/${consultation.profile_id}?fields=book_information`;
+        const profileRes = await fetch(profileUrl, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+          cache: "no-store",
+        });
+
+        if (profileRes.ok) {
+          const profileData = await profileRes.json().catch(() => ({}));
+          bookInformation = profileData?.data?.book_information || null;
+        }
+      } catch (error) {
+        logger.error("Error fetching book_information:", error);
+      }
+    }
+
     return NextResponse.json({
-      consultation: consultationData?.data,
+      consultation: consultation,
       steps,
+      bookInformation,
     }, { status: 200 });
   } catch (error: any) {
     logger.error("Get express consultation error:", error);
