@@ -50,10 +50,10 @@ export default function NewClientPage() {
       });
       
       if (res.ok) {
-        // Редиректим на список клиентов
-        router.push("/clients");
-        // Принудительно обновляем данные на странице
-        router.refresh();
+        // Редиректим на список клиентов с параметром для обновления кеша
+        router.push(`/clients?fresh=${Date.now()}`);
+        // Обновляем данные после небольшой задержки, чтобы навигация успела завершиться
+        setTimeout(() => router.refresh(), 200);
       } else {
         const data = await res.json().catch(() => ({}));
         console.log("Form error:", { status: res.status, data });
