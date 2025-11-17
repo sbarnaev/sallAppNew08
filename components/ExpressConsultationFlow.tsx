@@ -104,14 +104,17 @@ export default function ExpressConsultationFlow({
       });
 
       if (!res.ok) {
-        throw new Error("Не удалось сохранить шаг");
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData?.message || "Не удалось сохранить шаг");
       }
 
       const data = await res.json().catch(() => ({}));
       
       // Обновляем локальное состояние
+      // API возвращает { data: { id, ... } } или { id, ... } напрямую
+      const stepId = data?.data?.id || data?.id || existingStep?.id;
       const newStep: ConsultationStep = {
-        id: data?.data?.id,
+        id: stepId,
         ...stepData,
       };
 
