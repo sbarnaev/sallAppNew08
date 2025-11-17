@@ -143,120 +143,88 @@ export async function POST(req: NextRequest) {
 
     // Статус 204 (No Content) - успешное создание без тела ответа
     if (r.status === 204) {
-      logger.log("Directus returned 204 (No Content), fetching created consultation with retry...");
+      logger.log("Directus returned 204 (No Content), fetching created consultation...");
+      logger.log("Search parameters:", { client_id, ownerUserId, type: "express" });
       
-      // Запрашиваем последнюю созданную консультацию для этого клиента
-      // Используем фильтр по client_id, owner_user и type для точности
-      // Добавляем retry с задержкой, так как Directus может еще не успеть сохранить запись
-      const fetchUrl = `${baseUrl}/items/consultations?filter[client_id][_eq]=${client_id}&filter[owner_user][_eq]=${ownerUserId}&filter[type][_eq]=express&sort=-created_at&limit=1&fields=id,client_id,type,status,scheduled_at,owner_user`;
+      // Небольшая задержка перед первым запросом, чтобы Directus успел сохранить
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      let retries = 3;
-      let delay = 500; // Начинаем с 500мс
+      // Начинаем с самого простого поиска - только по client_id, без owner_user
+      // owner_user может быть проблемой из-за прав доступа или формата данных
+      const searchUrls = [
+        // Вариант 1: Только по client_id и type, сортировка по created_at
+        `${baseUrl}/items/consultations?filter[client_id][_eq]=${client_id}&filter[type][_eq]=express&sort=-created_at&limit=10&fields=id,client_id,type,status,scheduled_at,owner_user,created_at`,
+        // Вариант 2: Только по client_id, ищем express в коде
+        `${baseUrl}/items/consultations?filter[client_id][_eq]=${client_id}&sort=-created_at&limit=20&fields=id,client_id,type,status,scheduled_at,owner_user,created_at`,
+        // Вариант 3: С owner_user (если права позволяют)
+        `${baseUrl}/items/consultations?filter[client_id][_eq]=${client_id}&filter[owner_user][_eq]=${ownerUserId}&filter[type][_eq]=express&sort=-created_at&limit=10&fields=id,client_id,type,status,scheduled_at,owner_user,created_at`,
+      ];
       
-      while (retries > 0 && !consultationId) {
+      for (let i = 0; i < searchUrls.length && !consultationId; i++) {
         try {
-          // Небольшая задержка перед запросом
-          if (retries < 3) {
-            await new Promise(resolve => setTimeout(resolve, delay));
-            delay *= 2; // Увеличиваем задержку с каждой попыткой
-          }
+          logger.log(`Trying search URL ${i + 1}/${searchUrls.length}...`);
           
-          logger.log(`Attempting to fetch consultation (${4 - retries}/3)...`);
-          
-          const fetchRes = await fetch(fetchUrl, {
+          const fetchRes = await fetch(searchUrls[i], {
             headers: {
               Authorization: `Bearer ${token}`,
               Accept: "application/json",
             },
             cache: "no-store",
-            signal: AbortSignal.timeout(5000),
+            signal: AbortSignal.timeout(10000),
           });
 
-          logger.log(`Fetch response status: ${fetchRes.status}`);
+          logger.log(`Search ${i + 1} response status: ${fetchRes.status}`);
 
           if (fetchRes.ok) {
             const fetchData = await fetchRes.json().catch(() => ({}));
-            logger.log("Fetch data:", {
+            
+            logger.log(`Search ${i + 1} result:`, {
               hasData: !!fetchData?.data,
               isArray: Array.isArray(fetchData?.data),
               length: Array.isArray(fetchData?.data) ? fetchData.data.length : 0,
-              firstItem: Array.isArray(fetchData?.data) && fetchData.data.length > 0 ? fetchData.data[0] : null,
+              allItems: Array.isArray(fetchData?.data) ? fetchData.data.map((item: any) => ({
+                id: item.id,
+                client_id: item.client_id,
+                type: item.type,
+                owner_user: item.owner_user,
+                created_at: item.created_at,
+              })) : null,
             });
             
-            if (fetchData?.data && Array.isArray(fetchData.data) && fetchData.data.length > 0) {
-              consultationId = fetchData.data[0]?.id;
-              consultationData = { data: fetchData.data[0] };
-              logger.log("Successfully fetched consultation ID after 204:", consultationId);
-              break; // Успешно получили ID, выходим из цикла
+            if (fetchData?.data && Array.isArray(fetchData.data)) {
+              // Ищем экспресс-консультацию
+              let found = fetchData.data.find((c: any) => c.type === "express");
+              
+              // Если не нашли по типу, берем самую свежую (может быть только что созданная)
+              if (!found && fetchData.data.length > 0) {
+                // Сортируем по created_at если есть
+                const sorted = [...fetchData.data].sort((a: any, b: any) => {
+                  const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+                  const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+                  return bTime - aTime;
+                });
+                found = sorted[0];
+                logger.log("Using most recent consultation as fallback:", found?.id);
+              }
+              
+              if (found?.id) {
+                consultationId = found.id;
+                consultationData = { data: found };
+                logger.log(`Successfully found consultation ID: ${consultationId} (search ${i + 1})`);
+                break;
+              }
             }
           } else {
             const errorText = await fetchRes.text().catch(() => "");
-            logger.warn(`Fetch failed with status ${fetchRes.status}:`, errorText.substring(0, 200));
+            logger.warn(`Search ${i + 1} failed with status ${fetchRes.status}:`, errorText.substring(0, 300));
           }
         } catch (fetchError: any) {
-          logger.error(`Failed to fetch consultation after 204 (attempt ${4 - retries}):`, fetchError?.message || fetchError);
+          logger.error(`Search ${i + 1} error:`, fetchError?.message || fetchError);
         }
         
-        retries--;
-      }
-
-      // Если не удалось получить ID после всех попыток, пробуем более широкий поиск
-      if (!consultationId) {
-        logger.warn("Could not retrieve consultation ID with filters, trying broader search...");
-        
-        try {
-          // Вариант 1: Более широкий поиск - только по client_id и типу, без owner_user
-          const broaderUrl1 = `${baseUrl}/items/consultations?filter[client_id][_eq]=${client_id}&filter[type][_eq]=express&sort=-created_at&limit=5&fields=id,client_id,type,status,scheduled_at,owner_user`;
-          
-          const broaderRes1 = await fetch(broaderUrl1, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: "application/json",
-            },
-            cache: "no-store",
-            signal: AbortSignal.timeout(5000),
-          });
-
-          if (broaderRes1.ok) {
-            const broaderData1 = await broaderRes1.json().catch(() => ({}));
-            if (broaderData1?.data && Array.isArray(broaderData1.data) && broaderData1.data.length > 0) {
-              // Берем самую свежую консультацию
-              const latest = broaderData1.data[0];
-              consultationId = latest?.id;
-              consultationData = { data: latest };
-              logger.log("Found consultation with broader search (without owner_user):", consultationId);
-            }
-          }
-          
-          // Вариант 2: Еще более широкий - только по client_id, без type
-          if (!consultationId) {
-            logger.warn("Trying even broader search - only by client_id...");
-            const broaderUrl2 = `${baseUrl}/items/consultations?filter[client_id][_eq]=${client_id}&sort=-created_at&limit=10&fields=id,client_id,type,status,scheduled_at,owner_user`;
-            
-            const broaderRes2 = await fetch(broaderUrl2, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                Accept: "application/json",
-              },
-              cache: "no-store",
-              signal: AbortSignal.timeout(5000),
-            });
-
-            if (broaderRes2.ok) {
-              const broaderData2 = await broaderRes2.json().catch(() => ({}));
-              if (broaderData2?.data && Array.isArray(broaderData2.data) && broaderData2.data.length > 0) {
-                // Ищем экспресс-консультацию среди последних
-                const expressConsultation = broaderData2.data.find((c: any) => c.type === "express");
-                if (expressConsultation) {
-                  consultationId = expressConsultation.id;
-                  consultationData = { data: expressConsultation };
-                  logger.log("Found consultation with very broad search:", consultationId);
-                }
-              }
-            }
-          }
-        } catch (broaderError: any) {
-          logger.error("Broader search also failed:", broaderError?.message || broaderError);
+        // Небольшая задержка между попытками
+        if (i < searchUrls.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
 
