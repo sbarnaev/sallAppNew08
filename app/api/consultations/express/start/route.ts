@@ -123,7 +123,8 @@ export async function POST(req: NextRequest) {
     };
 
     // Запрашиваем создание консультации с явным указанием полей для получения ID
-    const url = `${baseUrl}/items/consultations?fields=id,client_id,type,status,scheduled_at,owner_user`;
+    // Используем параметр return=* чтобы Directus вернул созданную запись
+    const url = `${baseUrl}/items/consultations?fields=id,client_id,type,status,scheduled_at,owner_user&return=*`;
     const r = await fetch(url, {
       method: "POST",
       headers: {

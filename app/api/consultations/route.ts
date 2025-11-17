@@ -71,14 +71,17 @@ export async function POST(req: NextRequest) {
   if (body.partner_client_id) payload.partner_client_id = Number(body.partner_client_id);
   if (body.partner_profile_id) payload.partner_profile_id = Number(body.partner_profile_id);
 
-  const url = `${baseUrl}/items/consultations`;
+  // Используем return=* чтобы Directus вернул созданную запись
+  const url = `${baseUrl}/items/consultations?return=*`;
   const r = await fetch(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
+      Accept: "application/json",
     },
     body: JSON.stringify(payload),
+    cache: "no-store",
   });
 
   const data = await r.json().catch(() => ({}));
