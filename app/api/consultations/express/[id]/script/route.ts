@@ -7,7 +7,6 @@ import OpenAI from "openai";
 export const dynamic = "force-dynamic";
 
 // Initialize OpenAI client
-// Initialize OpenAI client
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY || "dummy", // Prevent build crash if env is missing
 });
@@ -29,6 +28,10 @@ export async function POST(
     }
 
     try {
+        const body = await req.json();
+        const { topic, customRequest } = body;
+        const requestText = customRequest || topic || "Общий разбор";
+
         // 1. Fetch consultation and profile data
         const consultationRes = await fetch(`${baseUrl}/items/consultations/${id}?fields=*,client_id.*`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -42,7 +45,7 @@ export async function POST(
         const { data: consultation } = await consultationRes.json();
         const client = consultation.client_id;
 
-        // Fetch profile data (including interpretations if available)
+        // Fetch profile data including book_information
         let profileData = null;
         if (consultation.profile_id) {
             const profileRes = await fetch(`${baseUrl}/items/profiles/${consultation.profile_id}?fields=*`, {
@@ -73,58 +76,43 @@ export async function POST(
             return NextResponse.json({ message: "Profile data not found. Please wait for calculation." }, { status: 400 });
         }
 
-        // 2. Construct Prompt for OpenAI
-        const systemPrompt = `Ты - эксперт по системе самопознания САЛ (Системный Анализ Личности). 
-Твоя задача - помочь консультанту провести экспресс-диагностику (продающую консультацию) для клиента.
-Ты должен сгенерировать скрипт общения, вопросы и фразы, которые идеально подойдут именно этому человеку, исходя из его кодов.
+        // Extract book information
+        const bookInfo = profileData.book_information || {};
+        const codes = profileData.digits || profileData.raw_json?.codes || "Неизвестно";
 
-Структура консультации:
-1. Установление контакта (Opener)
-2. Точка А (Текущая ситуация - боль)
-3. Точка Б (Желаемое будущее - мечта)
-4. Ресурсы (Что есть и что мы можем дать)
-5. Закрытие (Продажа полной консультации)
+        // 2. Construct Prompt for OpenAI
+        const systemPrompt = `Ты - эксперт по системе самопознания САЛ (Системный Анализ Личности).
+Твоя задача - составить сценарий экспресс-разбора для продажи полной консультации.
+
+Клиент: ${client.name} (${client.birth_date})
+Запрос клиента: "${requestText}"
+
+Данные из учебника (Book Information) для этого клиента:
+${JSON.stringify(bookInfo, null, 2)}
 
 Коды клиента:
-${JSON.stringify(profileData.digits || profileData.raw_json?.codes || "Неизвестно")}
+${JSON.stringify(codes)}
 
-Трактовки (если есть):
-${JSON.stringify(profileData.raw_json?.interpretations || "Нет данных")}
+Твоя задача - сгенерировать 3 блока текста, которые консультант скажет клиенту.
+Текст должен быть живым, разговорным, "бить в цель".
 
-Твоя цель: дать консультанту конкретные фразы, которые "попадут" в клиента. 
-- Если Коннектор мягкий (2,4,6,8) - фразы должны быть теплыми, поддерживающими.
-- Если Коннектор жесткий (1,3,5,7,9) - фразы должны быть четкими, структурными, вызывающими на честность.
-- Используй информацию о Личности и Реализации, чтобы подсветить сильные стороны и конфликты.
-
-Верни ответ строго в формате JSON:
+Структура ответа (JSON):
 {
-  "opener": "Текст для начала разговора...",
-  "contact_phrases": ["фраза 1", "фраза 2"],
-  "point_a": {
-    "questions": ["Вопрос 1", "Вопрос 2"],
-    "phrases": ["Фраза поддержки 1", "Фраза-провокация"],
-    "context": "Почему мы спрашиваем именно это (для консультанта)"
-  },
-  "point_b": {
-    "questions": ["Вопрос о мечте 1", "Вопрос о мечте 2"],
-    "phrases": ["Фраза вдохновения"],
-    "context": "На что давить в точке Б"
-  },
-  "resources": {
-    "analysis": "Текст анализа ресурсов клиента",
-    "phrases": ["Фраза о ресурсах"]
-  },
-  "closing": {
-    "phrases": ["Продающая фраза 1", "Продающая фраза 2"],
-    "offer_text": "Текст оффера (почему ему нужна полная консультация)"
-  }
-}`;
+  "pain": "Актуализация боли. Надави на больное место, используя данные из учебника (минусовые проявления, искажения). Покажи, что ты видишь его проблему насквозь. Свяжи это с его запросом.",
+  "vision": "Точка Б. Покажи, как может быть круто, если он выйдет в плюс. Опиши его идеальное состояние (ресурс, реализация) на основе данных учебника.",
+  "solution": "Решение через САЛ. Объясни, что его проблема решается через знание конкретных кодов (упомяни их). Продай идею, что полная консультация даст ему инструкцию к самому себе."
+}
+
+Важно:
+- Используй конкретные формулировки из book_information, но адаптируй их под разговорную речь.
+- Не будь слишком абстрактным. Если у него Коннектор 8 - говори про структуру и холодность. Если 2 - про отношения и заботу.
+- Ответ должен быть на русском языке.`;
 
         // 3. Call OpenAI
         const completion = await openai.chat.completions.create({
             messages: [
                 { role: "system", content: systemPrompt },
-                { role: "user", content: `Сгенерируй скрипт для клиента ${client.name} (${client.birth_date}).` },
+                { role: "user", content: "Сгенерируй сценарий." },
             ],
             model: "gpt-4o",
             response_format: { type: "json_object" },
