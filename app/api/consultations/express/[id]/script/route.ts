@@ -29,7 +29,7 @@ export async function POST(
 
     try {
         const body = await req.json();
-        const { topic, customRequest } = body;
+        const { topic, customRequest, stage = "diagnostics", confirmedIssues = [] } = body;
         const requestText = customRequest || topic || "Общий разбор";
 
         // 1. Fetch consultation and profile data
@@ -80,47 +80,77 @@ export async function POST(
         const bookInfo = profileData.book_information || {};
         const codes = profileData.digits || profileData.raw_json?.codes || "Неизвестно";
 
-        // 2. Construct Prompt for OpenAI
-        const systemPrompt = `Ты - эксперт по системе самопознания САЛ (Системный Анализ Личности).
-Твоя задача - составить сценарий экспресс-разбора для продажи полной консультации.
+        let systemPrompt = "";
+        let userPrompt = "";
+
+        if (stage === "diagnostics") {
+            // STAGE 1: Generate Hypotheses
+            systemPrompt = `Ты - эксперт по системе самопознания САЛ.
+Твоя задача - на основе профиля клиента и его запроса сформулировать 5-7 гипотез о его проблемах ("болях").
+Эти гипотезы консультант будет проверять в диалоге.
 
 Клиент: ${client.name} (${client.birth_date})
-Запрос клиента: "${requestText}"
+Запрос: "${requestText}"
 
-Данные из учебника (Book Information) для этого клиента:
+Данные из учебника (Book Information):
 ${JSON.stringify(bookInfo, null, 2)}
 
 Коды клиента:
 ${JSON.stringify(codes)}
 
-Твоя задача - сгенерировать 3 блока текста, которые консультант скажет клиенту.
-Текст должен быть живым, разговорным, "бить в цель".
+Сформулируй гипотезы как утверждения или вопросы, на которые клиент может ответить "Да".
+Примеры: "Вам часто кажется, что вас используют?", "Деньги приходят и сразу уходят?", "Вам сложно просить о помощи?".
+Гипотезы должны быть основаны на "минусовых" проявлениях его кодов.
+
+Верни ответ строго в формате JSON:
+{
+  "hypotheses": ["Гипотеза 1", "Гипотеза 2", ...]
+}`;
+            userPrompt = "Сгенерируй гипотезы.";
+        } else {
+            // STAGE 2: Generate Solution
+            systemPrompt = `Ты - эксперт по системе самопознания САЛ.
+Твоя задача - составить сценарий продажи консультации, опираясь на ПОДТВЕРЖДЕННЫЕ проблемы клиента.
+
+Клиент: ${client.name} (${client.birth_date})
+Запрос: "${requestText}"
+
+Подтвержденные проблемы (то, что клиент признал):
+${JSON.stringify(confirmedIssues)}
+
+Данные из учебника (Book Information):
+${JSON.stringify(bookInfo, null, 2)}
+
+Коды клиента:
+${JSON.stringify(codes)}
+
+Твоя задача - сгенерировать 2 блока текста (Точка Б и Решение).
+Текст должен быть готовыми фразами для консультанта.
 
 Структура ответа (JSON):
 {
-  "pain": "Актуализация боли. Надави на больное место, используя данные из учебника (минусовые проявления, искажения). Покажи, что ты видишь его проблему насквозь. Свяжи это с его запросом.",
-  "vision": "Точка Б. Покажи, как может быть круто, если он выйдет в плюс. Опиши его идеальное состояние (ресурс, реализация) на основе данных учебника.",
-  "solution": "Решение через САЛ. Объясни, что его проблема решается через знание конкретных кодов (упомяни их). Продай идею, что полная консультация даст ему инструкцию к самому себе."
+  "vision": "Точка Б. Опиши вдохновляющее будущее, где эти конкретные проблемы решены. Используй 'плюсовые' проявления кодов. (3-4 предложения)",
+  "solution": "Решение через САЛ. Объясни, как именно знание кодов поможет прийти в Точку Б. Используй названия кодов (Личность, Коннектор и т.д.). (3-4 предложения)",
+  "sales_phrases": ["Короткая продающая фраза 1", "Короткая продающая фраза 2"]
 }
 
-Важно:
-- Используй конкретные формулировки из book_information, но адаптируй их под разговорную речь.
-- Не будь слишком абстрактным. Если у него Коннектор 8 - говори про структуру и холодность. Если 2 - про отношения и заботу.
-- Ответ должен быть на русском языке.`;
+Ответ на русском языке.`;
+            userPrompt = "Сгенерируй решение.";
+        }
 
-        // 3. Call OpenAI
+        // Call OpenAI
         const completion = await openai.chat.completions.create({
             messages: [
                 { role: "system", content: systemPrompt },
-                { role: "user", content: "Сгенерируй сценарий." },
+                { role: "user", content: userPrompt },
             ],
             model: "gpt-4o",
             response_format: { type: "json_object" },
         });
 
-        const script = JSON.parse(completion.choices[0].message.content || "{}");
+        const result = JSON.parse(completion.choices[0].message.content || "{}");
 
-        return NextResponse.json({ data: script });
+        return NextResponse.json({ data: result });
 
     } catch (error: any) {
         logger.error("Script generation error:", error);
