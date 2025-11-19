@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { logger } from "@/lib/logger";
 import { calculateSALCodes, getCodeShortLabel, SALCodes } from "@/lib/sal-codes";
-import { getPersonalizedContent, PersonalizedContent, CodeInterpretations } from "@/lib/sal-personalization";
 
 interface ConsultationStep {
   id?: number;
@@ -36,6 +35,29 @@ const STEP_CONFIG: Record<StepType, { title: string; order: number }> = {
   closing: { title: "Закрытие и продажа", order: 4 },
 };
 
+interface AIScript {
+  opener?: string;
+  contact_phrases?: string[];
+  point_a?: {
+    questions?: string[];
+    phrases?: string[];
+    context?: string;
+  };
+  point_b?: {
+    questions?: string[];
+    phrases?: string[];
+    context?: string;
+  };
+  resources?: {
+    analysis?: string;
+    phrases?: string[];
+  };
+  closing?: {
+    phrases?: string[];
+    offer_text?: string;
+  };
+}
+
 export default function ExpressConsultationFlow({
   consultationId,
   clientId,
@@ -47,9 +69,8 @@ export default function ExpressConsultationFlow({
   const [saving, setSaving] = useState(false);
   const [clientData, setClientData] = useState<ClientData | null>(null);
   const [salCodes, setSalCodes] = useState<ReturnType<typeof calculateSALCodes> | null>(null);
-  const [personalizedContent, setPersonalizedContent] = useState<PersonalizedContent | null>(null);
-  const [bookInformation, setBookInformation] = useState<CodeInterpretations | null>(null);
-  const [profileOpener, setProfileOpener] = useState<string | null>(null);
+  const [aiScript, setAiScript] = useState<AIScript | null>(null);
+  const [scriptLoading, setScriptLoading] = useState(false);
 
   // Загружаем данные клиента и САЛ коды
   useEffect(() => {
@@ -60,26 +81,44 @@ export default function ExpressConsultationFlow({
         if (data?.data) {
           const client = data.data;
           setClientData(client);
-          
+
           // Рассчитываем САЛ коды из даты рождения
           if (client.birth_date) {
             const codes = calculateSALCodes(client.birth_date);
             setSalCodes(codes);
-            
-            // Генерируем базовый персонализированный контент (без трактовок, они загрузятся позже)
-            if (codes) {
-              const personalized = getPersonalizedContent(codes, {});
-              setPersonalizedContent(personalized);
-            }
           }
         }
       } catch (error: any) {
         logger.error("Error loading client data:", error);
       }
     }
-    
+
     loadClientData();
   }, [clientId]);
+
+  // Загружаем AI скрипт
+  useEffect(() => {
+    async function loadScript() {
+      setScriptLoading(true);
+      try {
+        const res = await fetch(`/api/consultations/express/${consultationId}/script`, {
+          method: "POST",
+        });
+        const data = await res.json();
+        if (data?.data) {
+          setAiScript(data.data);
+        }
+      } catch (error) {
+        logger.error("Error loading AI script:", error);
+      } finally {
+        setScriptLoading(false);
+      }
+    }
+
+    if (consultationId) {
+      loadScript();
+    }
+  }, [consultationId]);
 
   // Загружаем сохраненные шаги при монтировании
   useEffect(() => {
@@ -91,23 +130,13 @@ export default function ExpressConsultationFlow({
     try {
       const res = await fetch(`/api/consultations/express/${consultationId}`);
       const data = await res.json().catch(() => ({}));
-      
-      // Загружаем трактовки из book_information и opener
-      if (data?.bookInformation) {
-        setBookInformation(data.bookInformation);
-      }
-      
-      // Сохраняем opener для использования в персонализации
-      if (data?.profileOpener) {
-        setProfileOpener(data.profileOpener);
-      }
-      
+
       if (data?.steps && Array.isArray(data.steps) && data.steps.length > 0) {
         setSteps(data.steps);
         // Определяем текущий шаг на основе сохраненных данных
         const stepTypes: StepType[] = ["point_a", "point_b", "resources", "closing"];
         const completedSteps = new Set(data.steps.map((s: ConsultationStep) => s.step_type));
-        
+
         // Находим первый незавершенный шаг
         let nextStep: StepType = "point_a";
         for (const stepType of stepTypes) {
@@ -116,44 +145,18 @@ export default function ExpressConsultationFlow({
             break;
           }
         }
-        
+
         // Если все шаги кроме closing завершены, переходим к closing
         if (completedSteps.has("point_a") && completedSteps.has("point_b") && completedSteps.has("resources")) {
           nextStep = "closing";
         }
-        
+
         setCurrentStep(nextStep);
       }
     } catch (error: any) {
       logger.error("Error loading steps:", error);
-      // Не показываем ошибку пользователю, просто не загружаем шаги
     }
   }
-  
-  // Обновляем персонализированный контент при изменении кодов, трактовок или шагов
-  useEffect(() => {
-    if (salCodes && bookInformation) {
-      // Извлекаем проблемы из Точки А и цели из Точки Б
-      const pointAStep = steps.find(s => s.step_type === "point_a");
-      const pointBStep = steps.find(s => s.step_type === "point_b");
-      
-      const pointAProblems = pointAStep?.selected_options || [];
-      const pointBGoals = pointBStep?.selected_options || [];
-      
-      const personalized = getPersonalizedContent(
-        salCodes,
-        bookInformation,
-        pointAProblems,
-        pointBGoals,
-        profileOpener || undefined
-      );
-      setPersonalizedContent(personalized);
-    } else if (salCodes) {
-      // Если трактовок еще нет, используем только коды
-      const personalized = getPersonalizedContent(salCodes, {}, undefined, undefined, profileOpener || undefined);
-      setPersonalizedContent(personalized);
-    }
-  }, [salCodes, bookInformation, steps, profileOpener]);
 
   async function saveStep(
     stepType: StepType,
@@ -189,9 +192,8 @@ export default function ExpressConsultationFlow({
       }
 
       const data = await res.json().catch(() => ({}));
-      
+
       // Обновляем локальное состояние
-      // API возвращает { data: { id, ... } } или { id, ... } напрямую
       const stepId = data?.data?.id || data?.id || existingStep?.id;
       const newStep: ConsultationStep = {
         id: stepId,
@@ -247,7 +249,6 @@ export default function ExpressConsultationFlow({
           headers: { "Content-Type": "application/json" },
         }).catch((error) => {
           logger.warn("Failed to generate insights:", error);
-          // Не блокируем завершение, если генерация не удалась
         });
       }
 
@@ -265,20 +266,20 @@ export default function ExpressConsultationFlow({
 
   return (
     <div className="space-y-4">
-      {/* Opener - краткое описание профиля для установления связи */}
-      {personalizedContent?.opener && (
+      {/* Opener - AI Generated */}
+      {aiScript?.opener && (
         <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-200 p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">Начало консультации</h3>
-          <p className="text-gray-700 whitespace-pre-wrap">{personalizedContent.opener}</p>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Начало консультации (AI)</h3>
+          <p className="text-gray-700 whitespace-pre-wrap">{aiScript.opener}</p>
         </div>
       )}
-      
+
       {/* Фразы для установления контакта */}
-      {personalizedContent?.contactPhrases && personalizedContent.contactPhrases.length > 0 && (
+      {aiScript?.contact_phrases && aiScript.contact_phrases.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-          <h4 className="text-sm font-semibold text-gray-900 mb-2">💬 Фразы для установления контакта:</h4>
+          <h4 className="text-sm font-semibold text-gray-900 mb-2">💬 Фразы для контакта:</h4>
           <div className="flex flex-wrap gap-2">
-            {personalizedContent.contactPhrases.slice(0, 3).map((phrase, idx) => (
+            {aiScript.contact_phrases.map((phrase, idx) => (
               <div key={idx} className="text-xs bg-white rounded px-3 py-2 border border-yellow-200 text-gray-700">
                 &quot;{phrase}&quot;
               </div>
@@ -286,7 +287,13 @@ export default function ExpressConsultationFlow({
           </div>
         </div>
       )}
-      
+
+      {scriptLoading && !aiScript && (
+        <div className="text-center py-4 text-gray-500 animate-pulse">
+          Генерируем персональный скрипт...
+        </div>
+      )}
+
       {/* Информация о клиенте и САЛ коды */}
       {clientData && (
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-6">
@@ -302,7 +309,7 @@ export default function ExpressConsultationFlow({
               )}
             </div>
           </div>
-          
+
           {salCodes && (
             <div>
               <div className="text-sm font-medium text-gray-700 mb-3">Коды САЛ клиента:</div>
@@ -344,13 +351,12 @@ export default function ExpressConsultationFlow({
             >
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium ${
-                    isCompleted
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium ${isCompleted
                       ? "bg-green-500 text-white"
                       : isOpen
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-300 text-gray-600"
-                  }`}
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-300 text-gray-600"
+                    }`}
                 >
                   {isCompleted ? "✓" : config.order}
                 </div>
@@ -367,8 +373,7 @@ export default function ExpressConsultationFlow({
                 {stepType === "point_a" && (
                   <PointAStep
                     stepData={stepData}
-                    personalizedContent={personalizedContent}
-                    salCodes={salCodes}
+                    aiData={aiScript?.point_a}
                     onSave={(question, response, options) => {
                       saveStep("point_a", question, response, options);
                       handleStepComplete("point_a");
@@ -379,8 +384,7 @@ export default function ExpressConsultationFlow({
                 {stepType === "point_b" && (
                   <PointBStep
                     stepData={stepData}
-                    personalizedContent={personalizedContent}
-                    salCodes={salCodes}
+                    aiData={aiScript?.point_b}
                     onSave={(question, response, options) => {
                       saveStep("point_b", question, response, options);
                       handleStepComplete("point_b");
@@ -391,8 +395,7 @@ export default function ExpressConsultationFlow({
                 {stepType === "resources" && (
                   <ResourcesStep
                     stepData={stepData}
-                    personalizedContent={personalizedContent}
-                    salCodes={salCodes}
+                    aiData={aiScript?.resources}
                     onSave={(question, response, options) => {
                       saveStep("resources", question, response, options);
                       handleStepComplete("resources");
@@ -403,8 +406,7 @@ export default function ExpressConsultationFlow({
                 {stepType === "closing" && (
                   <ClosingStep
                     steps={steps}
-                    personalizedContent={personalizedContent}
-                    salCodes={salCodes}
+                    aiData={aiScript?.closing}
                     onComplete={handleConsultationComplete}
                     loading={loading}
                   />
@@ -418,46 +420,38 @@ export default function ExpressConsultationFlow({
   );
 }
 
-// Компоненты для каждого шага будут добавлены ниже
+// Компоненты шагов
+
 function PointAStep({
   stepData,
-  personalizedContent,
-  salCodes,
+  aiData,
   onSave,
   saving,
 }: {
   stepData?: ConsultationStep;
-  personalizedContent: PersonalizedContent | null;
-  salCodes: SALCodes | null;
+  aiData?: AIScript["point_a"];
   onSave: (question: string, response: string, options?: string[]) => void;
   saving: boolean;
 }) {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [customText, setCustomText] = useState("");
-  const [showPhrases, setShowPhrases] = useState(false);
+  const [showPhrases, setShowPhrases] = useState(true);
 
-  // Восстанавливаем состояние из сохраненных данных
   useEffect(() => {
     if (stepData) {
       if (stepData.selected_options && stepData.selected_options.length > 0) {
         setSelectedOptions(stepData.selected_options);
-        // Если есть selected_options, customText должен быть только дополнительным текстом
         const responseText = stepData.response || "";
         const additionalMatch = responseText.match(/Дополнительно:\s*(.+)/s);
         setCustomText(additionalMatch ? additionalMatch[1].trim() : "");
       } else {
-        // Если нет selected_options, значит весь ответ в customText
         setSelectedOptions([]);
         setCustomText(stepData.response || "");
       }
-    } else {
-      setSelectedOptions([]);
-      setCustomText("");
     }
   }, [stepData]);
 
-  // Используем персонализированные опции или базовые
-  const options = personalizedContent?.pointAOptions || [
+  const options = [
     "Не получается найти клиентов",
     "Низкий доход",
     "Нет мотивации",
@@ -467,41 +461,29 @@ function PointAStep({
     "Постоянные сомнения",
     "Упадок сил",
   ];
-  
-  // Персонализированные вопросы
-  const questions = personalizedContent?.pointAQuestions || [
-    "Что не получается? Что вас не устраивает в текущей ситуации?",
-  ];
-  const mainQuestion = questions[0];
-  
-  // Готовые фразы для консультанта
-  const phrases = personalizedContent?.pointAPhrases || [];
+
+  const mainQuestion = aiData?.questions?.[0] || "Что не получается? Что вас не устраивает в текущей ситуации?";
+  const phrases = aiData?.phrases || [];
 
   function handleSave() {
-    if (selectedOptions.length === 0 && !customText.trim()) {
-      return; // Валидация уже есть в disabled кнопки
-    }
-    
-    const response = selectedOptions.length > 0 
+    if (selectedOptions.length === 0 && !customText.trim()) return;
+
+    const response = selectedOptions.length > 0
       ? selectedOptions.join(", ") + (customText.trim() ? `\n\nДополнительно: ${customText.trim()}` : "")
       : customText.trim();
-    
-    onSave(
-      mainQuestion,
-      response,
-      selectedOptions.length > 0 ? selectedOptions : undefined
-    );
+
+    onSave(mainQuestion, response, selectedOptions.length > 0 ? selectedOptions : undefined);
   }
 
   return (
     <div className="space-y-4">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
         <p className="text-gray-700 font-medium mb-2">
-          Задача - столкнуть человека с реальностью, чтобы он осознал, что его так больше не устраивает.
+          Задача - столкнуть человека с реальностью.
         </p>
-        {salCodes && (
-          <p className="text-sm text-gray-600 mb-3">
-            💡 Персонализация на основе САЛ-кодов: Личность {salCodes.personality}, Коннектор {salCodes.connector}, Реализация {salCodes.realization}
+        {aiData?.context && (
+          <p className="text-sm text-gray-600 mb-3 italic">
+            💡 {aiData.context}
           </p>
         )}
         {phrases.length > 0 && (
@@ -510,7 +492,7 @@ function PointAStep({
               onClick={() => setShowPhrases(!showPhrases)}
               className="text-sm text-blue-600 hover:text-blue-700 font-medium mb-2"
             >
-              {showPhrases ? "▼" : "▶"} Готовые фразы для консультанта ({phrases.length})
+              {showPhrases ? "▼" : "▶"} Подсказки AI ({phrases.length})
             </button>
             {showPhrases && (
               <div className="bg-white rounded-lg border border-blue-200 p-3 space-y-2 max-h-60 overflow-y-auto">
@@ -524,28 +506,22 @@ function PointAStep({
           </div>
         )}
       </div>
-      
+
       <div>
-        <label className="block text-sm font-medium mb-2">
-          {mainQuestion}
-        </label>
-        <p className="text-xs text-gray-500 mb-2">Выберите проблемы (можно несколько):</p>
+        <label className="block text-sm font-medium mb-2">{mainQuestion}</label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {options.map((option) => (
             <button
               key={option}
               onClick={() => {
                 setSelectedOptions((prev) =>
-                  prev.includes(option)
-                    ? prev.filter((o) => o !== option)
-                    : [...prev, option]
+                  prev.includes(option) ? prev.filter((o) => o !== option) : [...prev, option]
                 );
               }}
-              className={`p-3 rounded-lg border text-left transition text-sm sm:text-base ${
-                selectedOptions.includes(option)
+              className={`p-3 rounded-lg border text-left transition text-sm sm:text-base ${selectedOptions.includes(option)
                   ? "bg-blue-50 border-blue-500 text-blue-700"
                   : "bg-white border-gray-300 hover:border-gray-400"
-              }`}
+                }`}
             >
               {option}
             </button>
@@ -554,7 +530,7 @@ function PointAStep({
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Дополнительно (опционально):</label>
+        <label className="block text-sm font-medium mb-2">Дополнительно:</label>
         <textarea
           value={customText}
           onChange={(e) => setCustomText(e.target.value)}
@@ -567,7 +543,7 @@ function PointAStep({
       <button
         onClick={handleSave}
         disabled={saving || (selectedOptions.length === 0 && !customText.trim())}
-        className="w-full sm:w-auto rounded-lg bg-blue-600 text-white px-6 py-3 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+        className="w-full sm:w-auto rounded-lg bg-blue-600 text-white px-6 py-3 hover:bg-blue-700 disabled:opacity-50 font-medium"
       >
         {saving ? "Сохранение..." : "Сохранить и перейти дальше"}
       </button>
@@ -577,43 +553,34 @@ function PointAStep({
 
 function PointBStep({
   stepData,
-  personalizedContent,
-  salCodes,
+  aiData,
   onSave,
   saving,
 }: {
   stepData?: ConsultationStep;
-  personalizedContent: PersonalizedContent | null;
-  salCodes: SALCodes | null;
+  aiData?: AIScript["point_b"];
   onSave: (question: string, response: string, options?: string[]) => void;
   saving: boolean;
 }) {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [customText, setCustomText] = useState("");
-  const [showPhrases, setShowPhrases] = useState(false);
+  const [showPhrases, setShowPhrases] = useState(true);
 
-  // Восстанавливаем состояние из сохраненных данных
   useEffect(() => {
     if (stepData) {
       if (stepData.selected_options && stepData.selected_options.length > 0) {
         setSelectedOptions(stepData.selected_options);
-        // Если есть selected_options, customText должен быть только дополнительным текстом
         const responseText = stepData.response || "";
         const additionalMatch = responseText.match(/Дополнительно:\s*(.+)/s);
         setCustomText(additionalMatch ? additionalMatch[1].trim() : "");
       } else {
-        // Если нет selected_options, значит весь ответ в customText
         setSelectedOptions([]);
         setCustomText(stepData.response || "");
       }
-    } else {
-      setSelectedOptions([]);
-      setCustomText("");
     }
   }, [stepData]);
 
-  // Используем персонализированные опции или базовые
-  const options = personalizedContent?.pointBOptions || [
+  const options = [
     "Зарабатывать больше денег",
     "Жить в теплой стране",
     "Признание и медийность",
@@ -623,41 +590,29 @@ function PointBStep({
     "Реализовать творческий потенциал",
     "Помогать другим",
   ];
-  
-  // Персонализированные вопросы
-  const questions = personalizedContent?.pointBQuestions || [
-    "К чему вы хотите прийти? Какой результат хотите получить?",
-  ];
-  const mainQuestion = questions[0];
-  
-  // Готовые фразы для консультанта
-  const phrases = personalizedContent?.pointBPhrases || [];
+
+  const mainQuestion = aiData?.questions?.[0] || "К чему вы хотите прийти? Какой результат хотите получить?";
+  const phrases = aiData?.phrases || [];
 
   function handleSave() {
-    if (selectedOptions.length === 0 && !customText.trim()) {
-      return;
-    }
-    
-    const response = selectedOptions.length > 0 
+    if (selectedOptions.length === 0 && !customText.trim()) return;
+
+    const response = selectedOptions.length > 0
       ? selectedOptions.join(", ") + (customText.trim() ? `\n\nДополнительно: ${customText.trim()}` : "")
       : customText.trim();
-    
-    onSave(
-      mainQuestion,
-      response,
-      selectedOptions.length > 0 ? selectedOptions : undefined
-    );
+
+    onSave(mainQuestion, response, selectedOptions.length > 0 ? selectedOptions : undefined);
   }
 
   return (
     <div className="space-y-4">
       <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
         <p className="text-gray-700 font-medium mb-2">
-          Задача - вдохновить человека и показать, что он может прийти к жизни своей мечты.
+          Задача - вдохновить человека.
         </p>
-        {salCodes && (
-          <p className="text-sm text-gray-600 mb-3">
-            💡 Персонализация на основе САЛ-кодов: Реализация {salCodes.realization}, Генератор {salCodes.generator}, Миссия {salCodes.mission}
+        {aiData?.context && (
+          <p className="text-sm text-gray-600 mb-3 italic">
+            💡 {aiData.context}
           </p>
         )}
         {phrases.length > 0 && (
@@ -666,7 +621,7 @@ function PointBStep({
               onClick={() => setShowPhrases(!showPhrases)}
               className="text-sm text-green-600 hover:text-green-700 font-medium mb-2"
             >
-              {showPhrases ? "▼" : "▶"} Готовые фразы для консультанта ({phrases.length})
+              {showPhrases ? "▼" : "▶"} Подсказки AI ({phrases.length})
             </button>
             {showPhrases && (
               <div className="bg-white rounded-lg border border-green-200 p-3 space-y-2 max-h-60 overflow-y-auto">
@@ -680,28 +635,22 @@ function PointBStep({
           </div>
         )}
       </div>
-      
+
       <div>
-        <label className="block text-sm font-medium mb-2">
-          {mainQuestion}
-        </label>
-        <p className="text-xs text-gray-500 mb-2">Выберите желания (можно несколько):</p>
+        <label className="block text-sm font-medium mb-2">{mainQuestion}</label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {options.map((option) => (
             <button
               key={option}
               onClick={() => {
                 setSelectedOptions((prev) =>
-                  prev.includes(option)
-                    ? prev.filter((o) => o !== option)
-                    : [...prev, option]
+                  prev.includes(option) ? prev.filter((o) => o !== option) : [...prev, option]
                 );
               }}
-              className={`p-3 rounded-lg border text-left transition ${
-                selectedOptions.includes(option)
+              className={`p-3 rounded-lg border text-left transition ${selectedOptions.includes(option)
                   ? "bg-green-50 border-green-500 text-green-700"
                   : "bg-white border-gray-300 hover:border-gray-400"
-              }`}
+                }`}
             >
               {option}
             </button>
@@ -710,13 +659,13 @@ function PointBStep({
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Дополнительно (опционально):</label>
+        <label className="block text-sm font-medium mb-2">Дополнительно:</label>
         <textarea
           value={customText}
           onChange={(e) => setCustomText(e.target.value)}
           className="w-full rounded-lg border p-3"
           rows={3}
-          placeholder="Опишите свое видение подробнее..."
+          placeholder="Опишите свое видение..."
         />
       </div>
 
@@ -733,37 +682,29 @@ function PointBStep({
 
 function ResourcesStep({
   stepData,
-  personalizedContent,
-  salCodes,
+  aiData,
   onSave,
   saving,
 }: {
   stepData?: ConsultationStep;
-  personalizedContent: PersonalizedContent | null;
-  salCodes: SALCodes | null;
+  aiData?: AIScript["resources"];
   onSave: (question: string, response: string, options?: string[]) => void;
   saving: boolean;
 }) {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [customText, setCustomText] = useState("");
 
-  // Восстанавливаем состояние из сохраненных данных
   useEffect(() => {
     if (stepData) {
       if (stepData.selected_options && stepData.selected_options.length > 0) {
         setSelectedOptions(stepData.selected_options);
-        // Если есть selected_options, customText должен быть только дополнительным текстом
         const responseText = stepData.response || "";
         const additionalMatch = responseText.match(/Дополнительно:\s*(.+)/s);
         setCustomText(additionalMatch ? additionalMatch[1].trim() : "");
       } else {
-        // Если нет selected_options, значит весь ответ в customText
         setSelectedOptions([]);
         setCustomText(stepData.response || "");
       }
-    } else {
-      setSelectedOptions([]);
-      setCustomText("");
     }
   }, [stepData]);
 
@@ -786,11 +727,11 @@ function ResourcesStep({
   ];
 
   function handleSave() {
-    const resourcesText = selectedOptions.length > 0 
-      ? `Доступные ресурсы: ${selectedOptions.join(", ")}` 
+    const resourcesText = selectedOptions.length > 0
+      ? `Доступные ресурсы: ${selectedOptions.join(", ")}`
       : "Доступные ресурсы не указаны";
     const response = `${resourcesText}\n\nЧто можем дать мы: ${offeredResources.join(", ")}${customText.trim() ? `\n\nДополнительно: ${customText.trim()}` : ""}`;
-    
+
     onSave(
       "Какие есть ресурсы для перехода из точки А в точку Б?",
       response,
@@ -798,77 +739,52 @@ function ResourcesStep({
     );
   }
 
-  // Анализ ресурсов с точки зрения САЛ
-  const resourcesAnalysis = personalizedContent?.resourcesAnalysis || 
-    "С точки зрения САЛ, у вас есть все необходимые ресурсы для достижения цели. Важно правильно их активировать.";
-
   return (
     <div className="space-y-4">
-      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
-        <p className="text-gray-700 font-medium mb-2">
-          На этом этапе человек понимает, что ресурсы есть, но либо не понимает как их реализовать, либо видит, что чего-то не хватает.
-        </p>
-        {salCodes && (
-          <div className="mt-3">
-            <p className="text-sm font-semibold text-gray-700 mb-2">💡 Анализ с точки зрения САЛ:</p>
-            <div className="bg-white rounded-lg border border-purple-200 p-3">
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{resourcesAnalysis}</p>
-            </div>
-          </div>
-        )}
-      </div>
-      
+      {aiData?.analysis && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+          <h4 className="text-sm font-semibold text-purple-900 mb-2">Анализ ресурсов (AI):</h4>
+          <p className="text-sm text-purple-800">{aiData.analysis}</p>
+        </div>
+      )}
+
       <div>
-        <label className="block text-sm font-medium mb-2">Какие ресурсы есть у клиента:</label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {availableResources.map((resource) => (
+        <label className="block text-sm font-medium mb-2">Какие ресурсы есть у клиента?</label>
+        <div className="grid grid-cols-2 gap-2">
+          {availableResources.map((res) => (
             <button
-              key={resource}
+              key={res}
               onClick={() => {
                 setSelectedOptions((prev) =>
-                  prev.includes(resource)
-                    ? prev.filter((o) => o !== resource)
-                    : [...prev, resource]
+                  prev.includes(res) ? prev.filter((r) => r !== res) : [...prev, res]
                 );
               }}
-              className={`p-3 rounded-lg border text-left transition ${
-                selectedOptions.includes(resource)
+              className={`p-2 rounded border text-sm ${selectedOptions.includes(res)
                   ? "bg-purple-50 border-purple-500 text-purple-700"
-                  : "bg-white border-gray-300 hover:border-gray-400"
-              }`}
+                  : "bg-white border-gray-300"
+                }`}
             >
-              {resource}
+              {res}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="font-medium text-blue-900 mb-2">Что мы можем дать:</p>
-        <ul className="list-disc list-inside space-y-1 text-blue-800">
-          {offeredResources.map((resource) => (
-            <li key={resource}>{resource}</li>
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <p className="text-sm font-medium mb-2">Что мы можем дать:</p>
+        <ul className="list-disc list-inside text-sm text-gray-600">
+          {offeredResources.map((res) => (
+            <li key={res}>{res}</li>
           ))}
         </ul>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-2">Дополнительно (опционально):</label>
-        <textarea
-          value={customText}
-          onChange={(e) => setCustomText(e.target.value)}
-          className="w-full rounded-lg border p-3"
-          rows={3}
-          placeholder="Добавьте свой текст..."
-        />
       </div>
 
       <button
         onClick={handleSave}
         disabled={saving}
-        className="w-full sm:w-auto rounded-lg bg-purple-600 text-white px-6 py-3 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+        className="rounded-lg bg-purple-600 text-white px-4 py-2 hover:bg-purple-700 disabled:opacity-50"
       >
-        {saving ? "Сохранение..." : "Сохранить и перейти к продаже"}
+        {saving ? "Сохранение..." : "Сохранить и перейти дальше"}
       </button>
     </div>
   );
@@ -876,169 +792,96 @@ function ResourcesStep({
 
 function ClosingStep({
   steps,
-  personalizedContent,
-  salCodes,
+  aiData,
   onComplete,
   loading,
 }: {
   steps: ConsultationStep[];
-  personalizedContent: PersonalizedContent | null;
-  salCodes: SALCodes | null;
+  aiData?: AIScript["closing"];
   onComplete: (soldProduct: "full" | "partner" | null, importanceRating?: number) => void;
   loading: boolean;
 }) {
-  const [importanceRating, setImportanceRating] = useState<number>(10);
+  const [importance, setImportance] = useState<number>(0);
   const [soldProduct, setSoldProduct] = useState<"full" | "partner" | null>(null);
 
   const pointA = steps.find((s) => s.step_type === "point_a");
   const pointB = steps.find((s) => s.step_type === "point_b");
-  const [showPhrases, setShowPhrases] = useState(false);
-  
-  // Используем персонализированный оффер или базовый
-  const offerText = personalizedContent?.offerTemplate || 
-    "Мы сегодня вскрыли только верхушку айсберга, но уже видно, насколько сильно это влияет на разные сферы.\n\nДальше есть два пути, которые реально помогут поменять ситуацию:\n– Личный разбор — на нём мы детально посмотрим на все твои природные ресурсы и скрытые конфликты. Ты получишь конкретную стратегию, как реализовать сильные стороны и обойти внутренние ограничения.\n– Парная консультация — если важна тема отношений, разберём совместимость с партнёром, выясним, как строить гармоничные отношения или найти подходящего человека.\n\nКакой формат тебе сейчас ближе?";
-  
-  const closingPhrases = personalizedContent?.closingPhrases || [];
-
-  function handleComplete() {
-    if (!soldProduct) {
-      alert("Выберите, что было продано");
-      return;
-    }
-    onComplete(soldProduct, importanceRating);
-  }
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl border border-yellow-200 p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Резюме консультации</h3>
-        
-        {pointA && (
-          <div className="mb-4">
-            <div className="text-sm font-medium text-gray-700 mb-2">Точка А (текущая ситуация):</div>
-            <div className="text-sm text-gray-600 whitespace-pre-wrap">{pointA.response}</div>
-          </div>
-        )}
-        
-        {pointB && (
-          <div className="mb-4">
-            <div className="text-sm font-medium text-gray-700 mb-2">Точка Б (желания):</div>
-            <div className="text-sm text-gray-600 whitespace-pre-wrap">{pointB.response}</div>
-          </div>
-        )}
-        
-        {salCodes && (
-          <div className="mt-4 pt-4 border-t border-yellow-300">
-            <div className="text-sm font-medium text-gray-700 mb-2">САЛ-коды клиента:</div>
-            <div className="text-xs text-gray-600">
-              Личность {salCodes.personality} · Коннектор {salCodes.connector} · Реализация {salCodes.realization} · Генератор {salCodes.generator} · Миссия {salCodes.mission}
-            </div>
-          </div>
-        )}
+      <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+        <h3 className="font-medium">Итоги:</h3>
+        <p className="text-sm"><span className="font-medium">Точка А:</span> {pointA?.response}</p>
+        <p className="text-sm"><span className="font-medium">Точка Б:</span> {pointB?.response}</p>
       </div>
-      
-      {/* Персонализированный оффер */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">Персонализированное предложение:</h3>
-        <div className="text-sm text-gray-700 whitespace-pre-wrap mb-3">{offerText}</div>
-        {closingPhrases.length > 0 && (
-          <div>
-            <button
-              onClick={() => setShowPhrases(!showPhrases)}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium mb-2"
-            >
-              {showPhrases ? "▼" : "▶"} Готовые фразы для закрытия ({closingPhrases.length})
-            </button>
-            {showPhrases && (
-              <div className="bg-white rounded-lg border border-blue-200 p-3 space-y-2 max-h-60 overflow-y-auto">
-                {closingPhrases.map((phrase, idx) => (
-                  <div key={idx} className="text-sm text-gray-700 p-2 bg-gray-50 rounded border border-gray-200">
-                    &quot;{phrase}&quot;
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+
+      {aiData?.offer_text && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+          <h4 className="text-sm font-semibold text-indigo-900 mb-2">Оффер (AI):</h4>
+          <p className="text-sm text-indigo-800 whitespace-pre-wrap">{aiData.offer_text}</p>
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium mb-2">
-          Насколько важно для клиента попасть в точку Б? (1-10)
+          Насколько важно для клиента решить проблему (1-10)?
         </label>
-        <div className="flex flex-wrap gap-2">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
             <button
-              key={rating}
-              onClick={() => setImportanceRating(rating)}
-              className={`w-10 h-10 rounded-lg border transition text-sm ${
-                importanceRating === rating
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white border-gray-300 hover:border-gray-400"
-              }`}
+              key={num}
+              onClick={() => setImportance(num)}
+              className={`w-8 h-8 rounded flex items-center justify-center text-sm ${importance === num
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 hover:bg-gray-200"
+                }`}
             >
-              {rating}
+              {num}
             </button>
           ))}
         </div>
-        {importanceRating < 7 && (
-          <p className="text-sm text-amber-600 mt-2">
-            ⚠️ Если важность ниже 7, клиенту может быть сложно помочь
-          </p>
-        )}
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Что было продано?</label>
-        <div className="space-y-2">
+        <label className="block text-sm font-medium mb-2">Результат продажи:</label>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <button
             onClick={() => setSoldProduct("full")}
-            className={`w-full p-4 rounded-lg border text-left transition ${
-              soldProduct === "full"
+            className={`p-3 rounded-lg border text-center ${soldProduct === "full"
                 ? "bg-green-50 border-green-500 text-green-700"
-                : "bg-white border-gray-300 hover:border-gray-400"
-            }`}
+                : "bg-white border-gray-300"
+              }`}
           >
-            <div className="font-medium">Полная консультация</div>
-            <div className="text-sm text-gray-600">
-              Детальный разбор всех природных ресурсов и скрытых конфликтов
-            </div>
+            Личный разбор
           </button>
           <button
             onClick={() => setSoldProduct("partner")}
-            className={`w-full p-4 rounded-lg border text-left transition ${
-              soldProduct === "partner"
+            className={`p-3 rounded-lg border text-center ${soldProduct === "partner"
                 ? "bg-green-50 border-green-500 text-green-700"
-                : "bg-white border-gray-300 hover:border-gray-400"
-            }`}
+                : "bg-white border-gray-300"
+              }`}
           >
-            <div className="font-medium">Парная консультация</div>
-            <div className="text-sm text-gray-600">
-              Разбор совместимости с партнером, гармоничные отношения
-            </div>
+            Парная консультация
           </button>
           <button
             onClick={() => setSoldProduct(null)}
-            className={`w-full p-4 rounded-lg border text-left transition ${
-              soldProduct === null
-                ? "bg-gray-50 border-gray-400 text-gray-700"
-                : "bg-white border-gray-300 hover:border-gray-400"
-            }`}
+            className={`p-3 rounded-lg border text-center ${soldProduct === null
+                ? "bg-red-50 border-red-500 text-red-700"
+                : "bg-white border-gray-300"
+              }`}
           >
-            <div className="font-medium">Ничего не продано</div>
+            Ничего не купил
           </button>
         </div>
       </div>
 
       <button
-        onClick={handleComplete}
-        disabled={loading}
-        className="w-full rounded-lg bg-green-600 text-white px-4 py-3 hover:bg-green-700 disabled:opacity-50 font-medium"
+        onClick={() => onComplete(soldProduct, importance)}
+        disabled={loading || importance === 0}
+        className="w-full rounded-lg bg-blue-600 text-white px-6 py-3 hover:bg-blue-700 disabled:opacity-50 font-medium"
       >
         {loading ? "Завершение..." : "Завершить консультацию"}
       </button>
     </div>
   );
 }
-
-
