@@ -8,6 +8,7 @@ import html2pdf from "html2pdf.js";
 import RichEditor from "@/components/RichEditor";
 import DeleteProfile from "../DeleteProfile";
 import { calculateSALCodes, getCodeShortLabel } from "@/lib/sal-codes";
+import ExpressConsultationModule from "@/components/ExpressConsultationModule";
 
 // Интересные факты для отображения во время генерации (200 фактов)
 const INTERESTING_FACTS = [
@@ -1714,8 +1715,8 @@ export default function ProfileDetail() {
                       <div className="space-y-3">
                         {item.currentDiagnostics.resourceStates.map((state: any, i: number) => (
                           <div key={i} className={`rounded-lg p-4 border-2 ${state.state === 'plus' ? 'border-green-200 bg-green-50' :
-                              state.state === 'minus' ? 'border-red-200 bg-red-50' :
-                                'border-gray-200 bg-gray-50'
+                            state.state === 'minus' ? 'border-red-200 bg-red-50' :
+                              'border-gray-200 bg-gray-50'
                             }`}>
                             <div className="font-semibold mb-2">{state.resource}</div>
                             {Array.isArray(state.evidence) && state.evidence.length > 0 && (
@@ -2089,8 +2090,8 @@ export default function ProfileDetail() {
                       <div className="space-y-3">
                         {item.currentDiagnostics.resourceStates.map((state: any, i: number) => (
                           <div key={i} className={`rounded-lg p-4 border-2 ${state.state === 'plus' ? 'border-green-200 bg-green-50' :
-                              state.state === 'minus' ? 'border-red-200 bg-red-50' :
-                                'border-gray-200 bg-gray-50'
+                            state.state === 'minus' ? 'border-red-200 bg-red-50' :
+                              'border-gray-200 bg-gray-50'
                             }`}>
                             <div className="font-semibold mb-2">{state.resource}</div>
                             {Array.isArray(state.evidence) && state.evidence.length > 0 && (
@@ -2155,8 +2156,8 @@ export default function ProfileDetail() {
                       <div className="space-y-3">
                         {item.currentDiagnostics.firstParticipant.resourceStates.map((state: any, i: number) => (
                           <div key={i} className={`rounded-lg p-4 border-2 ${state.state === 'plus' ? 'border-green-200 bg-green-50' :
-                              state.state === 'minus' ? 'border-red-200 bg-red-50' :
-                                'border-gray-200 bg-gray-50'
+                            state.state === 'minus' ? 'border-red-200 bg-red-50' :
+                              'border-gray-200 bg-gray-50'
                             }`}>
                             <div className="font-semibold mb-2">{state.resource}</div>
                             {Array.isArray(state.evidence) && state.evidence.length > 0 && (
@@ -2192,8 +2193,8 @@ export default function ProfileDetail() {
                       <div className="space-y-3">
                         {item.currentDiagnostics.secondParticipant.resourceStates.map((state: any, i: number) => (
                           <div key={i} className={`rounded-lg p-4 border-2 ${state.state === 'plus' ? 'border-green-200 bg-green-50' :
-                              state.state === 'minus' ? 'border-red-200 bg-red-50' :
-                                'border-gray-200 bg-gray-50'
+                            state.state === 'minus' ? 'border-red-200 bg-red-50' :
+                              'border-gray-200 bg-gray-50'
                             }`}>
                             <div className="font-semibold mb-2">{state.resource}</div>
                             {Array.isArray(state.evidence) && state.evidence.length > 0 && (
@@ -2504,6 +2505,14 @@ export default function ProfileDetail() {
           </div>
         </div>
       </div>
+
+      {/* Экспресс-диагностика / продажа по САЛ */}
+      {profile?.client_id && (
+        <ExpressConsultationModule
+          clientId={profile.client_id}
+          profileId={profile?.id ? Number(profile.id) : undefined}
+        />
+      )}
 
       {/* Пять кубиков - вывод кодов для всех типов расчетов */}
       {(() => {

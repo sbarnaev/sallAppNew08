@@ -5,7 +5,7 @@ import { calculateSALCodes, getCodeShortLabel } from "@/lib/sal-codes";
 
 async function getClient(id: string) {
   const res = await internalApiFetch(`/api/clients/${id}`);
-  const json = await res.json().catch(()=>({}));
+  const json = await res.json().catch(() => ({}));
   return json?.data || null;
 }
 
@@ -23,11 +23,11 @@ async function getClientProfiles(id: string, searchParams: Record<string, string
 
 
   const res = await internalApiFetch(`/api/profiles?${params.toString()}`, { cache: 'no-store' });
-  const json = await res.json().catch(()=>({ data: [], meta: {} }));
+  const json = await res.json().catch(() => ({ data: [], meta: {} }));
   return json;
 }
 
-export default async function ClientDetailPage({ params, searchParams }: { params: { id: string }, searchParams: Record<string, string | string[] | undefined>}) {
+export default async function ClientDetailPage({ params, searchParams }: { params: { id: string }, searchParams: Record<string, string | string[] | undefined> }) {
   const client = await getClient(params.id);
   const { data: profiles = [], meta = {} } = await getClientProfiles(params.id, searchParams);
 
@@ -90,13 +90,7 @@ export default async function ClientDetailPage({ params, searchParams }: { param
             <span className="hidden sm:inline">Новый расчёт</span>
             <span className="sm:hidden">Расчёт</span>
           </Link>
-          <Link href={`/consultations/express/${params.id}`} className="rounded-xl bg-green-100 text-green-700 px-4 md:px-6 py-2 hover:bg-green-200 border border-green-200 flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            <span className="hidden sm:inline">Экспресс-консультация</span>
-            <span className="sm:hidden">Экспресс</span>
-          </Link>
+
         </div>
       </div>
 
@@ -124,20 +118,20 @@ export default async function ClientDetailPage({ params, searchParams }: { param
                     <div className="font-medium">{client.name || 'Не указано'}</div>
                   </div>
                 </div>
-                
+
                 {client.birth_date && (
                   <>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-500">Дата рождения</div>
+                        <div className="font-medium">{new Date(client.birth_date).toLocaleDateString('ru-RU')}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Дата рождения</div>
-                      <div className="font-medium">{new Date(client.birth_date).toLocaleDateString('ru-RU')}</div>
-                    </div>
-                  </div>
                     {(() => {
                       const codes = calculateSALCodes(client.birth_date);
                       if (!codes) return null;
@@ -162,7 +156,7 @@ export default async function ClientDetailPage({ params, searchParams }: { param
                     })()}
                   </>
                 )}
-                
+
                 {client.email && (
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -181,7 +175,7 @@ export default async function ClientDetailPage({ params, searchParams }: { param
                   </div>
                 )}
               </div>
-              
+
               <div className="space-y-4">
                 {client.phone && (
                   <div className="flex items-center gap-3">
@@ -200,7 +194,7 @@ export default async function ClientDetailPage({ params, searchParams }: { param
                     </div>
                   </div>
                 )}
-                
+
                 {client.source && (
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -214,7 +208,7 @@ export default async function ClientDetailPage({ params, searchParams }: { param
                     </div>
                   </div>
                 )}
-                
+
                 {client.communication_method && (
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -228,13 +222,13 @@ export default async function ClientDetailPage({ params, searchParams }: { param
                     </div>
                   </div>
                 )}
-                
+
 
               </div>
             </div>
           </div>
 
-{/* АНКЕТА КЛИЕНТА */}
+          {/* АНКЕТА КЛИЕНТА */}
 
           <div className="card">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -258,7 +252,7 @@ export default async function ClientDetailPage({ params, searchParams }: { param
               </div>
             </div>
           </div>
-          
+
 
           {/* Расчёты клиента */}
           <div className="card">
@@ -274,7 +268,7 @@ export default async function ClientDetailPage({ params, searchParams }: { param
                 + Добавить расчёт
               </Link>
             </div>
-            
+
             <div className="space-y-3">
               {profiles.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
@@ -285,7 +279,7 @@ export default async function ClientDetailPage({ params, searchParams }: { param
                   <div className="text-sm">Создайте первый расчёт для этого клиента</div>
                 </div>
               )}
-              
+
               {profiles.map((p: any) => (
                 <Link key={p.id} href={`/profiles/${p.id}`} className="block p-4 border border-gray-200 rounded-xl hover:shadow-md transition-all duration-200 hover:border-brand-200">
                   <div className="flex items-center justify-between">
@@ -302,12 +296,12 @@ export default async function ClientDetailPage({ params, searchParams }: { param
               <div className="flex items-center justify-between mt-6 pt-4 border-t">
                 <div className="flex items-center gap-2">
                   {hasPrev && (
-                    <Link href={`/clients/${params.id}?page=${page-1}&limit=${limit}`} className="px-3 py-1 rounded-lg border hover:bg-gray-50 text-sm">
+                    <Link href={`/clients/${params.id}?page=${page - 1}&limit=${limit}`} className="px-3 py-1 rounded-lg border hover:bg-gray-50 text-sm">
                       ← Назад
                     </Link>
                   )}
                   {hasNext && (
-                    <Link href={`/clients/${params.id}?page=${page+1}&limit=${limit}`} className="px-3 py-1 rounded-lg border hover:bg-gray-50 text-sm">
+                    <Link href={`/clients/${params.id}?page=${page + 1}&limit=${limit}`} className="px-3 py-1 rounded-lg border hover:bg-gray-50 text-sm">
                       Вперёд →
                     </Link>
                   )}
@@ -335,7 +329,7 @@ export default async function ClientDetailPage({ params, searchParams }: { param
                   <div className="text-sm text-gray-500">Создать профиль</div>
                 </div>
               </Link>
-              
+
               <Link href={`/clients/${params.id}/edit`} className="w-full flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                 <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                   <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -347,7 +341,7 @@ export default async function ClientDetailPage({ params, searchParams }: { param
                   <div className="text-sm text-gray-500">Изменить данные</div>
                 </div>
               </Link>
-              
+
               {client.phone && (
                 <a href={`tel:${client.phone}`} className="w-full flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                   <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
@@ -361,7 +355,7 @@ export default async function ClientDetailPage({ params, searchParams }: { param
                   </div>
                 </a>
               )}
-              
+
               {client.email && (
                 <a href={`mailto:${client.email}`} className="w-full flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                   <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
