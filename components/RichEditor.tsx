@@ -14,9 +14,15 @@ export default function RichEditor({ value, onChange }: Props) {
   useEffect(() => {
     if (!ref.current) return;
     const html = value || "";
-    // Обновляем только если значение действительно изменилось
+    
+    // Если содержимое отличается
     if (ref.current.innerHTML !== html) {
-      ref.current.innerHTML = html;
+      // Если элемент в фокусе, не обновляем (чтобы не сбивать курсор),
+      // КРОМЕ случая, когда в редакторе пусто (инициализация)
+      const isFocused = document.activeElement === ref.current;
+      if (!isFocused || ref.current.innerHTML === "") {
+        ref.current.innerHTML = html;
+      }
     }
   }, [value]);
 

@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { refreshAccessToken } from "@/lib/auth";
 
 // Функция для получения текущего пользователя
 async function getCurrentUser(token: string, baseUrl: string) {
@@ -12,12 +13,12 @@ async function getCurrentUser(token: string, baseUrl: string) {
         Accept: "application/json"
       }
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       return data?.data;
     }
-    
+
     return null;
   } catch (error) {
     logger.error("Error getting current user:", error);
@@ -28,7 +29,7 @@ async function getCurrentUser(token: string, baseUrl: string) {
 export async function GET(req: NextRequest) {
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
-  
+
   if (!token || !baseUrl) {
     return NextResponse.json({ data: [], message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
   }
@@ -77,37 +78,37 @@ export async function GET(req: NextRequest) {
   // Если есть поиск, делаем два запроса и объединяем результаты
   let allClientIds = new Set<number>();
   let finalData: any = null;
-  
+
   if (searchTerm) {
     // Пробуем преобразовать поисковый запрос в формат даты
     let dateFormats: string[] = [];
-    
+
     // Формат ДД.ММ.ГГГГ -> YYYY-MM-DD
     const ddmmyyyy = searchTerm.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
     if (ddmmyyyy) {
       const [, dd, mm, yyyy] = ddmmyyyy;
       dateFormats.push(`${yyyy}-${mm}-${dd}`);
     }
-    
+
     // Формат ДД-ММ-ГГГГ -> YYYY-MM-DD
     const ddmmyyyyDash = searchTerm.match(/^(\d{2})-(\d{2})-(\d{4})$/);
     if (ddmmyyyyDash) {
       const [, dd, mm, yyyy] = ddmmyyyyDash;
       dateFormats.push(`${yyyy}-${mm}-${dd}`);
     }
-    
+
     // Формат YYYY-MM-DD (уже правильный)
     if (/^\d{4}-\d{2}-\d{2}$/.test(searchTerm)) {
       dateFormats.push(searchTerm);
     }
-    
+
     // Формат ГГГГ (год)
     let yearFilter: { start?: string; end?: string } = {};
     if (/^\d{4}$/.test(searchTerm) && !ddmmyyyy && !ddmmyyyyDash) {
       yearFilter.start = `${searchTerm}-01-01`;
       yearFilter.end = `${searchTerm}-12-31`;
     }
-    
+
     // 1. Поиск по имени, email, телефону
     const nameSearchParams = new URLSearchParams(sp);
     nameSearchParams.set("filter[_or][0][name][_icontains]", searchTerm);
@@ -120,7 +121,7 @@ export async function GET(req: NextRequest) {
     if (currentUserId && !hasExplicitFilter) {
       nameSearchParams.set("filter[owner_user][_eq]", currentUserId);
     }
-    
+
     const nameUrl = `${baseUrl}/items/clients?${nameSearchParams.toString()}`;
     try {
       const nameRes = await fetch(nameUrl, {
@@ -136,7 +137,7 @@ export async function GET(req: NextRequest) {
     } catch (error) {
       logger.error("Error searching clients by name:", error);
     }
-    
+
     // 2. Поиск по дате рождения (если поисковый запрос похож на дату)
     if (dateFormats.length > 0) {
       for (const dateFormat of dateFormats) {
@@ -152,7 +153,7 @@ export async function GET(req: NextRequest) {
         if (currentUserId && !hasExplicitFilter) {
           dateSearchParams.set("filter[owner_user][_eq]", currentUserId);
         }
-        
+
         const dateUrl = `${baseUrl}/items/clients?${dateSearchParams.toString()}`;
         try {
           const dateRes = await fetch(dateUrl, {
@@ -170,7 +171,7 @@ export async function GET(req: NextRequest) {
         }
       }
     }
-    
+
     // 3. Поиск по году (диапазон дат)
     if (yearFilter.start && yearFilter.end) {
       const yearSearchParams = new URLSearchParams(sp);
@@ -186,7 +187,7 @@ export async function GET(req: NextRequest) {
       if (currentUserId && !hasExplicitFilter) {
         yearSearchParams.set("filter[owner_user][_eq]", currentUserId);
       }
-      
+
       const yearUrl = `${baseUrl}/items/clients?${yearSearchParams.toString()}`;
       try {
         const yearRes = await fetch(yearUrl, {
@@ -203,7 +204,7 @@ export async function GET(req: NextRequest) {
         logger.error("Error searching clients by year:", error);
       }
     }
-    
+
     // Если нашли клиентов, делаем финальный запрос с фильтром по ID
     if (allClientIds.size > 0) {
       const clientIdsArray = Array.from(allClientIds);
@@ -218,13 +219,13 @@ export async function GET(req: NextRequest) {
       if (currentUserId && !hasExplicitFilter) {
         finalSearchParams.set("filter[owner_user][_eq]", currentUserId);
       }
-      
+
       if (clientIdsArray.length === 1) {
         finalSearchParams.set("filter[id][_eq]", String(clientIdsArray[0]));
       } else {
         finalSearchParams.set("filter[id][_in]", clientIdsArray.join(','));
       }
-      
+
       // Переопределяем sp для финального запроса
       sp = finalSearchParams;
     } else {
@@ -245,9 +246,9 @@ export async function GET(req: NextRequest) {
       return { r, data } as const;
     } catch (error) {
       logger.error("Error fetching from Directus:", error);
-      return { 
-        r: new Response(null, { status: 500 }), 
-        data: { data: [], meta: { filter_count: 0 }, errors: [{ message: String(error) }] } 
+      return {
+        r: new Response(null, { status: 500 }),
+        data: { data: [], meta: { filter_count: 0 }, errors: [{ message: String(error) }] }
       } as const;
     }
   }
@@ -256,15 +257,9 @@ export async function GET(req: NextRequest) {
 
   // Автообновление токена при истёкшей сессии
   if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
-    const origin = req.nextUrl.origin;
-    const refreshRes = await fetch(`${origin}/api/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (refreshRes.ok) {
-      const refreshData = await refreshRes.json().catch(() => ({}));
-      // Используем токен из ответа, а не из cookies
-      const newToken = refreshData?.access_token || cookies().get("directus_access_token")?.value;
+    const refreshToken = cookies().get("directus_refresh_token")?.value;
+    if (refreshToken) {
+      const newToken = await refreshAccessToken(refreshToken);
       if (newToken) {
         ({ r, data } = await fetchList(newToken));
       }
@@ -275,26 +270,26 @@ export async function GET(req: NextRequest) {
   if (r.status === 404) {
     return NextResponse.json({ data: [], meta: { filter_count: 0 }, upstreamStatus: 404 });
   }
-  
+
   // Если ошибка, но есть данные - возвращаем пустой массив
   if (!r.ok && (!data || !data.data)) {
     logger.error("Directus error response");
     return NextResponse.json({ data: [], meta: { filter_count: 0 } }, { status: 200 });
   }
-  
+
   return NextResponse.json(data, { status: r.ok ? 200 : r.status });
 }
 
 export async function POST(req: NextRequest) {
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
-  
+
   if (!token || !baseUrl) {
     return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
   }
 
   const body = await req.json();
-  
+
   // Валидация обязательных полей
   if (!body.first_name?.trim()) {
     return NextResponse.json({ message: "Имя обязательно для заполнения" }, { status: 400 });
@@ -305,7 +300,7 @@ export async function POST(req: NextRequest) {
 
   // Получаем текущего пользователя
   const currentUser = await getCurrentUser(token, baseUrl);
-  
+
   if (!currentUser?.id) {
     return NextResponse.json({ message: "Ошибка получения данных пользователя" }, { status: 500 });
   }
@@ -324,20 +319,20 @@ export async function POST(req: NextRequest) {
   };
 
   const url = `${baseUrl}/items/clients`;
-  
+
   try {
     const r = await fetch(url, {
       method: "POST",
-      headers: { 
-        Authorization: `Bearer ${token}`, 
+      headers: {
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
         Accept: "application/json"
       },
       body: JSON.stringify(clientData),
     });
-    
-    const data = await r.json().catch(()=>({}));
-    
+
+    const data = await r.json().catch(() => ({}));
+
     // Если токен истек, попробуем обновить его
     if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
 
@@ -352,26 +347,26 @@ export async function POST(req: NextRequest) {
         // Получим новый токен из ответа
         const refreshData = await refreshRes.json().catch(() => ({}));
         const newToken = refreshData?.access_token || cookies().get("directus_access_token")?.value;
-        
+
         if (newToken) {
           // Повторим запрос с новым токеном
           const retryRes = await fetch(url, {
             method: "POST",
-            headers: { 
-              Authorization: `Bearer ${newToken}`, 
+            headers: {
+              Authorization: `Bearer ${newToken}`,
               "Content-Type": "application/json",
               Accept: "application/json"
             },
             body: JSON.stringify(clientData),
           });
-          
-          const retryData = await retryRes.json().catch(()=>({}));
-          
+
+          const retryData = await retryRes.json().catch(() => ({}));
+
           return NextResponse.json(retryData, { status: retryRes.status });
         }
       }
     }
-    
+
     return NextResponse.json(data, { status: r.status });
   } catch (error) {
     logger.error("Creating client - Fetch error:", error);

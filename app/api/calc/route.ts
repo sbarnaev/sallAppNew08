@@ -2,6 +2,8 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 
+import { refreshAccessToken } from "@/lib/auth";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -15,51 +17,21 @@ function generatePublicCode(): string {
   return out;
 }
 
-/**
- * Обновляет access token через refresh token
- * Возвращает новый access token или null в случае ошибки
- */
-async function refreshAccessToken(refreshToken: string, baseUrl: string): Promise<string | null> {
-  try {
-    const refreshUrl = `${baseUrl}/auth/refresh`;
-    const res = await fetch(refreshUrl, {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-      signal: AbortSignal.timeout(10000),
-    });
-
-    if (!res.ok) {
-      console.error("[CALC] Token refresh failed:", res.status, res.statusText);
-      return null;
-    }
-
-    const data = await res.json().catch(() => ({}));
-    return data?.data?.access_token || null;
-  } catch (error) {
-    console.error("[CALC] Error refreshing token:", error);
-    return null;
-  }
-}
-
 export async function POST(req: Request) {
   let token = cookies().get("directus_access_token")?.value;
   const refreshToken = cookies().get("directus_refresh_token")?.value;
   const directusUrl = getDirectusUrl();
   const n8nUrl = process.env.N8N_CALC_URL;
-  
+
   if (!token && !refreshToken) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
   if (!n8nUrl) return NextResponse.json({ message: "No N8N_CALC_URL configured" }, { status: 400 });
 
   // ОБЯЗАТЕЛЬНЫЙ REFRESH перед отправкой в n8n для получения свежего токена
-  if (refreshToken && directusUrl) {
+  if (refreshToken) {
     console.log("[CALC] Refreshing token before n8n request...");
-    const freshToken = await refreshAccessToken(refreshToken, directusUrl);
+    const freshToken = await refreshAccessToken(refreshToken);
     if (freshToken) {
       token = freshToken;
       console.log("[CALC] Token refreshed successfully");
@@ -124,10 +96,10 @@ export async function POST(req: Request) {
           cache: "no-store",
         });
         if (meRes.ok) {
-          const me = await meRes.json().catch(()=>({}));
+          const me = await meRes.json().catch(() => ({}));
           ownerUserId = me?.data?.id || null;
         }
-      } catch {}
+      } catch { }
 
       const createRes = await fetch(`${directusUrl}/items/profiles`, {
         method: "POST",
@@ -136,7 +108,7 @@ export async function POST(req: Request) {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           client_id: clientId ? Number(clientId) : null,
           ...(ownerUserId ? { owner_user: ownerUserId } : {}),
         }),
@@ -161,21 +133,22 @@ export async function POST(req: Request) {
           Accept: "application/json",
         },
         body: JSON.stringify({ public_code: publicCode }),
-      }).catch(() => {});
-    } catch {}
+      }).catch(() => { });
+    } catch { }
   }
 
   // 2) Вызываем n8n, передаём profileId (если удалось создать) и publicCode
   let r: Response;
   let data: any = null;
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30_000);
-    
+    // Retry logic for n8n
+    let attempts = 0;
+    const maxAttempts = 2;
+
     // Убеждаемся, что directusUrl правильный и без слеша в конце
     const cleanDirectusUrl = directusUrl ? directusUrl.replace(/\/+$/, '') : null;
-    
-    const payload = {
+
+    const n8nPayload = {
       name,
       birthday,
       clientId,
@@ -196,14 +169,14 @@ export async function POST(req: Request) {
       token: token, // access token (может истечь)
       refreshToken: refreshToken, // refresh token для обновления access token в n8n
     };
-    
+
     console.log("Payload to n8n:", {
-      directusUrl: payload.directusUrl,
-      hasToken: !!payload.token,
-      hasRefreshToken: !!payload.refreshToken,
-      type: payload.type
+      directusUrl: n8nPayload.directusUrl,
+      hasToken: !!n8nPayload.token,
+      hasRefreshToken: !!n8nPayload.refreshToken,
+      type: n8nPayload.type
     });
-    
+
     console.log("Calling n8n workflow:", {
       url: n8nUrl,
       type: type || "base",
@@ -213,24 +186,52 @@ export async function POST(req: Request) {
       hasToken: !!token,
       hasRefreshToken: !!refreshToken
     });
-    
+
     // Проверяем, что directusUrl правильный
     if (directusUrl && !directusUrl.includes('sposobniymaster.online')) {
       console.warn("WARNING: Directus URL might be incorrect:", directusUrl);
     }
-    
-    r = await fetch(n8nUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
+
+    while (attempts < maxAttempts) {
+      attempts++;
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30_000);
+
+        r = await fetch(n8nUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(n8nPayload),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        // If successful or client error (4xx), break loop
+        // Only retry on server errors (5xx)
+        if (r.ok || r.status < 500) {
+          break;
+        }
+
+        console.warn(`[CALC] n8n attempt ${attempts} failed with status ${r.status}`);
+      } catch (e) {
+        console.warn(`[CALC] n8n attempt ${attempts} failed with error:`, e);
+        if (attempts === maxAttempts) throw e;
+      }
+
+      // Wait before retry if not last attempt
+      if (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    // @ts-ignore
+    if (!r) throw new Error("No response from n8n");
+
     data = await r.json().catch(() => ({}));
-    
+
     console.log("n8n response:", {
       status: r.status,
       statusText: r.statusText,
@@ -254,7 +255,7 @@ export async function POST(req: Request) {
     } else if (data?.errors && Array.isArray(data.errors)) {
       msg = data.errors.map((e: any) => e.message || String(e)).join('; ');
     }
-    
+
     // Логируем полную ошибку для диагностики
     console.error("n8n calculation error:", {
       status: r.status,
@@ -262,15 +263,15 @@ export async function POST(req: Request) {
       data: data,
       message: msg
     });
-    
+
     // Специальная обработка ошибки с directus node - показываем детали
     if (msg.includes('directus') || msg.includes('n8n-nodes-directus') || msg.includes('Unrecognized node type')) {
       const detailMsg = data?.error?.message || data?.message || msg;
       msg = `Ошибка в n8n workflow: ${detailMsg}. Проверьте настройки Directus node в n8n workflow (URL: ${directusUrl || 'не указан'}).`;
     }
-    
-    return NextResponse.json({ 
-      ...data, 
+
+    return NextResponse.json({
+      ...data,
       message: msg,
       errorDetails: data?.error || data?.errors || null
     }, { status: r.status });
