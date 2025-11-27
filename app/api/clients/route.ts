@@ -11,12 +11,13 @@ async function getCurrentUser(token: string, baseUrl: string) {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/json"
-      }
+      },
+      cache: "no-store"
     });
 
     if (response.ok) {
-      const data = await response.json();
-      return data?.data;
+      const data = await response.json().catch(() => ({}));
+      return data?.data || null;
     }
 
     return null;
@@ -288,13 +289,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
   }
 
-  const body = await req.json();
+  let body: any = {};
+  try {
+    body = await req.json();
+  } catch (error) {
+    logger.error("Error parsing request body:", error);
+    return NextResponse.json({ message: "Ошибка обработки данных запроса" }, { status: 400 });
+  }
 
   // Валидация обязательных полей
-  if (!body.first_name?.trim()) {
+  if (!body?.first_name?.trim()) {
     return NextResponse.json({ message: "Имя обязательно для заполнения" }, { status: 400 });
   }
-  if (!body.last_name?.trim()) {
+  if (!body?.last_name?.trim()) {
     return NextResponse.json({ message: "Фамилия обязательна для заполнения" }, { status: 400 });
   }
 
@@ -307,14 +314,14 @@ export async function POST(req: NextRequest) {
 
   // Подготовка данных для отправки в Directus
   const clientData = {
-    name: `${body.first_name.trim()} ${body.last_name.trim()}`.trim(),
+    name: `${String(body.first_name || "").trim()} ${String(body.last_name || "").trim()}`.trim(),
     birth_date: body.birth_date || null,
     gender: body.gender === "male" || body.gender === "female" ? body.gender : null,
-    phone: body.phone?.trim() || null,
-    email: body.email?.trim() || null,
-    source: body.source?.trim() || null,
-    communication_method: body.communication_method?.trim() || null,
-    notes: body.notes?.trim?.() || body.notes || null,
+    phone: body.phone ? String(body.phone).trim() || null : null,
+    email: body.email ? String(body.email).trim() || null : null,
+    source: body.source ? String(body.source).trim() || null : null,
+    communication_method: body.communication_method ? String(body.communication_method).trim() || null : null,
+    notes: body.notes ? (typeof body.notes === "string" ? body.notes.trim() : String(body.notes)) || null : null,
     owner_user: currentUser.id,
   };
 
@@ -368,8 +375,12 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(data, { status: r.status });
-  } catch (error) {
+  } catch (error: any) {
     logger.error("Creating client - Fetch error:", error);
-    return NextResponse.json({ message: "Ошибка соединения с Directus", error: String(error) }, { status: 502 });
+    const errorMessage = error?.message || String(error);
+    return NextResponse.json({ 
+      message: "Ошибка соединения с Directus", 
+      error: errorMessage 
+    }, { status: 502 });
   }
 } 
