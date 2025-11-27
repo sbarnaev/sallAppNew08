@@ -93,7 +93,7 @@ export async function POST(req: Request) {
       // Streaming branch
       if (wantStream) {
         console.log("[DEBUG] Starting OpenAI streaming request", {
-          model: "gpt-5-mini",
+          model: "gpt-4o-mini",
           messagesCount: messages.length,
           hasOpenAIKey: !!openaiKey,
           openAIKeyLength: openaiKey?.length || 0,
@@ -102,19 +102,21 @@ export async function POST(req: Request) {
 
         let r: Response;
         try {
-          r = await fetch("https://api.openai.com/v1/responses", {
+          r = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${openaiKey}`,
             },
             body: JSON.stringify({
-              model: "gpt-5-mini",
-              input: messages,
-              reasoning: {
-                effort: "medium"
-              },
+              model: "gpt-4o-mini",
+              messages,
+              temperature: 0.7,
+              max_tokens: 1500,
               stream: true,
+              // Убеждаемся, что модель возвращает правильно отформатированный текст
+              presence_penalty: 0.1,
+              frequency_penalty: 0.1,
             }),
           });
         } catch (fetchError: any) {
@@ -198,20 +200,14 @@ export async function POST(req: Request) {
 
                   try {
                     const json = JSON.parse(payload);
-                    // Responses API формат: output содержит массив items, ищем message items с output_text
-                    const items = json?.output || [];
-                    for (const item of items) {
-                      if (item?.type === "message" && item?.content) {
-                        for (const content of item.content) {
-                          if (content?.type === "output_text" && content?.text) {
-                            const delta = content.text;
-                            if (typeof delta === 'string') {
-                              const sseData = JSON.stringify(delta);
-                              controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
-                            }
-                          }
-                        }
-                      }
+                    const delta = json?.choices?.[0]?.delta?.content;
+                    if (delta && typeof delta === 'string') {
+                      // Отправляем delta в правильном SSE формате
+                      // SSE требует, чтобы данные были в одной строке после "data: "
+                      // Многострочные данные нужно экранировать или отправлять как JSON
+                      // Используем JSON.stringify для безопасной передачи
+                      const sseData = JSON.stringify(delta);
+                      controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
                     }
                   } catch (e) {
                     // Игнорируем ошибки парсинга
@@ -227,20 +223,10 @@ export async function POST(req: Request) {
                   if (payload !== "[DONE]") {
                     try {
                       const json = JSON.parse(payload);
-                      // Responses API формат
-                      const items = json?.output || [];
-                      for (const item of items) {
-                        if (item?.type === "message" && item?.content) {
-                          for (const content of item.content) {
-                            if (content?.type === "output_text" && content?.text) {
-                              const delta = content.text;
-                              if (typeof delta === 'string') {
-                                const sseData = JSON.stringify(delta);
-                                controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
-                              }
-                            }
-                          }
-                        }
+                      const delta = json?.choices?.[0]?.delta?.content;
+                      if (delta && typeof delta === 'string') {
+                        const sseData = JSON.stringify(delta);
+                        controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
                       }
                     } catch (e) {
                       console.warn("[DEBUG] Failed to parse remaining buffer:", e);
@@ -270,18 +256,19 @@ export async function POST(req: Request) {
       // Non-streaming branch
       let r: Response;
       try {
-        r = await fetch("https://api.openai.com/v1/responses", {
+        r = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${openaiKey}`,
           },
           body: JSON.stringify({
-            model: "gpt-5-mini",
-            input: messages,
-            reasoning: {
-              effort: "medium"
-            },
+            model: "gpt-4o-mini",
+            messages,
+            temperature: 0.7,
+            max_tokens: 1500,
+            presence_penalty: 0.1,
+            frequency_penalty: 0.1,
           }),
         });
       } catch (fetchError: any) {
@@ -322,26 +309,7 @@ export async function POST(req: Request) {
       }
 
       const data = await r.json().catch(() => ({}));
-      // Responses API формат: используем output_text helper или парсим вручную
-      let answer = data?.output_text || null;
-      if (!answer && data?.output) {
-        // Парсим output вручную, если output_text недоступен
-        for (const item of data.output) {
-          if (item?.type === "message" && item?.content) {
-            for (const content of item.content) {
-              if (content?.type === "output_text" && content?.text) {
-                answer = content.text;
-                break;
-              }
-            }
-            if (answer) break;
-          }
-        }
-      }
-      // Fallback на старый формат для совместимости
-      if (!answer) {
-        answer = data?.choices?.[0]?.message?.content || data?.answer || data?.content || null;
-      }
+      const answer = data?.choices?.[0]?.message?.content || data?.answer || data?.content || null;
       return NextResponse.json({ answer: answer || "" });
     } catch (e: any) {
       console.error("[DEBUG] OpenAI request exception:", {
