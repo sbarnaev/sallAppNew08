@@ -131,6 +131,16 @@ export async function POST(req: Request) {
           openAIKeyPreview: openaiKey ? `${openaiKey.substring(0, 10)}...${openaiKey.substring(openaiKey.length - 4)}` : 'null'
         });
 
+        const requestBody = {
+          model: "gpt-5-mini",
+          input: messages,
+          reasoning: {
+            effort: "medium"
+          },
+          stream: true,
+        };
+        console.log("[DEBUG] Streaming request body:", JSON.stringify(requestBody).substring(0, 500));
+        
         let r: Response;
         try {
           r = await fetch("https://api.openai.com/v1/responses", {
@@ -139,14 +149,7 @@ export async function POST(req: Request) {
               "Content-Type": "application/json",
               Authorization: `Bearer ${openaiKey}`,
             },
-            body: JSON.stringify({
-              model: "gpt-5-mini",
-              input: messages,
-              reasoning: {
-                effort: "medium"
-              },
-              stream: true,
-            }),
+            body: JSON.stringify(requestBody),
           });
         } catch (fetchError: any) {
           console.error("[DEBUG] OpenAI fetch error:", {
@@ -170,11 +173,12 @@ export async function POST(req: Request) {
             errorData = { raw: errorText.substring(0, 200) };
           }
 
-          console.error("[DEBUG] OpenAI API error:", {
+          console.error("[DEBUG] OpenAI API error (streaming):", {
             status: r.status,
             statusText: r.statusText,
             error: errorData,
-            errorText: errorText.substring(0, 500)
+            errorText: errorText.substring(0, 500),
+            headers: Object.fromEntries(r.headers.entries())
           });
 
           // Более понятные сообщения об ошибках
@@ -333,6 +337,15 @@ export async function POST(req: Request) {
       }
 
       // Non-streaming branch
+      const requestBody = {
+        model: "gpt-5-mini",
+        input: messages,
+        reasoning: {
+          effort: "medium"
+        },
+      };
+      console.log("[DEBUG] Non-streaming request body:", JSON.stringify(requestBody).substring(0, 500));
+      
       let r: Response;
       try {
         r = await fetch("https://api.openai.com/v1/responses", {
@@ -341,13 +354,7 @@ export async function POST(req: Request) {
             "Content-Type": "application/json",
             Authorization: `Bearer ${openaiKey}`,
           },
-          body: JSON.stringify({
-            model: "gpt-5-mini",
-            input: messages,
-            reasoning: {
-              effort: "medium"
-            },
-          }),
+          body: JSON.stringify(requestBody),
         });
       } catch (fetchError: any) {
         console.error("[DEBUG] OpenAI fetch error (non-streaming):", fetchError);
