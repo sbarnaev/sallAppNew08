@@ -124,32 +124,31 @@ export async function POST(req: Request) {
       // Streaming branch
       if (wantStream) {
         console.log("[DEBUG] Starting OpenAI streaming request", {
-          model: "gpt-5-mini",
+          model: "gpt-4o-mini",
           messagesCount: messages.length,
           hasOpenAIKey: !!openaiKey,
           openAIKeyLength: openaiKey?.length || 0,
           openAIKeyPreview: openaiKey ? `${openaiKey.substring(0, 10)}...${openaiKey.substring(openaiKey.length - 4)}` : 'null'
         });
 
-        const requestBody = {
-          model: "gpt-5-mini",
-          input: messages,
-          reasoning: {
-            effort: "medium"
-          },
-          stream: true,
-        };
-        console.log("[DEBUG] Streaming request body:", JSON.stringify(requestBody).substring(0, 500));
-        
         let r: Response;
         try {
-          r = await fetch("https://api.openai.com/v1/responses", {
+          r = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${openaiKey}`,
             },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify({
+              model: "gpt-4o-mini",
+              messages,
+              temperature: 0.7,
+              max_tokens: 1500,
+              stream: true,
+              // Убеждаемся, что модель возвращает правильно отформатированный текст
+              presence_penalty: 0.1,
+              frequency_penalty: 0.1,
+            }),
           });
         } catch (fetchError: any) {
           console.error("[DEBUG] OpenAI fetch error:", {
@@ -173,12 +172,11 @@ export async function POST(req: Request) {
             errorData = { raw: errorText.substring(0, 200) };
           }
 
-          console.error("[DEBUG] OpenAI API error (streaming):", {
+          console.error("[DEBUG] OpenAI API error:", {
             status: r.status,
             statusText: r.statusText,
             error: errorData,
-            errorText: errorText.substring(0, 500),
-            headers: Object.fromEntries(r.headers.entries())
+            errorText: errorText.substring(0, 500)
           });
 
           // Более понятные сообщения об ошибках
@@ -233,43 +231,18 @@ export async function POST(req: Request) {
 
                   try {
                     const json = JSON.parse(payload);
-                    console.log("[DEBUG] SSE chunk:", JSON.stringify(json).substring(0, 200));
-                    
-                    // Responses API формат стриминга может быть разным
-                    // Вариант 1: delta с output_text
-                    if (json?.delta?.output_text?.text) {
-                      const delta = json.delta.output_text.text;
-                      if (typeof delta === 'string') {
-                        const sseData = JSON.stringify(delta);
-                        controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
-                        continue;
-                      }
-                    }
-                    
-                    // Вариант 2: output содержит массив items
-                    const items = json?.output || [];
-                    for (const item of items) {
-                      if (item?.type === "message" && item?.content) {
-                        for (const content of item.content) {
-                          if (content?.type === "output_text" && content?.text) {
-                            const delta = content.text;
-                            if (typeof delta === 'string') {
-                              const sseData = JSON.stringify(delta);
-                              controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
-                            }
-                          }
-                        }
-                      }
-                    }
-                    
-                    // Вариант 3: прямая структура с text
-                    if (json?.text && typeof json.text === 'string') {
-                      const sseData = JSON.stringify(json.text);
+                    const delta = json?.choices?.[0]?.delta?.content;
+                    if (delta && typeof delta === 'string') {
+                      // Отправляем delta в правильном SSE формате
+                      // SSE требует, чтобы данные были в одной строке после "data: "
+                      // Многострочные данные нужно экранировать или отправлять как JSON
+                      // Используем JSON.stringify для безопасной передачи
+                      const sseData = JSON.stringify(delta);
                       controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
                     }
                   } catch (e) {
                     // Игнорируем ошибки парсинга
-                    console.warn("[DEBUG] Failed to parse SSE chunk:", e, "Payload:", payload.substring(0, 100));
+                    console.warn("[DEBUG] Failed to parse SSE chunk:", e);
                   }
                 }
               }
@@ -281,35 +254,10 @@ export async function POST(req: Request) {
                   if (payload !== "[DONE]") {
                     try {
                       const json = JSON.parse(payload);
-                      // Responses API формат стриминга
-                      // Вариант 1: delta с output_text
-                      if (json?.delta?.output_text?.text) {
-                        const delta = json.delta.output_text.text;
-                        if (typeof delta === 'string') {
-                          const sseData = JSON.stringify(delta);
-                          controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
-                        }
-                      } else {
-                        // Вариант 2: output содержит массив items
-                        const items = json?.output || [];
-                        for (const item of items) {
-                          if (item?.type === "message" && item?.content) {
-                            for (const content of item.content) {
-                              if (content?.type === "output_text" && content?.text) {
-                                const delta = content.text;
-                                if (typeof delta === 'string') {
-                                  const sseData = JSON.stringify(delta);
-                                  controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
-                                }
-                              }
-                            }
-                          }
-                        }
-                        // Вариант 3: прямая структура с text
-                        if (json?.text && typeof json.text === 'string') {
-                          const sseData = JSON.stringify(json.text);
-                          controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
-                        }
+                      const delta = json?.choices?.[0]?.delta?.content;
+                      if (delta && typeof delta === 'string') {
+                        const sseData = JSON.stringify(delta);
+                        controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
                       }
                     } catch (e) {
                       console.warn("[DEBUG] Failed to parse remaining buffer:", e);
@@ -337,24 +285,22 @@ export async function POST(req: Request) {
       }
 
       // Non-streaming branch
-      const requestBody = {
-        model: "gpt-5-mini",
-        input: messages,
-        reasoning: {
-          effort: "medium"
-        },
-      };
-      console.log("[DEBUG] Non-streaming request body:", JSON.stringify(requestBody).substring(0, 500));
-      
       let r: Response;
       try {
-        r = await fetch("https://api.openai.com/v1/responses", {
+        r = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${openaiKey}`,
           },
-          body: JSON.stringify(requestBody),
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages,
+            temperature: 0.7,
+            max_tokens: 1500,
+            presence_penalty: 0.1,
+            frequency_penalty: 0.1,
+          }),
         });
       } catch (fetchError: any) {
         console.error("[DEBUG] OpenAI fetch error (non-streaming):", fetchError);
@@ -394,30 +340,7 @@ export async function POST(req: Request) {
       }
 
       const data = await r.json().catch(() => ({}));
-      console.log("[DEBUG] Non-streaming response:", JSON.stringify(data).substring(0, 500));
-      
-      // Responses API формат: используем output_text helper или парсим вручную
-      let answer = data?.output_text || null;
-      if (!answer && data?.output) {
-        // Парсим output вручную, если output_text недоступен
-        for (const item of data.output) {
-          if (item?.type === "message" && item?.content) {
-            for (const content of item.content) {
-              if (content?.type === "output_text" && content?.text) {
-                answer = content.text;
-                break;
-              }
-            }
-            if (answer) break;
-          }
-        }
-      }
-      // Fallback на старый формат для совместимости
-      if (!answer) {
-        answer = data?.choices?.[0]?.message?.content || data?.answer || data?.content || null;
-      }
-      
-      console.log("[DEBUG] Extracted answer length:", answer?.length || 0);
+      const answer = data?.choices?.[0]?.message?.content || data?.answer || data?.content || null;
       return NextResponse.json({ answer: answer || "" });
     } catch (e: any) {
       console.error("[DEBUG] OpenAI request exception:", {
