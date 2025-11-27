@@ -229,7 +229,20 @@ export async function POST(req: Request) {
 
                   try {
                     const json = JSON.parse(payload);
-                    // Responses API формат: output содержит массив items, ищем message items с output_text
+                    console.log("[DEBUG] SSE chunk:", JSON.stringify(json).substring(0, 200));
+                    
+                    // Responses API формат стриминга может быть разным
+                    // Вариант 1: delta с output_text
+                    if (json?.delta?.output_text?.text) {
+                      const delta = json.delta.output_text.text;
+                      if (typeof delta === 'string') {
+                        const sseData = JSON.stringify(delta);
+                        controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+                        continue;
+                      }
+                    }
+                    
+                    // Вариант 2: output содержит массив items
                     const items = json?.output || [];
                     for (const item of items) {
                       if (item?.type === "message" && item?.content) {
@@ -244,9 +257,15 @@ export async function POST(req: Request) {
                         }
                       }
                     }
+                    
+                    // Вариант 3: прямая структура с text
+                    if (json?.text && typeof json.text === 'string') {
+                      const sseData = JSON.stringify(json.text);
+                      controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+                    }
                   } catch (e) {
                     // Игнорируем ошибки парсинга
-                    console.warn("[DEBUG] Failed to parse SSE chunk:", e);
+                    console.warn("[DEBUG] Failed to parse SSE chunk:", e, "Payload:", payload.substring(0, 100));
                   }
                 }
               }
@@ -258,19 +277,34 @@ export async function POST(req: Request) {
                   if (payload !== "[DONE]") {
                     try {
                       const json = JSON.parse(payload);
-                      // Responses API формат
-                      const items = json?.output || [];
-                      for (const item of items) {
-                        if (item?.type === "message" && item?.content) {
-                          for (const content of item.content) {
-                            if (content?.type === "output_text" && content?.text) {
-                              const delta = content.text;
-                              if (typeof delta === 'string') {
-                                const sseData = JSON.stringify(delta);
-                                controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+                      // Responses API формат стриминга
+                      // Вариант 1: delta с output_text
+                      if (json?.delta?.output_text?.text) {
+                        const delta = json.delta.output_text.text;
+                        if (typeof delta === 'string') {
+                          const sseData = JSON.stringify(delta);
+                          controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+                        }
+                      } else {
+                        // Вариант 2: output содержит массив items
+                        const items = json?.output || [];
+                        for (const item of items) {
+                          if (item?.type === "message" && item?.content) {
+                            for (const content of item.content) {
+                              if (content?.type === "output_text" && content?.text) {
+                                const delta = content.text;
+                                if (typeof delta === 'string') {
+                                  const sseData = JSON.stringify(delta);
+                                  controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
+                                }
                               }
                             }
                           }
+                        }
+                        // Вариант 3: прямая структура с text
+                        if (json?.text && typeof json.text === 'string') {
+                          const sseData = JSON.stringify(json.text);
+                          controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
                         }
                       }
                     } catch (e) {
@@ -353,6 +387,8 @@ export async function POST(req: Request) {
       }
 
       const data = await r.json().catch(() => ({}));
+      console.log("[DEBUG] Non-streaming response:", JSON.stringify(data).substring(0, 500));
+      
       // Responses API формат: используем output_text helper или парсим вручную
       let answer = data?.output_text || null;
       if (!answer && data?.output) {
@@ -373,6 +409,8 @@ export async function POST(req: Request) {
       if (!answer) {
         answer = data?.choices?.[0]?.message?.content || data?.answer || data?.content || null;
       }
+      
+      console.log("[DEBUG] Extracted answer length:", answer?.length || 0);
       return NextResponse.json({ answer: answer || "" });
     } catch (e: any) {
       console.error("[DEBUG] OpenAI request exception:", {
