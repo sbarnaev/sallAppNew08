@@ -14,12 +14,17 @@ export async function GET(_req: Request, ctx: { params: { id: string }}) {
   }
 
   const url = `${baseUrl}/items/clients/${id}?fields=id,name,birth_date,email,phone,source,communication_method,notes,created_at,owner_user`;
-  const r = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-  const data = await r.json().catch(()=>({ data: null }));
-  return NextResponse.json(data, { status: r.status });
+  
+  try {
+    const r = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      cache: "no-store",
+    });
+    const data = await r.json().catch(()=>({ data: null }));
+    return NextResponse.json(data, { status: r.status });
+  } catch (error) {
+    return NextResponse.json({ data: null, message: "Ошибка соединения с Directus", error: String(error) }, { status: 502 });
+  }
 }
 
 export async function PATCH(req: Request, ctx: { params: { id: string }}) {

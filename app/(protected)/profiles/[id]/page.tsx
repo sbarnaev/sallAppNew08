@@ -8,6 +8,7 @@ import html2pdf from "html2pdf.js";
 import RichEditor from "@/components/RichEditor";
 import DeleteProfile from "../DeleteProfile";
 import { calculateSALCodes, getCodeShortLabel } from "@/lib/sal-codes";
+import ExpressConsultationModule from "@/components/ExpressConsultationModule";
 
 // Интересные факты для отображения во время генерации (200 фактов)
 const INTERESTING_FACTS = [
@@ -280,10 +281,10 @@ function LoadingMessage() {
   useEffect(() => {
     // Выбираем случайный факт при первом рендере
     setFactIndex(Math.floor(Math.random() * INTERESTING_FACTS.length));
-
+    
     // Показываем основное сообщение, затем через 2 секунды начинаем показывать факты
     const factTimer = setTimeout(() => setShowFact(true), 2000);
-
+    
     // Меняем факты каждые 15 секунд на случайный
     const interval = setInterval(() => {
       setFactIndex(() => {
@@ -383,12 +384,12 @@ export default function ProfileDetail() {
       let deficitSignals: string[] = [];
       let checkedResource: Record<string, boolean> = {};
       let checkedDeficit: Record<string, boolean> = {};
-
+      
       try {
         let payload: any = profile?.raw_json;
         if (typeof payload === 'string') payload = JSON.parse(payload);
         const item = Array.isArray(payload) ? payload[0] : payload;
-
+        
         // Обрабатываем сильные стороны - убираем формат словаря
         if (item?.strengths) {
           if (Array.isArray(item.strengths)) {
@@ -406,7 +407,7 @@ export default function ProfileDetail() {
             strengths = String(item.strengths_text).split(/\n+/).filter(Boolean);
           }
         }
-
+        
         // Обрабатываем слабые стороны - убираем формат словаря
         if (item?.weaknesses) {
           if (Array.isArray(item.weaknesses)) {
@@ -423,7 +424,7 @@ export default function ProfileDetail() {
             weaknesses = String(item.weaknesses_text).split(/\n+/).filter(Boolean);
           }
         }
-
+        
         // Чеклисты ресурсов - убираем формат словаря
         if (item?.resourceSignals) {
           if (Array.isArray(item.resourceSignals)) {
@@ -440,7 +441,7 @@ export default function ProfileDetail() {
             resourceSignals = String(item.resourceSignals_text).split(/\n+/).filter(Boolean);
           }
         }
-
+        
         if (item?.deficitSignals) {
           if (Array.isArray(item.deficitSignals)) {
             deficitSignals = item.deficitSignals.map((d: any) => {
@@ -456,7 +457,7 @@ export default function ProfileDetail() {
             deficitSignals = String(item.deficitSignals_text).split(/\n+/).filter(Boolean);
           }
         }
-
+        
         // Получаем состояние чекбоксов из ui_state
         const uiState = (profile as any)?.ui_state;
         if (uiState?.checked) {
@@ -467,19 +468,19 @@ export default function ProfileDetail() {
             Object.entries(uiState.checked).filter(([key]) => key.includes('deficitSignals'))
           ) as Record<string, boolean>;
         }
-
+        
         if (item?.personalitySummary) {
-          personalitySummary = Array.isArray(item.personalitySummary)
-            ? item.personalitySummary.join('\n\n')
+          personalitySummary = Array.isArray(item.personalitySummary) 
+            ? item.personalitySummary.join('\n\n') 
             : String(item.personalitySummary);
         }
-
+        
         if (item?.happinessFormula) {
           happinessFormula = Array.isArray(item.happinessFormula)
             ? item.happinessFormula.join('\n\n')
             : String(item.happinessFormula);
         }
-
+        
         // Получаем digits
         const d = (profile as any)?.digits;
         if (Array.isArray(d)) digits = d;
@@ -492,7 +493,7 @@ export default function ProfileDetail() {
           }
         }
       } catch { }
-
+      
       let contact = "";
       let initials = "";
       try {
@@ -503,9 +504,9 @@ export default function ProfileDetail() {
         if (initials) initials += '.';
         contact = user.contact || '';
       } catch { }
-
+      
       const dateStr = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('ru-RU') : '';
-
+      
       // Функция для очистки текста от формата словаря
       const cleanText = (text: string): string => {
         if (!text) return '';
@@ -516,7 +517,7 @@ export default function ProfileDetail() {
         cleaned = cleaned.replace(/\s+/g, ' ').trim();
         return cleaned;
       };
-
+      
       // Создаем HTML с красивым оформлением, один блок - одна страница
       const html = `
 <!DOCTYPE html>
@@ -640,9 +641,9 @@ export default function ProfileDetail() {
       <h2 class="section-title">Сильные стороны</h2>
       <ul>
         ${strengths.map((s: string) => {
-        const cleaned = cleanText(s);
-        return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>` : '';
-      }).filter(Boolean).join('')}
+          const cleaned = cleanText(s);
+          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>` : '';
+        }).filter(Boolean).join('')}
       </ul>
     </div>
     <div class="footer">
@@ -662,9 +663,9 @@ export default function ProfileDetail() {
       <h2 class="section-title">Слабые стороны</h2>
       <ul>
         ${weaknesses.map((w: string) => {
-        const cleaned = cleanText(w);
-        return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>` : '';
-      }).filter(Boolean).join('')}
+          const cleaned = cleanText(w);
+          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>` : '';
+        }).filter(Boolean).join('')}
       </ul>
     </div>
     <div class="footer">
@@ -687,14 +688,14 @@ export default function ProfileDetail() {
         <div class="checklist-title">Признаки плюса (ресурс)</div>
         <ul>
           ${resourceSignals.map((r: string, idx: number) => {
-        const cleaned = cleanText(r);
-        if (!cleaned) return '';
-        const isChecked = Object.keys(checkedResource).some(k =>
-          k.includes('resourceSignals') && (k.includes(String(idx)) || k.includes(r.slice(0, 20)))
-        );
-        const checkmark = isChecked ? '☑' : '☐';
-        return `<li class="checklist-item"><span class="checkmark">${checkmark}</span>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`;
-      }).filter(Boolean).join('')}
+            const cleaned = cleanText(r);
+            if (!cleaned) return '';
+            const isChecked = Object.keys(checkedResource).some(k => 
+              k.includes('resourceSignals') && (k.includes(String(idx)) || k.includes(r.slice(0, 20)))
+            );
+            const checkmark = isChecked ? '☑' : '☐';
+            return `<li class="checklist-item"><span class="checkmark">${checkmark}</span>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`;
+          }).filter(Boolean).join('')}
         </ul>
       </div>
       ` : ''}
@@ -703,14 +704,14 @@ export default function ProfileDetail() {
         <div class="checklist-title minus">Признаки минуса (дефицит)</div>
         <ul>
           ${deficitSignals.map((d: string, idx: number) => {
-        const cleaned = cleanText(d);
-        if (!cleaned) return '';
-        const isChecked = Object.keys(checkedDeficit).some(k =>
-          k.includes('deficitSignals') && (k.includes(String(idx)) || k.includes(d.slice(0, 20)))
-        );
-        const checkmark = isChecked ? '☑' : '☐';
-        return `<li class="checklist-item"><span class="checkmark">${checkmark}</span>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`;
-      }).filter(Boolean).join('')}
+            const cleaned = cleanText(d);
+            if (!cleaned) return '';
+            const isChecked = Object.keys(checkedDeficit).some(k => 
+              k.includes('deficitSignals') && (k.includes(String(idx)) || k.includes(d.slice(0, 20)))
+            );
+            const checkmark = isChecked ? '☑' : '☐';
+            return `<li class="checklist-item"><span class="checkmark">${checkmark}</span>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`;
+          }).filter(Boolean).join('')}
         </ul>
       </div>
       ` : ''}
@@ -723,12 +724,12 @@ export default function ProfileDetail() {
   ` : ''}
 </body>
 </html>`;
-
+      
       // Создаем временный элемент для генерации PDF
       // Используем DOMParser для правильного парсинга HTML
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
-
+      
       // Проверяем ошибки парсинга
       const parserError = doc.querySelector('parsererror');
       if (parserError) {
@@ -736,10 +737,10 @@ export default function ProfileDetail() {
         alert('Ошибка парсинга HTML: ' + parserError.textContent);
         return;
       }
-
+      
       const bodyContent = doc.body;
       const styleElement = doc.querySelector('style');
-
+      
       console.log('PDF generation debug:', {
         hasDoc: !!doc,
         hasBody: !!bodyContent,
@@ -747,7 +748,7 @@ export default function ProfileDetail() {
         hasStyle: !!styleElement,
         htmlLength: html.length
       });
-
+      
       if (!bodyContent || bodyContent.children.length === 0) {
         console.error('Body content is empty or missing', {
           bodyContent,
@@ -757,7 +758,7 @@ export default function ProfileDetail() {
         alert('Ошибка: не удалось создать содержимое для PDF. Проверьте консоль для деталей.');
         return;
       }
-
+      
       // Создаем контейнер для PDF
       const element = document.createElement('div');
       // Делаем элемент видимым для html2canvas, но вне видимой области экрана
@@ -774,49 +775,49 @@ export default function ProfileDetail() {
       element.style.pointerEvents = 'none';
       element.style.overflow = 'visible';
       element.style.zIndex = '999999';
-
+      
       // Копируем стили
       if (styleElement) {
         const style = document.createElement('style');
         style.textContent = styleElement.textContent || '';
         element.appendChild(style);
       }
-
+      
       // Копируем содержимое body
       const bodyClone = bodyContent.cloneNode(true) as HTMLElement;
       while (bodyClone.firstChild) {
         element.appendChild(bodyClone.firstChild);
       }
-
+      
       document.body.appendChild(element);
-
+      
       // Ждем, чтобы стили применились и контент отрендерился
       // Увеличиваем задержку для полного рендеринга
       await new Promise(resolve => setTimeout(resolve, 500));
-
+      
       // Дополнительная проверка - убеждаемся, что контент отрендерился
       const textContent = element.textContent?.trim() || '';
       const hasContent = element.children.length > 0 || textContent.length > 0;
       console.log('PDF element ready:', {
         childrenCount: element.children.length,
         hasText: textContent.length > 0,
-        computedStyle: window.getComputedStyle(element).display
+        computedStyle: typeof window !== 'undefined' ? window.getComputedStyle(element).display : 'none'
       });
-
+      
       if (!hasContent) {
         console.error('PDF element has no content after rendering');
         document.body.removeChild(element);
         alert('Ошибка: контент не отрендерился для PDF');
         return;
       }
-
+      
       // Настройки для html2pdf
       const opt = {
         margin: [0, 0, 0, 0] as [number, number, number, number],
         filename: `Расчет_${clientName || 'профиль'}_${dateStr || new Date().toLocaleDateString('ru-RU')}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: {
-          scale: 2,
+        html2canvas: { 
+          scale: 2, 
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
@@ -829,7 +830,7 @@ export default function ProfileDetail() {
         jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
-
+      
       // Генерируем и скачиваем PDF
       try {
         await html2pdf().set(opt).from(element).save();
@@ -847,13 +848,13 @@ export default function ProfileDetail() {
     // if (consultationType !== "base") {
     //   return null;
     // }
-
+    
     // return (
     //   <div className="flex items-center gap-2 text-sm flex-shrink-0">
     //     <button onClick={exportPdf} className="px-3 py-1.5 rounded-lg border hover:bg-gray-50">📄 PDF</button>
     //   </div>
     // );
-
+    
     return null;
   }
 
@@ -898,7 +899,7 @@ export default function ProfileDetail() {
       }
       if (!mounted) return;
       const p = data?.data || null;
-
+      
       // Логируем данные для диагностики
       console.log("API response:", {
         status: responseStatus,
@@ -907,7 +908,7 @@ export default function ProfileDetail() {
         profileKeys: p ? Object.keys(p) : [],
         fullResponse: data
       });
-
+      
       if (p) {
         console.log("Profile data received:", {
           id: p.id,
@@ -924,7 +925,7 @@ export default function ProfileDetail() {
       } else {
         console.warn("⚠️ Profile data is null!", { data, status: responseStatus });
       }
-
+      
       // если идёт локальное сохранение чекбоксов — не перетирать ui_state
       setProfile(prev => {
         if (!prev) return p;
@@ -956,7 +957,7 @@ export default function ProfileDetail() {
       }
       const htmlCandidate = p?.html || p?.raw_html || p?.content || p?.html_content;
       const hasRenderableHtml = Boolean(htmlCandidate && String(htmlCandidate).trim().length > 0);
-
+      
       // Проверяем raw_json более тщательно
       let hasRaw = false;
       if (p?.raw_json) {
@@ -987,30 +988,30 @@ export default function ProfileDetail() {
           hasRaw = false;
         }
       }
-
+      
       // Также проверяем наличие digits (могут быть данные даже без html)
       const hasDigits = Boolean(p?.digits && (
         (Array.isArray(p.digits) && p.digits.length > 0) ||
         (typeof p.digits === 'string' && p.digits.trim().length > 0)
       ));
-
+      
       tries += 1;
-
-      // Останавливаем поллинг если:
-      // 1. Есть данные для отображения
-      // 2. Достигнут лимит попыток
-      // 3. Получили 401 и refresh не помог (нужен перелогин)
-      const isUnauthorized = responseStatus === 401 && !p;
-      const shouldStop = hasRenderableHtml || hasRaw || hasDigits || tries >= maxTries || isUnauthorized;
-
+          
+          // Останавливаем поллинг если:
+          // 1. Есть данные для отображения
+          // 2. Достигнут лимит попыток
+          // 3. Получили 401 и refresh не помог (нужен перелогин)
+          const isUnauthorized = responseStatus === 401 && !p;
+          const shouldStop = hasRenderableHtml || hasRaw || hasDigits || tries >= maxTries || isUnauthorized;
+      
       if (shouldStop) {
         if (pollingRef.current) {
-          setPolling(false);
-          pollingRef.current = false;
-          console.log("✅ Polling stopped:", {
-            hasRenderableHtml,
-            hasRaw,
-            hasDigits,
+        setPolling(false);
+        pollingRef.current = false;
+          console.log("✅ Polling stopped:", { 
+            hasRenderableHtml, 
+            hasRaw, 
+            hasDigits, 
             tries,
             profileId: p?.id,
             htmlLength: htmlCandidate ? String(htmlCandidate).length : 0
@@ -1018,11 +1019,11 @@ export default function ProfileDetail() {
         }
       } else {
         if (pollingRef.current) {
-          console.log("⏳ Still polling:", {
-            hasRenderableHtml,
-            hasRaw,
-            hasDigits,
-            tries,
+          console.log("⏳ Still polling:", { 
+            hasRenderableHtml, 
+            hasRaw, 
+            hasDigits, 
+            tries, 
             profileId: p?.id,
             maxTries,
             htmlCandidate: htmlCandidate ? String(htmlCandidate).substring(0, 50) : null
@@ -1078,7 +1079,7 @@ export default function ProfileDetail() {
           const data = await res.json();
           a = data?.answer || data?.message || a;
           errorMessage = data?.error || "";
-
+          
           // Если это ошибка, показываем более понятное сообщение
           if (!res.ok) {
             if (res.status === 401) {
@@ -1107,28 +1108,28 @@ export default function ProfileDetail() {
       let acc = "";
       // добавим пустое сообщение ассистента, будем дописывать
       setChat((prev) => [...prev, { role: "assistant", content: "" }]);
-
+      
       try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+          
+        const chunk = decoder.decode(value, { stream: true });
           // SSE формат: каждая строка "data: текст\n\n"
           const lines = chunk.split("\n");
-
+          
           for (const line of lines) {
             if (!line.trim()) continue;
-
+            
             // Пропускаем не-SSE строки
             if (!line.startsWith("data:")) continue;
-
+            
             const payload = line.slice(5).trim(); // Убираем "data:"
-
+            
             if (payload === "[DONE]") {
               break;
             }
-
+            
             // Payload может быть JSON строкой или обычным текстом
             // Пытаемся распарсить как JSON, если не получается - используем как есть
             let textChunk = payload;
@@ -1142,33 +1143,33 @@ export default function ProfileDetail() {
               textChunk = payload;
             }
             acc += textChunk;
-            setAnswer(acc);
-
+          setAnswer(acc);
+            
             // Обновляем последнее сообщение ассистента
             setChat((prev) => {
               const next = [...prev];
-              for (let i = next.length - 1; i >= 0; i--) {
+            for (let i = next.length - 1; i >= 0; i--) {
                 if (next[i].role === "assistant") {
                   next[i] = { role: "assistant", content: acc };
                   break;
                 }
-              }
-              return next;
-            });
-
+            }
+            return next;
+          });
+            
             // Автопрокрутка чата
             if (chatBoxRef.current) {
               chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
-            }
-          }
+        }
+      }
         }
       } catch (streamError) {
         console.error("Stream reading error:", streamError);
         if (acc) {
           // Если уже есть текст, сохраняем его
-          const finalHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: acc }];
+      const finalHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: acc }];
           setChat(finalHistory);
-          await saveChatHistory(finalHistory);
+      await saveChatHistory(finalHistory);
         }
       }
       const finalHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: acc }];
@@ -1248,25 +1249,25 @@ export default function ProfileDetail() {
     const items = Array.isArray(payload) ? payload : (payload && typeof payload === 'object' ? [payload] : []);
     if (items.length === 0) return null;
     const item = items[0];
-
+    
     // Партнерская консультация - есть compatibility или firstParticipant/secondParticipant
-    if (item.compatibility || item.firstParticipantCodes || item.secondParticipantCodes ||
-      item.partnerCodes ||
-      (item.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant))) {
+    if (item.compatibility || item.firstParticipantCodes || item.secondParticipantCodes || 
+        item.partnerCodes || 
+        (item.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant))) {
       return "partner";
     }
-
+    
     // Целевая консультация - есть goalDecomposition, warnings, plan123 и т.д., но нет opener/personalitySummary
-    if ((item.goalDecomposition || item.warnings || item.plan123 || item.request) &&
-      !item.opener && !item.personalitySummary) {
+    if ((item.goalDecomposition || item.warnings || item.plan123 || item.request) && 
+        !item.opener && !item.personalitySummary) {
       return "target";
     }
-
+    
     // Базовый расчет - есть opener, personalitySummary, strengths, weaknesses и т.д.
     if (item.opener || item.personalitySummary || item.strengths || item.weaknesses) {
       return "base";
     }
-
+    
     return null;
   }, [profile?.raw_json]);
 
@@ -1294,7 +1295,7 @@ export default function ProfileDetail() {
     } else {
       items = [];
     }
-
+    
     console.log("[DEBUG] renderedFromJson: parsed items", {
       itemsCount: items.length,
       firstItemKeys: items[0] ? Object.keys(items[0]) : [],
@@ -1368,19 +1369,19 @@ export default function ProfileDetail() {
     const hasAnyData = items.some((item: any) => {
       if (!item || typeof item !== 'object') return false;
       return !!(
-        item.opener ||
-        item.personalitySummary ||
-        item.strengths ||
-        item.strengths_text ||
-        item.weaknesses ||
-        item.weaknesses_text ||
-        item.happinessFormula ||
-        item.codesExplanation ||
-        item.resourceSignals ||
-        item.resourceSignals_text ||
-        item.deficitSignals ||
-        item.deficitSignals_text ||
-        item.conflicts ||
+        item.opener || 
+        item.personalitySummary || 
+        item.strengths || 
+        item.strengths_text || 
+        item.weaknesses || 
+        item.weaknesses_text || 
+        item.happinessFormula || 
+        item.codesExplanation || 
+        item.resourceSignals || 
+        item.resourceSignals_text || 
+        item.deficitSignals || 
+        item.deficitSignals_text || 
+        item.conflicts || 
         item.practices ||
         // Для целевых консультаций могут быть другие поля
         item.request ||
@@ -1404,13 +1405,13 @@ export default function ProfileDetail() {
         (item.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant || item.currentDiagnostics.conflictZones))
       );
     });
-
+    
     console.log("[DEBUG] renderedFromJson: hasAnyData check", {
       hasAnyData,
       itemsLength: items.length,
       firstItemType: items[0] ? typeof items[0] : 'none'
     });
-
+    
     if (!hasAnyData) {
       console.warn("[DEBUG] renderedFromJson: no recognizable data fields in items", {
         items,
@@ -1418,13 +1419,13 @@ export default function ProfileDetail() {
       });
       return null;
     }
-
+    
     // Определяем тип консультации для первого элемента
     const item = items[0];
-    const isPartner = !!(item?.compatibility || item?.firstParticipantCodes || item?.secondParticipantCodes ||
-      item?.partnerCodes ||
+    const isPartner = !!(item?.compatibility || item?.firstParticipantCodes || item?.secondParticipantCodes || 
+      item?.partnerCodes || 
       (item?.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant)));
-    const isTarget = !!(item?.goalDecomposition || item?.warnings || item?.plan123 || item?.request) &&
+    const isTarget = !!(item?.goalDecomposition || item?.warnings || item?.plan123 || item?.request) && 
       !item?.opener && !item?.personalitySummary;
     const isBase = !!(item?.opener || item?.personalitySummary || item?.strengths || item?.weaknesses);
 
@@ -1456,28 +1457,28 @@ export default function ProfileDetail() {
         {items.map((item, idx) => (
           <div key={idx} className="space-y-6">
             {/* Скажите клиенту */}
-            {item.opener && (
+                {item.opener && (
               <section id="opener" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
                 <h2 className="m-0 flex items-center gap-2 text-sm font-bold text-gray-800 mb-3">
                   <span className="text-lg">❗</span>
-                  Скажите клиенту
-                </h2>
-                <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.opener}</p>
+                      Скажите клиенту
+                    </h2>
+                    <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.opener}</p>
               </section>
-            )}
+                )}
 
             {/* Описание личности */}
-            {item.personalitySummary && (
+                {item.personalitySummary && (
               <section id="personality" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
                 <h2 className="m-0 text-base font-bold text-gray-800 mb-3">👤 Описание личности</h2>
-                {Array.isArray(item.personalitySummary) ? (
-                  <div className="mt-3 space-y-2">
-                    {item.personalitySummary.map((t: string, idx: number) => (
-                      <p key={idx} className="whitespace-pre-wrap leading-relaxed text-gray-800">{t}</p>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.personalitySummary}</p>
+                    {Array.isArray(item.personalitySummary) ? (
+                      <div className="mt-3 space-y-2">
+                        {item.personalitySummary.map((t: string, idx: number) => (
+                          <p key={idx} className="whitespace-pre-wrap leading-relaxed text-gray-800">{t}</p>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.personalitySummary}</p>
                 )}
               </section>
             )}
@@ -1488,28 +1489,28 @@ export default function ProfileDetail() {
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <article className="rounded-2xl border-2 border-orange-300 bg-orange-50 p-6 shadow-sm">
                     <h3 className="m-0 text-base font-bold text-gray-900 mb-3">⚖️ Сильные стороны</h3>
-                    <div className="mt-3">
-                      {Array.isArray(item.strengths) ? (
-                        <CheckList list={item.strengths} section="strengths" />
-                      ) : (
-                        item.strengths_text && (
-                          <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.strengths_text}</pre>
-                        )
-                      )}
-                    </div>
-                  </article>
+                  <div className="mt-3">
+                    {Array.isArray(item.strengths) ? (
+                      <CheckList list={item.strengths} section="strengths" />
+                    ) : (
+                      item.strengths_text && (
+                        <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.strengths_text}</pre>
+                      )
+                    )}
+                  </div>
+                </article>
                   <article className="rounded-2xl border-2 border-orange-300 bg-orange-50 p-6 shadow-sm">
                     <h3 className="m-0 text-base font-bold text-gray-900 mb-3">⚖️ Слабые стороны</h3>
-                    <div className="mt-3">
-                      {Array.isArray(item.weaknesses) ? (
-                        <CheckList list={item.weaknesses} section="weaknesses" />
-                      ) : (
-                        item.weaknesses_text && (
-                          <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.weaknesses_text}</pre>
-                        )
-                      )}
-                    </div>
-                  </article>
+                  <div className="mt-3">
+                    {Array.isArray(item.weaknesses) ? (
+                      <CheckList list={item.weaknesses} section="weaknesses" />
+                    ) : (
+                      item.weaknesses_text && (
+                        <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.weaknesses_text}</pre>
+                      )
+                    )}
+                  </div>
+                </article>
                 </div>
               </section>
             )}
@@ -1575,7 +1576,7 @@ export default function ProfileDetail() {
                     </div>
                   </article>
                 </div>
-              </section>
+                </section>
             )}
 
             {/* Конфликты и проблемы */}
@@ -1648,7 +1649,7 @@ export default function ProfileDetail() {
     localUiStateRef: React.MutableRefObject<Record<string, boolean>>,
     saveChecked: (map: Record<string, boolean>) => void
   ) {
-    return (
+  return (
       <div className="space-y-6">
         {items.map((item, idx) => (
           <div key={idx} className="space-y-6">
@@ -1709,14 +1710,14 @@ export default function ProfileDetail() {
               <AccordionSection title="🔍 Диагностика" id="diagnostics">
                 <div className="space-y-6">
                   {Array.isArray(item.currentDiagnostics.resourceStates) && item.currentDiagnostics.resourceStates.length > 0 && (
-                    <div>
+        <div>
                       <h3 className="text-base font-semibold mb-3">Состояние ресурсов</h3>
                       <div className="space-y-3">
                         {item.currentDiagnostics.resourceStates.map((state: any, i: number) => (
                           <div key={i} className={`rounded-lg p-4 border-2 ${state.state === 'plus' ? 'border-green-200 bg-green-50' :
-                              state.state === 'minus' ? 'border-red-200 bg-red-50' :
-                                'border-gray-200 bg-gray-50'
-                            }`}>
+                            state.state === 'minus' ? 'border-red-200 bg-red-50' :
+                            'border-gray-200 bg-gray-50'
+                          }`}>
                             <div className="font-semibold mb-2">{state.resource}</div>
                             {Array.isArray(state.evidence) && state.evidence.length > 0 && (
                               <div className="mb-2">
@@ -2023,7 +2024,7 @@ export default function ProfileDetail() {
                       </div>
                     </div>
                   )}
-
+                  
                   {Array.isArray(item.compatibility.conflicts) && item.compatibility.conflicts.length > 0 && (
                     <div>
                       <h3 className="text-base font-semibold text-red-800 mb-3">⚠️ Конфликтующие ресурсы</h3>
@@ -2089,9 +2090,9 @@ export default function ProfileDetail() {
                       <div className="space-y-3">
                         {item.currentDiagnostics.resourceStates.map((state: any, i: number) => (
                           <div key={i} className={`rounded-lg p-4 border-2 ${state.state === 'plus' ? 'border-green-200 bg-green-50' :
-                              state.state === 'minus' ? 'border-red-200 bg-red-50' :
-                                'border-gray-200 bg-gray-50'
-                            }`}>
+                            state.state === 'minus' ? 'border-red-200 bg-red-50' :
+                            'border-gray-200 bg-gray-50'
+                          }`}>
                             <div className="font-semibold mb-2">{state.resource}</div>
                             {Array.isArray(state.evidence) && state.evidence.length > 0 && (
                               <div className="mb-2">
@@ -2155,9 +2156,9 @@ export default function ProfileDetail() {
                       <div className="space-y-3">
                         {item.currentDiagnostics.firstParticipant.resourceStates.map((state: any, i: number) => (
                           <div key={i} className={`rounded-lg p-4 border-2 ${state.state === 'plus' ? 'border-green-200 bg-green-50' :
-                              state.state === 'minus' ? 'border-red-200 bg-red-50' :
-                                'border-gray-200 bg-gray-50'
-                            }`}>
+                            state.state === 'minus' ? 'border-red-200 bg-red-50' :
+                            'border-gray-200 bg-gray-50'
+                          }`}>
                             <div className="font-semibold mb-2">{state.resource}</div>
                             {Array.isArray(state.evidence) && state.evidence.length > 0 && (
                               <div className="mb-2">
@@ -2184,7 +2185,7 @@ export default function ProfileDetail() {
                       </div>
                     </div>
                   )}
-
+                  
                   {/* Второй участник */}
                   {item.currentDiagnostics.secondParticipant && Array.isArray(item.currentDiagnostics.secondParticipant.resourceStates) && (
                     <div>
@@ -2192,9 +2193,9 @@ export default function ProfileDetail() {
                       <div className="space-y-3">
                         {item.currentDiagnostics.secondParticipant.resourceStates.map((state: any, i: number) => (
                           <div key={i} className={`rounded-lg p-4 border-2 ${state.state === 'plus' ? 'border-green-200 bg-green-50' :
-                              state.state === 'minus' ? 'border-red-200 bg-red-50' :
-                                'border-gray-200 bg-gray-50'
-                            }`}>
+                            state.state === 'minus' ? 'border-red-200 bg-red-50' :
+                            'border-gray-200 bg-gray-50'
+                          }`}>
                             <div className="font-semibold mb-2">{state.resource}</div>
                             {Array.isArray(state.evidence) && state.evidence.length > 0 && (
                               <div className="mb-2">
@@ -2239,9 +2240,9 @@ export default function ProfileDetail() {
                         )}
                         {q.participant && (
                           <span className="text-xs text-gray-500">
-                            {q.participant === 'first' ? 'Первый участник' :
-                              q.participant === 'second' ? 'Второй участник' :
-                                'Оба участника'}
+                            {q.participant === 'first' ? 'Первый участник' : 
+                             q.participant === 'second' ? 'Второй участник' : 
+                             'Оба участника'}
                           </span>
                         )}
                       </div>
@@ -2470,10 +2471,10 @@ export default function ProfileDetail() {
   }
 
   // Название типа консультации
-  const consultationTypeLabel = consultationType === "base" ? "Базовый" :
-    consultationType === "target" ? "Целевой" :
-      consultationType === "partner" ? "Партнерский" :
-        "Расчет";
+  const consultationTypeLabel = consultationType === "base" ? "Базовый" : 
+                                  consultationType === "target" ? "Целевой" : 
+                                  consultationType === "partner" ? "Партнерский" : 
+                                  "Расчет";
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
@@ -2483,7 +2484,7 @@ export default function ProfileDetail() {
           <div className="flex-1 min-w-0">
             <div className="text-xl md:text-2xl font-semibold text-gray-900 break-words">{clientName || "Профиль"}</div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
-              {profile?.created_at && (
+          {profile?.created_at && (
                 <div className="text-sm text-gray-500">
                   <span className="font-medium">Дата создания:</span> {new Date(profile.created_at).toLocaleString("ru-RU")}
                 </div>
@@ -2497,13 +2498,21 @@ export default function ProfileDetail() {
                 </div>
               )}
             </div>
-          </div>
+        </div>
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center print:hidden">
-            <ActionBar />
+        <ActionBar />
             {!polling && profile && <DeleteProfile id={id} />}
           </div>
         </div>
       </div>
+
+      {/* Экспресс-диагностика / продажа по САЛ */}
+      {profile?.client_id && (
+        <ExpressConsultationModule
+          clientId={profile.client_id}
+          profileId={profile?.id ? Number(profile.id) : undefined}
+        />
+      )}
 
       {/* Пять кубиков - вывод кодов для всех типов расчетов */}
       {(() => {
@@ -2579,13 +2588,13 @@ export default function ProfileDetail() {
               {arr.slice(0, 5).map((val: any, i: number) => (
                 <div key={i} className="flex flex-col items-center gap-2">
                   <div className="w-14 h-14 md:w-[74px] md:h-[74px] rounded-xl shadow-sm bg-[#1f92aa] text-white font-bold text-xl md:text-[28px] grid place-items-center">
-                    {val ?? ""}
+                {val ?? ""}
                   </div>
                   <div className="text-xs md:text-sm text-gray-600 text-center font-medium">
                     {codeLabels[i] || `Код ${i + 1}`}
                   </div>
-                </div>
-              ))}
+              </div>
+            ))}
             </div>
           </div>
         );
@@ -2595,7 +2604,7 @@ export default function ProfileDetail() {
       {consultationType === "base" && (() => {
         const images = (profile as any)?.images;
         let imageArray: any[] = [];
-
+        
         // Обработка разных форматов: массив файлов, один файл, строка JSON, или массив строк
         if (Array.isArray(images)) {
           imageArray = images;
@@ -2611,19 +2620,19 @@ export default function ProfileDetail() {
             imageArray = [images];
           }
         }
-
+        
         // Если нет изображений, показываем плейсхолдеры
         const displayImages = imageArray.length > 0 ? imageArray : Array.from({ length: 5 }).map(() => null);
-
+        
         // Функция для получения URL изображения
         const getImageUrl = (img: any): string | null => {
           if (!img) return null;
-
+          
           // Приоритет 1: Если есть прямой URL из S3 (новый формат)
           if (typeof img === 'object' && img.url) {
             return img.url;
           }
-
+          
           // Приоритет 2: Если это обработанное изображение из коллекции images (с полями id и code)
           if (typeof img === 'object' && img.code) {
             // Используем code для получения изображения
@@ -2634,7 +2643,7 @@ export default function ProfileDetail() {
             // Иначе code может быть URL или другим идентификатором
             return img.code;
           }
-
+          
           // Приоритет 3: Если это объект файла Directus с полным URL
           if (typeof img === 'object') {
             if (img.id) {
@@ -2645,7 +2654,7 @@ export default function ProfileDetail() {
               return img.id ? `/api/files/${img.id}` : null;
             }
           }
-
+          
           // Приоритет 4: Если это строка
           if (typeof img === 'string') {
             // Если уже полный URL
@@ -2655,22 +2664,22 @@ export default function ProfileDetail() {
             // Иначе считаем это URL
             return img;
           }
-
+          
           return null;
         };
-
+        
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {displayImages.slice(0, 5).map((img: any, i: number) => {
               const imageUrl = getImageUrl(img);
-
+              
               return (
                 <div key={i} className="rounded-2xl overflow-hidden border bg-gray-50 relative max-w-[200px] mx-auto sm:max-w-none sm:mx-0" style={{ aspectRatio: '2/3' }}>
                   {imageUrl ? (
                     <>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={imageUrl}
+                      <img 
+                        src={imageUrl} 
                         alt={`Изображение ${i + 1}`}
                         className="w-full h-full object-contain"
                         onError={(e) => {
@@ -2693,16 +2702,16 @@ export default function ProfileDetail() {
                         }}
                       />
                       <div className="hidden absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-50">
-                        Изображение {i + 1}
-                      </div>
+            Изображение {i + 1}
+          </div>
                     </>
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-gray-400">Изображение {i + 1}</div>
                   )}
-                </div>
+      </div>
               );
             })}
-          </div>
+      </div>
         );
       })()}
 
@@ -2711,7 +2720,7 @@ export default function ProfileDetail() {
       {/* Меню-навигация по блокам */}
       {!polling && renderedFromJson && consultationType && (() => {
         const menuItems: Array<{ id: string; label: string; icon?: string }> = [];
-
+        
         if (consultationType === "base") {
           menuItems.push(
             { id: "opener", label: "Скажите клиенту", icon: "❗" },
@@ -2764,10 +2773,10 @@ export default function ProfileDetail() {
               className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-t-2xl"
             >
               <div className="text-sm font-semibold text-gray-700">Навигация по блокам</div>
-              <svg
+              <svg 
                 className={`w-5 h-5 text-gray-500 transition-transform ${navigationExpanded ? 'rotate-180' : ''}`}
-                fill="none"
-                stroke="currentColor"
+                fill="none" 
+                stroke="currentColor" 
                 viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -2786,19 +2795,21 @@ export default function ProfileDetail() {
                         // Находим меню навигации для расчета offset
                         const menuElement = e.currentTarget.closest('.bg-white.rounded-2xl.border') as HTMLElement;
                         let offset = 100; // Дефолтный offset
-
+                        
                         if (menuElement) {
                           const menuHeight = menuElement.offsetHeight;
                           // Высота меню + 10% от его высоты
                           offset = menuHeight + (menuHeight * 0.1);
                         }
-
+                        
                         const elementPosition = element.getBoundingClientRect().top;
-                        const offsetPosition = elementPosition + window.pageYOffset - offset;
-                        window.scrollTo({
-                          top: offsetPosition,
-                          behavior: 'smooth'
-                        });
+                        if (typeof window !== 'undefined') {
+                          const offsetPosition = elementPosition + window.pageYOffset - offset;
+                          window.scrollTo({
+                            top: offsetPosition,
+                            behavior: 'smooth'
+                          });
+                        }
                       }
                     }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer"
@@ -2806,8 +2817,8 @@ export default function ProfileDetail() {
                     {item.icon && <span>{item.icon}</span>}
                     <span>{item.label}</span>
                   </button>
-                ))}
-              </div>
+        ))}
+      </div>
             )}
           </div>
         );
@@ -2819,7 +2830,7 @@ export default function ProfileDetail() {
           <div className="flex items-center gap-3 text-red-800">
             <svg className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+          </svg>
             <div>
               <div className="font-semibold">Сессия истекла</div>
               <div className="text-sm mt-1">Пожалуйста, перелогиньтесь для продолжения работы.</div>
@@ -2839,35 +2850,35 @@ export default function ProfileDetail() {
             </AccordionSection>
           );
         }
-
+        
         // Затем проверяем raw_json
         if (renderedFromJson) {
           return renderedFromJson;
         }
-
+        
         // Если есть raw_json, но renderedFromJson вернул null, показываем отладочную информацию
         if (profile?.raw_json && !polling) {
           console.warn("[DEBUG] raw_json exists but renderedFromJson is null:", {
             rawJsonType: typeof profile.raw_json,
             rawJsonKeys: typeof profile.raw_json === 'object' && profile.raw_json !== null ? Object.keys(profile.raw_json) : [],
-            rawJsonPreview: typeof profile.raw_json === 'string'
-              ? profile.raw_json.substring(0, 200)
+            rawJsonPreview: typeof profile.raw_json === 'string' 
+              ? profile.raw_json.substring(0, 200) 
               : JSON.stringify(profile.raw_json).substring(0, 200)
           });
-
+          
           // Пытаемся отобразить raw_json в сыром виде для отладки
           return (
             <div className="card">
               <div className="text-sm font-semibold mb-2">Данные из raw_json (отладка):</div>
               <pre className="text-xs bg-gray-100 p-3 rounded overflow-auto max-h-96">
-                {typeof profile.raw_json === 'string'
-                  ? profile.raw_json
+                {typeof profile.raw_json === 'string' 
+                  ? profile.raw_json 
                   : JSON.stringify(profile.raw_json, null, 2)}
               </pre>
             </div>
           );
         }
-
+        
         return !polling ? (
           <div className="card text-sm text-gray-600">Нет данных для отображения.</div>
         ) : null;
@@ -2876,89 +2887,89 @@ export default function ProfileDetail() {
       {!polling && renderedFromJson && consultationType && (
         <div className="card space-y-4 print:hidden">
           <div className="font-semibold text-lg">💬 Чат с ИИ по профилю</div>
-          <div className="space-y-3">
+        <div className="space-y-3">
             <div ref={chatBoxRef} className="rounded-xl border-2 border-gray-200 p-4 bg-white min-h-[300px] max-h-[500px] md:max-h-[600px] overflow-y-auto break-words">
-              {chat.length === 0 && <div className="text-sm text-gray-500">Начните диалог — задайте вопрос ниже</div>}
-              {chat.map((m, i) => (
-                <div key={i} className={`mb-3 ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
-                  <div className={`inline-block rounded-2xl px-4 py-3 max-w-[85%] ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
-                    {m.role === 'assistant' ? (
-                      <div className="prose prose-sm max-w-none dark:prose-invert">
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          components={{
-                            // Заголовки
+            {chat.length === 0 && <div className="text-sm text-gray-500">Начните диалог — задайте вопрос ниже</div>}
+            {chat.map((m, i) => (
+              <div key={i} className={`mb-3 ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
+                <div className={`inline-block rounded-2xl px-4 py-3 max-w-[85%] ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
+                  {m.role === 'assistant' ? (
+                    <div className="prose prose-sm max-w-none dark:prose-invert">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          // Заголовки
                             h1: ({ node, ...props }) => <h1 className="text-lg font-bold mb-2 mt-3 first:mt-0" {...props} />,
                             h2: ({ node, ...props }) => <h2 className="text-base font-bold mb-2 mt-3 first:mt-0" {...props} />,
                             h3: ({ node, ...props }) => <h3 className="text-sm font-semibold mb-1 mt-2 first:mt-0" {...props} />,
-                            // Параграфы
+                          // Параграфы
                             p: ({ node, ...props }) => <p className="mb-2 last:mb-0 leading-relaxed" {...props} />,
-                            // Списки
+                          // Списки
                             ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-2 space-y-1 ml-2" {...props} />,
                             ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-2 space-y-1 ml-2" {...props} />,
                             li: ({ node, ...props }) => <li className="leading-relaxed" {...props} />,
-                            // Ссылки
+                          // Ссылки
                             a: ({ node, ...props }) => <a className="text-blue-600 underline hover:text-blue-800" target="_blank" rel="noopener noreferrer" {...props} />,
-                            // Код
+                          // Код
                             code: ({ node, inline, ...props }: any) =>
-                              inline ? (
-                                <code className="bg-gray-200 text-gray-800 px-1.5 py-0.5 rounded text-xs font-mono" {...props} />
-                              ) : (
-                                <code className="block bg-gray-200 text-gray-800 p-2 rounded text-xs font-mono overflow-x-auto mb-2" {...props} />
-                              ),
-                            pre: ({ node, ...props }) => <pre className="bg-gray-200 p-2 rounded overflow-x-auto mb-2" {...props} />,
-                            // Таблицы
-                            table: ({ node, ...props }) => (
-                              <div className="overflow-x-auto my-2">
-                                <table className="min-w-full border-collapse border border-gray-300" {...props} />
-                              </div>
+                            inline ? (
+                              <code className="bg-gray-200 text-gray-800 px-1.5 py-0.5 rounded text-xs font-mono" {...props} />
+                            ) : (
+                              <code className="block bg-gray-200 text-gray-800 p-2 rounded text-xs font-mono overflow-x-auto mb-2" {...props} />
                             ),
+                            pre: ({ node, ...props }) => <pre className="bg-gray-200 p-2 rounded overflow-x-auto mb-2" {...props} />,
+                          // Таблицы
+                            table: ({ node, ...props }) => (
+                            <div className="overflow-x-auto my-2">
+                              <table className="min-w-full border-collapse border border-gray-300" {...props} />
+                            </div>
+                          ),
                             thead: ({ node, ...props }) => <thead className="bg-gray-200" {...props} />,
                             tbody: ({ node, ...props }) => <tbody {...props} />,
                             tr: ({ node, ...props }) => <tr className="border-b border-gray-300" {...props} />,
                             th: ({ node, ...props }) => <th className="border border-gray-300 px-2 py-1 text-left font-semibold" {...props} />,
                             td: ({ node, ...props }) => <td className="border border-gray-300 px-2 py-1" {...props} />,
-                            // Выделение
+                          // Выделение
                             strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
                             em: ({ node, ...props }) => <em className="italic" {...props} />,
-                            // Горизонтальная линия
+                          // Горизонтальная линия
                             hr: ({ node, ...props }) => <hr className="my-3 border-gray-300" {...props} />,
-                            // Блоки цитат
+                          // Блоки цитат
                             blockquote: ({ node, ...props }) => (
-                              <blockquote className="border-l-4 border-gray-400 pl-3 italic my-2 text-gray-700" {...props} />
-                            ),
-                          }}
-                        >
-                          {m.content}
-                        </ReactMarkdown>
-                      </div>
-                    ) : (
-                      <div className="whitespace-pre-wrap break-words">{m.content}</div>
-                    )}
-                    {loading && i === chat.length - 1 && m.role === 'assistant' && (
-                      <span className="inline-block w-2 h-4 ml-1 bg-gray-400 animate-pulse">▋</span>
-                    )}
-                  </div>
+                            <blockquote className="border-l-4 border-gray-400 pl-3 italic my-2 text-gray-700" {...props} />
+                          ),
+                        }}
+                      >
+                        {m.content}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <div className="whitespace-pre-wrap break-words">{m.content}</div>
+                  )}
+                  {loading && i === chat.length - 1 && m.role === 'assistant' && (
+                    <span className="inline-block w-2 h-4 ml-1 bg-gray-400 animate-pulse">▋</span>
+                  )}
                 </div>
-              ))}
-            </div>
-            <form onSubmit={ask} className="flex items-start gap-3">
-              <textarea
-                className="flex-1 rounded-xl border-2 border-gray-200 p-4 h-28 md:h-32 resize-none overflow-y-auto text-base focus:border-brand-500 focus:ring-2 focus:ring-brand-200 transition"
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder="Например: как лучше работать с конфликтом 2↔7?"
-                required
-              />
-              <button
-                disabled={loading}
-                className="rounded-2xl bg-brand-600 text-white px-6 py-4 h-28 md:h-32 hover:bg-brand-700 disabled:opacity-60 transition-colors font-medium text-base"
-              >
-                {loading ? "Думаю..." : "Спросить"}
-              </button>
-            </form>
+              </div>
+            ))}
           </div>
+          <form onSubmit={ask} className="flex items-start gap-3">
+            <textarea
+                className="flex-1 rounded-xl border-2 border-gray-200 p-4 h-28 md:h-32 resize-none overflow-y-auto text-base focus:border-brand-500 focus:ring-2 focus:ring-brand-200 transition"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Например: как лучше работать с конфликтом 2↔7?"
+              required
+            />
+            <button
+              disabled={loading}
+                className="rounded-2xl bg-brand-600 text-white px-6 py-4 h-28 md:h-32 hover:bg-brand-700 disabled:opacity-60 transition-colors font-medium text-base"
+            >
+              {loading ? "Думаю..." : "Спросить"}
+            </button>
+          </form>
         </div>
+      </div>
       )}
 
       {/* Плавающая кнопка «Заметки» */}
@@ -2973,34 +2984,34 @@ export default function ProfileDetail() {
         <div className="fixed inset-0 bg-black/40 z-50 grid place-items-center p-4" onClick={() => setNotesOpen(false)}>
           <div className="bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 border-b">
-              <div className="font-semibold">Заметки по расчёту</div>
+            <div className="font-semibold">Заметки по расчёту</div>
               <button className="text-gray-500 hover:text-gray-800" onClick={() => setNotesOpen(false)}>✕</button>
             </div>
             <div className="p-6 overflow-y-auto flex-grow">
               <RichEditor
-                value={notesDraft}
+              value={notesDraft}
                 onChange={(html) => {
                   setNotesDraft(html);
                   notesTouchedRef.current = true;
                 }}
               />
-              <div className="flex gap-2 justify-end mt-4">
+            <div className="flex gap-2 justify-end mt-4">
                 <button className="rounded-xl border px-4 py-2" onClick={() => setNotesOpen(false)}>Отмена</button>
-                <button
-                  className="rounded-xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 disabled:opacity-60"
-                  disabled={savingNotes}
+              <button
+                className="rounded-xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 disabled:opacity-60"
+                disabled={savingNotes}
                   onClick={async () => {
-                    setSavingNotes(true);
-                    try {
-                      const res = await fetch(`/api/profiles/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: notesDraft }) });
-                      if (!res.ok) throw new Error('Failed to save notes');
-                      setProfile(p => (p ? { ...p, notes: notesDraft } : p));
-                      setNotesOpen(false);
-                    } finally { setSavingNotes(false); }
-                  }}
-                >
-                  {savingNotes ? 'Сохранение...' : 'Сохранить'}
-                </button>
+                  setSavingNotes(true);
+                  try {
+                    const res = await fetch(`/api/profiles/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: notesDraft }) });
+                    if (!res.ok) throw new Error('Failed to save notes');
+                    setProfile(p => (p ? { ...p, notes: notesDraft } : p));
+                    setNotesOpen(false);
+                  } finally { setSavingNotes(false); }
+                }}
+              >
+                {savingNotes ? 'Сохранение...' : 'Сохранить'}
+              </button>
               </div>
             </div>
           </div>

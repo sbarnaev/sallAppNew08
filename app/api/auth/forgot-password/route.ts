@@ -10,7 +10,12 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch (error) {
+      return NextResponse.json({ message: "Ошибка обработки данных запроса" }, { status: 400 });
+    }
     const { email } = body;
 
     if (!email || !email.includes("@")) {
