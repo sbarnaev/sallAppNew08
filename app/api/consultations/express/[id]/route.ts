@@ -138,7 +138,12 @@ export async function PATCH(
   }
 
   try {
-    const body = await req.json();
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch (error) {
+      return NextResponse.json({ message: "Ошибка обработки данных запроса" }, { status: 400 });
+    }
     const { status, sold_product, importance_rating } = body;
 
     const updatePayload: any = {};

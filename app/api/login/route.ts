@@ -2,7 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 
 export async function POST(req: NextRequest) {
-  const { email, password } = await req.json();
+  let email: string = "";
+  let password: string = "";
+  
+  try {
+    const body = await req.json();
+    email = String(body?.email || "").trim();
+    password = String(body?.password || "");
+  } catch (error) {
+    return NextResponse.json({ message: "Ошибка обработки данных запроса" }, { status: 400 });
+  }
+
+  // Валидация обязательных полей
+  if (!email || !email.includes("@")) {
+    return NextResponse.json({ message: "Некорректный email" }, { status: 400 });
+  }
+  if (!password || password.length < 1) {
+    return NextResponse.json({ message: "Пароль обязателен для заполнения" }, { status: 400 });
+  }
+
   const baseUrl = getDirectusUrl();
   if (!baseUrl) {
     return NextResponse.json({ message: "DIRECTUS_URL is not set" }, { status: 500 });

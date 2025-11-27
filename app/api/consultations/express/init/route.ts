@@ -32,12 +32,12 @@ async function fetchJson<T = any>(url: string, token: string, options: RequestIn
 }
 
 export async function POST(req: NextRequest) {
-  const token = cookies().get("directus_access_token")?.value;
-  const baseUrl = getDirectusUrl();
+    const token = cookies().get("directus_access_token")?.value;
+    const baseUrl = getDirectusUrl();
 
-  if (!token || !baseUrl) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
+    if (!token || !baseUrl) {
+        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
 
   let body: any = {};
   try {
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   if (!clientId) {
     return NextResponse.json({ message: "clientId is required" }, { status: 400 });
-  }
+        }
 
   try {
     // 1. Получаем данные клиента (для генерации профиля при необходимости)
@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
         data: { ...existingConsultation, profile_id: existingConsultation.profile_id || profileId },
         profileId,
       });
-    }
+        }
 
     // 4. Получаем текущего пользователя (owner_user)
     const me = await fetchJson<DirectusItemResponse<any>>(`${baseUrl}/users/me`, token);
@@ -166,9 +166,9 @@ export async function POST(req: NextRequest) {
 
     // 5. Создаем новую экспресс-консультацию
     const payload: Record<string, any> = {
-      client_id: clientId,
-      profile_id: profileId,
-      type: "express",
+            client_id: clientId,
+            profile_id: profileId,
+            type: "express",
       status: "in_progress",
       scheduled_at: new Date().toISOString(),
       title: `Экспресс-разбор от ${new Date().toLocaleDateString("ru-RU")}`,
@@ -179,25 +179,25 @@ export async function POST(req: NextRequest) {
     }
 
     const createRes = await fetch(`${baseUrl}/items/consultations?return=*`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
         Accept: "application/json",
-      },
+            },
       body: JSON.stringify(payload),
       cache: "no-store",
-    });
+        });
 
     const createdData = await createRes.json().catch(() => ({}));
 
-    if (!createRes.ok) {
+        if (!createRes.ok) {
       logger.error("Failed to create express consultation:", createdData);
       return NextResponse.json(
         { message: createdData?.errors?.[0]?.message || "Failed to create consultation" },
         { status: createRes.status }
       );
-    }
+        }
 
     const consultationId =
       createdData?.data?.id ||
@@ -218,11 +218,11 @@ export async function POST(req: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (error: any) {
-    logger.error("Init consultation error:", error);
+    } catch (error: any) {
+        logger.error("Init consultation error:", error);
     return NextResponse.json(
       { message: "Internal server error", error: error.message },
       { status: 500 }
     );
-  }
+    }
 }

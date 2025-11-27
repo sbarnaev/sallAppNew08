@@ -29,7 +29,12 @@ export async function POST(
   }
 
   try {
-    const body = await req.json();
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch (error) {
+      return NextResponse.json({ message: "Ошибка обработки данных запроса" }, { status: 400 });
+    }
     const { step_type, step_order, question, response, response_type, selected_options } = body;
 
     if (!step_type || !step_order) {

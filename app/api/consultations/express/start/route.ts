@@ -68,7 +68,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json();
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch (error) {
+      return NextResponse.json({ message: "Ошибка обработки данных запроса" }, { status: 400 });
+    }
     const { client_id } = body;
 
     if (!client_id) {

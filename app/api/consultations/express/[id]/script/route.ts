@@ -28,7 +28,12 @@ export async function POST(
     }
 
     try {
-        const body = await req.json();
+        let body: any = {};
+        try {
+            body = await req.json();
+        } catch (error) {
+            return NextResponse.json({ message: "Ошибка обработки данных запроса" }, { status: 400 });
+        }
         const { topic, customRequest, stage = "diagnostics", confirmedIssues = [], clientDesires = "" } = body;
         const requestText = customRequest || topic || "Общий разбор";
 
