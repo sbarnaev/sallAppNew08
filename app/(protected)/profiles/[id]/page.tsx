@@ -8,7 +8,6 @@ import html2pdf from "html2pdf.js";
 import RichEditor from "@/components/RichEditor";
 import DeleteProfile from "../DeleteProfile";
 import { calculateSALCodes, getCodeShortLabel } from "@/lib/sal-codes";
-import ExpressConsultationModule from "@/components/ExpressConsultationModule";
 
 // Интересные факты для отображения во время генерации (200 фактов)
 const INTERESTING_FACTS = [
@@ -2506,13 +2505,7 @@ export default function ProfileDetail() {
         </div>
       </div>
 
-      {/* Экспресс-диагностика / продажа по САЛ */}
-      {profile?.client_id && (
-        <ExpressConsultationModule
-          clientId={profile.client_id}
-          profileId={profile?.id ? Number(profile.id) : undefined}
-        />
-      )}
+      {/* Экспресс-диагностика / продажа по САЛ - доступна только в feature/consultations */}
 
       {/* Пять кубиков - вывод кодов для всех типов расчетов */}
       {(() => {
