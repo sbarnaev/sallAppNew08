@@ -124,7 +124,7 @@ export async function POST(req: Request) {
       // Streaming branch
       if (wantStream) {
         console.log("[DEBUG] Starting OpenAI streaming request", {
-          model: "gpt-4o-mini",
+          model: "gpt-5-mini",
           messagesCount: messages.length,
           hasOpenAIKey: !!openaiKey,
           openAIKeyLength: openaiKey?.length || 0,
@@ -140,7 +140,7 @@ export async function POST(req: Request) {
               Authorization: `Bearer ${openaiKey}`,
             },
             body: JSON.stringify({
-              model: "gpt-4o-mini",
+              model: "gpt-5-mini",
               messages,
               temperature: 0.7,
               max_tokens: 1500,
@@ -294,7 +294,7 @@ export async function POST(req: Request) {
             Authorization: `Bearer ${openaiKey}`,
           },
           body: JSON.stringify({
-            model: "gpt-4o-mini",
+            model: "gpt-5-mini",
             messages,
             temperature: 0.7,
             max_tokens: 1500,
