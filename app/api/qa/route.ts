@@ -111,12 +111,10 @@ export async function POST(req: Request) {
             body: JSON.stringify({
               model: "gpt-5-mini",
               input: messages,
-              temperature: 0.7,
-              max_tokens: 1500,
+              reasoning: {
+                effort: "medium"
+              },
               stream: true,
-              // Убеждаемся, что модель возвращает правильно отформатированный текст
-              presence_penalty: 0.1,
-              frequency_penalty: 0.1,
             }),
           });
         } catch (fetchError: any) {
@@ -281,10 +279,9 @@ export async function POST(req: Request) {
           body: JSON.stringify({
             model: "gpt-5-mini",
             input: messages,
-            temperature: 0.7,
-            max_tokens: 1500,
-            presence_penalty: 0.1,
-            frequency_penalty: 0.1,
+            reasoning: {
+              effort: "medium"
+            },
           }),
         });
       } catch (fetchError: any) {
