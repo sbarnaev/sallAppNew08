@@ -99,13 +99,37 @@ export default function NewCalculationPage() {
         payload.goal = cleanText(partnerGoal);
       }
 
+      console.log("[CLIENT] Sending calculation request:", {
+        type: payload.type,
+        hasName: !!payload.name,
+        hasBirthday: !!payload.birthday,
+        hasClientId: !!payload.clientId
+      });
+      
       const res = await fetch("/api/calc", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.message || "Calculation failed");
+      
+      console.log("[CLIENT] Calculation response status:", res.status);
+      
+      const data = await res.json().catch((err) => {
+        console.error("[CLIENT] Failed to parse response:", err);
+        return {};
+      });
+      
+      if (!res.ok) {
+        console.error("[CLIENT] Calculation failed:", {
+          status: res.status,
+          data: data
+        });
+        throw new Error(data?.message || "Calculation failed");
+      }
+      
+      console.log("[CLIENT] Calculation successful:", {
+        profileId: data?.profileId || data?.data?.profileId || data?.id
+      });
       const profileId = data?.profileId || data?.data?.profileId || data?.id;
       if (profileId) router.push(`/profiles/${profileId}`);
       else router.push("/profiles");
@@ -121,20 +145,39 @@ export default function NewCalculationPage() {
     setError(null);
     setLoading(true);
     try {
+      const payload = {
+        name,
+        birthday, // YYYY-MM-DD
+        clientId: clientId ? Number(clientId) : undefined,
+        type: "base",
+      };
+      
+      console.log("[CLIENT] Sending calculation request (form):", payload);
+      
       const res = await fetch("/api/calc", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          birthday, // YYYY-MM-DD
-          clientId: clientId ? Number(clientId) : undefined,
-          type: "base",
-        }),
+        body: JSON.stringify(payload),
       });
-      const data = await res.json().catch(() => ({}));
+      
+      console.log("[CLIENT] Calculation response status (form):", res.status);
+      
+      const data = await res.json().catch((err) => {
+        console.error("[CLIENT] Failed to parse response (form):", err);
+        return {};
+      });
+      
       if (!res.ok) {
+        console.error("[CLIENT] Calculation failed (form):", {
+          status: res.status,
+          data: data
+        });
         throw new Error(data?.message || "Calculation failed");
       }
+      
+      console.log("[CLIENT] Calculation successful (form):", {
+        profileId: data?.profileId || data?.data?.profileId || data?.id
+      });
       const profileId = data?.profileId || data?.data?.profileId || data?.id; // accept common shapes
       if (profileId) {
         router.push(`/profiles/${profileId}`);

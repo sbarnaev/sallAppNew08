@@ -26,7 +26,17 @@ export async function POST(req: Request) {
   if (!token && !refreshToken) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
-  if (!n8nUrl) return NextResponse.json({ message: "No N8N_CALC_URL configured" }, { status: 400 });
+  if (!n8nUrl) {
+    console.error("[CALC] N8N_CALC_URL is not configured");
+    return NextResponse.json({ message: "No N8N_CALC_URL configured" }, { status: 400 });
+  }
+  
+  console.log("[CALC] Starting calculation request", {
+    hasToken: !!token,
+    hasRefreshToken: !!refreshToken,
+    n8nUrl: n8nUrl,
+    directusUrl: directusUrl
+  });
 
   // ОБЯЗАТЕЛЬНЫЙ REFRESH перед отправкой в n8n для получения свежего токена
   if (refreshToken) {
@@ -170,18 +180,22 @@ export async function POST(req: Request) {
       refreshToken: refreshToken, // refresh token для обновления access token в n8n
     };
 
-    console.log("Payload to n8n:", {
+    console.log("[CALC] Payload to n8n:", {
       directusUrl: n8nPayload.directusUrl,
       hasToken: !!n8nPayload.token,
       hasRefreshToken: !!n8nPayload.refreshToken,
-      type: n8nPayload.type
+      type: n8nPayload.type,
+      profileId: n8nPayload.profileId,
+      clientId: n8nPayload.clientId,
+      name: n8nPayload.name,
+      birthday: n8nPayload.birthday
     });
 
-    console.log("Calling n8n workflow:", {
+    console.log("[CALC] Calling n8n workflow:", {
       url: n8nUrl,
       type: type || "base",
       profileId,
-      directusUrl: directusUrl, // Логируем полный URL для диагностики
+      directusUrl: directusUrl,
       hasDirectusUrl: !!directusUrl,
       hasToken: !!token,
       hasRefreshToken: !!refreshToken
@@ -189,15 +203,18 @@ export async function POST(req: Request) {
 
     // Проверяем, что directusUrl правильный
     if (directusUrl && !directusUrl.includes('sposobniymaster.online')) {
-      console.warn("WARNING: Directus URL might be incorrect:", directusUrl);
+      console.warn("[CALC] WARNING: Directus URL might be incorrect:", directusUrl);
     }
 
     while (attempts < maxAttempts) {
       attempts++;
       try {
+        console.log(`[CALC] Attempt ${attempts}/${maxAttempts} - Sending request to n8n...`);
+        
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 30_000);
 
+        const fetchStartTime = Date.now();
         r = await fetch(n8nUrl, {
           method: "POST",
           headers: {
@@ -208,6 +225,9 @@ export async function POST(req: Request) {
           signal: controller.signal,
         });
         clearTimeout(timeout);
+        
+        const fetchDuration = Date.now() - fetchStartTime;
+        console.log(`[CALC] n8n request completed in ${fetchDuration}ms, status: ${r.status}`);
 
         // If successful or client error (4xx), break loop
         // Only retry on server errors (5xx)
@@ -216,9 +236,18 @@ export async function POST(req: Request) {
         }
 
         console.warn(`[CALC] n8n attempt ${attempts} failed with status ${r.status}`);
-      } catch (e) {
-        console.warn(`[CALC] n8n attempt ${attempts} failed with error:`, e);
-        if (attempts === maxAttempts) throw e;
+        const errorText = await r.text().catch(() => "");
+        console.warn(`[CALC] n8n error response:`, errorText.substring(0, 500));
+      } catch (e: any) {
+        console.error(`[CALC] n8n attempt ${attempts} failed with error:`, {
+          message: e?.message || String(e),
+          name: e?.name,
+          stack: e?.stack?.substring(0, 500)
+        });
+        if (attempts === maxAttempts) {
+          console.error("[CALC] All attempts failed, throwing error");
+          throw e;
+        }
       }
 
       // Wait before retry if not last attempt
@@ -238,9 +267,19 @@ export async function POST(req: Request) {
       hasData: !!data,
       error: data?.error || data?.message
     });
-  } catch (error) {
-    console.error("Error calling n8n:", error);
-    return NextResponse.json({ message: "Cannot connect to n8n", error: String(error), n8nUrl }, { status: 502 });
+  } catch (error: any) {
+    console.error("[CALC] Error calling n8n:", {
+      message: error?.message || String(error),
+      name: error?.name,
+      stack: error?.stack?.substring(0, 500),
+      n8nUrl: n8nUrl,
+      hasN8nUrl: !!n8nUrl
+    });
+    return NextResponse.json({ 
+      message: "Cannot connect to n8n", 
+      error: error?.message || String(error),
+      n8nUrl: n8nUrl ? "configured" : "not configured"
+    }, { status: 502 });
   }
 
   if (!r.ok) {
