@@ -13,16 +13,50 @@ export default function LoginPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+    
+    console.log("[CLIENT LOGIN] ===== Login attempt =====", {
+      hasEmail: !!email,
+      emailLength: email.length,
+      hasPassword: !!password,
+      passwordLength: password.length,
+      emailPrefix: email.substring(0, 3) + "***"
     });
-    if (res.ok) {
-      router.push("/dashboard");
-    } else {
-      const data = await res.json().catch(()=>({message:"Login failed"}));
-      setError(data?.message || "Ошибка входа");
+    
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      console.log("[CLIENT LOGIN] Response received:", {
+        status: res.status,
+        statusText: res.statusText,
+        ok: res.ok,
+        headers: Object.fromEntries(res.headers.entries())
+      });
+      
+      if (res.ok) {
+        console.log("[CLIENT LOGIN] Login successful, redirecting to dashboard");
+        router.push("/dashboard");
+      } else {
+        const data = await res.json().catch((err) => {
+          console.error("[CLIENT LOGIN] Failed to parse error response:", err);
+          return { message: "Login failed" };
+        });
+        console.error("[CLIENT LOGIN] Login failed:", {
+          status: res.status,
+          data: data
+        });
+        setError(data?.message || "Ошибка входа");
+      }
+    } catch (err: any) {
+      console.error("[CLIENT LOGIN] Network error:", {
+        message: err?.message || String(err),
+        name: err?.name,
+        stack: err?.stack?.substring(0, 500)
+      });
+      setError("Ошибка подключения к серверу");
     }
   }
 
