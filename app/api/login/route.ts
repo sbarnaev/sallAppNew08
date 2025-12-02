@@ -84,13 +84,47 @@ export async function POST(req: NextRequest) {
   }
 
   if (!res.ok) {
+    const errorMessage = data?.errors?.[0]?.message || data?.message || "Unknown error";
+    
     console.error("[LOGIN] Login failed:", {
       status: res.status,
       statusText: res.statusText,
       data: data,
-      errorMessage: data?.errors?.[0]?.message || data?.message || "Unknown error"
+      errorMessage: errorMessage
     });
-    return NextResponse.json(data || { message: "Login failed" }, { status: res.status });
+    
+    // Проверяем, не связана ли ошибка с suspended статусом
+    // Directus может вернуть разные сообщения, но обычно это "Invalid user credentials" или "User is suspended"
+    let userFriendlyMessage = errorMessage;
+    
+    // Если это 401 и есть информация о статусе пользователя, проверяем его
+    if (res.status === 401) {
+      // Пытаемся получить информацию о пользователе для проверки статуса
+      try {
+        // Используем публичный endpoint для проверки статуса (если доступен)
+        // Или просто проверяем текст ошибки
+        const lowerError = errorMessage.toLowerCase();
+        if (lowerError.includes("suspended") || lowerError.includes("приостановлен") || lowerError.includes("заблокирован")) {
+          userFriendlyMessage = "Ваш аккаунт приостановлен. Обратитесь к администратору для восстановления доступа.";
+        } else if (lowerError.includes("invalid") || lowerError.includes("credentials") || lowerError.includes("неверный")) {
+          userFriendlyMessage = "Неверный email или пароль. Проверьте правильность введенных данных.";
+        } else {
+          userFriendlyMessage = "Ошибка авторизации. Проверьте правильность email и пароля.";
+        }
+      } catch (statusCheckError) {
+        // Если не удалось проверить статус, используем оригинальное сообщение
+        console.warn("[LOGIN] Could not check user status:", statusCheckError);
+      }
+    }
+    
+    return NextResponse.json(
+      { 
+        ...data, 
+        message: userFriendlyMessage,
+        originalError: errorMessage // Сохраняем оригинальное сообщение для отладки
+      }, 
+      { status: res.status }
+    );
   }
 
   const access = data?.data?.access_token;
