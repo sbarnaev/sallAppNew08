@@ -18,12 +18,23 @@ function generatePublicCode(): string {
 }
 
 export async function POST(req: Request) {
+  console.log("[CALC] ===== POST /api/calc called =====");
+  
   let token = cookies().get("directus_access_token")?.value;
   const refreshToken = cookies().get("directus_refresh_token")?.value;
   const directusUrl = getDirectusUrl();
   const n8nUrl = process.env.N8N_CALC_URL;
 
+  console.log("[CALC] Initial check:", {
+    hasToken: !!token,
+    hasRefreshToken: !!refreshToken,
+    hasDirectusUrl: !!directusUrl,
+    hasN8nUrl: !!n8nUrl,
+    n8nUrl: n8nUrl || "NOT SET"
+  });
+
   if (!token && !refreshToken) {
+    console.error("[CALC] No tokens found, returning 401");
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
   if (!n8nUrl) {
