@@ -56,17 +56,13 @@ export default function NewCalculationPage() {
   }
 
   async function startCalc(type: "base" | "target" | "partner") {
-    console.log("[CLIENT] ===== startCalc called =====", { type, name, birthday, clientIdParam });
-    
     setError(null);
     if (!name || !birthday) {
-      console.warn("[CLIENT] Validation failed: missing name or birthday");
       setError("Нет имени или даты рождения. Подождите автозаполнение или используйте форму ниже.");
       return;
     }
     if (type === "partner") {
       if (!partnerName || !partnerBirthday || !partnerGoal) {
-        console.warn("[CLIENT] Validation failed: missing partner data");
         setError("Для партнерского расчета заполните все поля: имя и дата рождения второго человека, цель расчета.");
         return;
       }
@@ -103,53 +99,22 @@ export default function NewCalculationPage() {
         payload.goal = cleanText(partnerGoal);
       }
 
-      console.log("[CLIENT] Sending calculation request:", {
-        type: payload.type,
-        hasName: !!payload.name,
-        hasBirthday: !!payload.birthday,
-        hasClientId: !!payload.clientId
-      });
-      
-      console.log("[CLIENT] About to send fetch request to /api/calc");
-      
       const res = await fetch("/api/calc", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       
-      console.log("[CLIENT] Calculation response received:", {
-        status: res.status,
-        statusText: res.statusText,
-        ok: res.ok,
-        headers: Object.fromEntries(res.headers.entries())
-      });
-      
-      const data = await res.json().catch((err) => {
-        console.error("[CLIENT] Failed to parse response:", err);
-        return {};
-      });
+      const data = await res.json().catch(() => ({}));
       
       if (!res.ok) {
-        console.error("[CLIENT] Calculation failed:", {
-          status: res.status,
-          data: data
-        });
         throw new Error(data?.message || "Calculation failed");
       }
       
-      console.log("[CLIENT] Calculation successful:", {
-        profileId: data?.profileId || data?.data?.profileId || data?.id
-      });
       const profileId = data?.profileId || data?.data?.profileId || data?.id;
       if (profileId) router.push(`/profiles/${profileId}`);
       else router.push("/profiles");
     } catch (err: any) {
-      console.error("[CLIENT] Error in startCalc:", {
-        message: err?.message || String(err),
-        name: err?.name,
-        stack: err?.stack?.substring(0, 500)
-      });
       setError(err.message || String(err));
     } finally {
       setLoading(false);
@@ -168,32 +133,17 @@ export default function NewCalculationPage() {
         type: "base",
       };
       
-      console.log("[CLIENT] Sending calculation request (form):", payload);
-      
       const res = await fetch("/api/calc", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       
-      console.log("[CLIENT] Calculation response status (form):", res.status);
-      
-      const data = await res.json().catch((err) => {
-        console.error("[CLIENT] Failed to parse response (form):", err);
-        return {};
-      });
+      const data = await res.json().catch(() => ({}));
       
       if (!res.ok) {
-        console.error("[CLIENT] Calculation failed (form):", {
-          status: res.status,
-          data: data
-        });
         throw new Error(data?.message || "Calculation failed");
       }
-      
-      console.log("[CLIENT] Calculation successful (form):", {
-        profileId: data?.profileId || data?.data?.profileId || data?.id
-      });
       const profileId = data?.profileId || data?.data?.profileId || data?.id; // accept common shapes
       if (profileId) {
         router.push(`/profiles/${profileId}`);

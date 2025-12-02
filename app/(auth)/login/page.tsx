@@ -14,13 +14,10 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     
-    console.log("[CLIENT LOGIN] ===== Login attempt =====", {
-      hasEmail: !!email,
-      emailLength: email.length,
-      hasPassword: !!password,
-      passwordLength: password.length,
-      emailPrefix: email.substring(0, 3) + "***"
-    });
+    // Логи только в development режиме
+    if (process.env.NODE_ENV === 'development') {
+      console.log("[CLIENT LOGIN] Login attempt");
+    }
     
     try {
       const res = await fetch("/api/login", {
@@ -29,33 +26,18 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       
-      console.log("[CLIENT LOGIN] Response received:", {
-        status: res.status,
-        statusText: res.statusText,
-        ok: res.ok,
-        headers: Object.fromEntries(res.headers.entries())
-      });
-      
       if (res.ok) {
-        console.log("[CLIENT LOGIN] Login successful, redirecting to dashboard");
+        if (process.env.NODE_ENV === 'development') {
+          console.log("[CLIENT LOGIN] Login successful");
+        }
         router.push("/dashboard");
       } else {
-        const data = await res.json().catch((err) => {
-          console.error("[CLIENT LOGIN] Failed to parse error response:", err);
-          return { message: "Login failed" };
-        });
-        console.error("[CLIENT LOGIN] Login failed:", {
-          status: res.status,
-          data: data
-        });
+        const data = await res.json().catch(() => ({ message: "Login failed" }));
+        // В продакшене показываем только общее сообщение об ошибке
         setError(data?.message || "Ошибка входа");
       }
     } catch (err: any) {
-      console.error("[CLIENT LOGIN] Network error:", {
-        message: err?.message || String(err),
-        name: err?.name,
-        stack: err?.stack?.substring(0, 500)
-      });
+      // В продакшене не логируем детали ошибок
       setError("Ошибка подключения к серверу");
     }
   }
