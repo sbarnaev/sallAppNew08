@@ -3,15 +3,19 @@ import { internalApiFetch } from "@/lib/fetchers";
 
 async function getStats() {
   try {
+    // Параллельно загружаем статистику
     const [clientsRes, profilesRes, consultationsRes] = await Promise.all([
       internalApiFetch("/api/clients?limit=1&meta=filter_count", { cache: "no-store" }),
       internalApiFetch("/api/profiles?limit=1&meta=filter_count", { cache: "no-store" }),
       internalApiFetch("/api/consultations?limit=1&meta=filter_count", { cache: "no-store" }),
     ]);
 
-    const clients = await clientsRes.json().catch(() => ({ meta: { filter_count: 0 } }));
-    const profiles = await profilesRes.json().catch(() => ({ meta: { filter_count: 0 } }));
-    const consultations = await consultationsRes.json().catch(() => ({ meta: { filter_count: 0 } }));
+    // Параллельно парсим все ответы
+    const [clients, profiles, consultations] = await Promise.all([
+      clientsRes.json().catch(() => ({ meta: { filter_count: 0 } })),
+      profilesRes.json().catch(() => ({ meta: { filter_count: 0 } })),
+      consultationsRes.json().catch(() => ({ meta: { filter_count: 0 } })),
+    ]);
 
     return {
       clients: clients?.meta?.filter_count || 0,
@@ -37,7 +41,9 @@ async function getClientsMap(clientIds: number[]) {
   try {
     if (clientIds.length === 0) return {};
     const ids = clientIds.join(',');
-    const res = await internalApiFetch(`/api/clients?filter[id][_in]=${ids}&fields=id,name,birth_date&limit=1000`, { cache: 'no-store' });
+    const res = await internalApiFetch(`/api/clients?filter[id][_in]=${ids}&fields=id,name,birth_date&limit=1000`, { 
+      cache: "no-store"
+    });
     if (!res.ok) {
       console.error("Failed to fetch clients:", res.status);
       return {};
@@ -63,8 +69,11 @@ async function getClientsMap(clientIds: number[]) {
 
 
 export default async function DashboardPage() {
-  const stats = await getStats();
-  const recentProfiles = await getRecentProfiles();
+  // Параллельно загружаем статистику и недавние профили
+  const [stats, recentProfiles] = await Promise.all([
+    getStats(),
+    getRecentProfiles(),
+  ]);
   
   // Загружаем данные клиентов для отображения имен и дат рождения
   const clientIds = recentProfiles.map((p: any) => p.client_id).filter((id: any): id is number => !!id);
@@ -73,12 +82,15 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Панель управления</h1>
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">Панель управления</h1>
+          <p className="text-gray-600 mt-1 text-sm md:text-base">Добро пожаловать в систему САЛ ПРОФИ</p>
+        </div>
         <div className="flex gap-2">
-          <Link href="/clients/new" className="rounded-xl bg-green-100 text-green-700 px-3 md:px-4 py-2 hover:bg-green-200 border border-green-200 text-sm whitespace-nowrap">
+          <Link href="/clients/new" className="rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white px-4 md:px-5 py-2.5 hover:from-green-600 hover:to-green-700 border-0 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 text-sm font-semibold whitespace-nowrap">
             + Клиент
           </Link>
-          <Link href="/profiles/new" className="rounded-xl bg-blue-100 text-blue-700 px-3 md:px-4 py-2 hover:bg-blue-200 border border-blue-200 text-sm whitespace-nowrap">
+          <Link href="/profiles/new" className="rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 md:px-5 py-2.5 hover:from-blue-600 hover:to-blue-700 border-0 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 text-sm font-semibold whitespace-nowrap">
             + Расчёт
           </Link>
         </div>
@@ -86,42 +98,42 @@ export default async function DashboardPage() {
 
       {/* Статистика */}
       <div className="grid md:grid-cols-3 gap-4">
-        <Link href="/clients" className="card hover:shadow-lg transition p-6">
+        <Link href="/clients" className="card hover:shadow-xl hover:scale-[1.02] transition-all duration-300 p-6 bg-gradient-to-br from-white to-green-50 border border-green-100 group">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-gray-500 mb-1">Клиенты</div>
-              <div className="text-3xl font-bold text-gray-900">{stats.clients}</div>
+              <div className="text-sm text-gray-600 mb-1 font-medium">Клиенты</div>
+              <div className="text-4xl font-bold text-gray-900 group-hover:text-green-700 transition-colors">{stats.clients}</div>
             </div>
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-14 h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
           </div>
         </Link>
 
-        <Link href="/profiles" className="card hover:shadow-lg transition p-6">
+        <Link href="/profiles" className="card hover:shadow-xl hover:scale-[1.02] transition-all duration-300 p-6 bg-gradient-to-br from-white to-brand-50 border border-brand-100 group">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-gray-500 mb-1">Расчёты</div>
-              <div className="text-3xl font-bold text-gray-900">{stats.profiles}</div>
+              <div className="text-sm text-gray-600 mb-1 font-medium">Расчёты</div>
+              <div className="text-4xl font-bold text-gray-900 group-hover:text-brand-700 transition-colors">{stats.profiles}</div>
             </div>
-            <div className="w-12 h-12 bg-brand-100 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-14 h-14 bg-gradient-to-br from-brand-400 to-brand-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </div>
           </div>
         </Link>
 
-        <Link href="/consultations" className="card hover:shadow-lg transition p-6">
+        <Link href="/consultations" className="card hover:shadow-xl hover:scale-[1.02] transition-all duration-300 p-6 bg-gradient-to-br from-white to-blue-50 border border-blue-100 group">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-gray-500 mb-1">Консультации</div>
-              <div className="text-3xl font-bold text-gray-900">{stats.consultations}</div>
+              <div className="text-sm text-gray-600 mb-1 font-medium">Консультации</div>
+              <div className="text-4xl font-bold text-gray-900 group-hover:text-blue-700 transition-colors">{stats.consultations}</div>
             </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
@@ -130,30 +142,30 @@ export default async function DashboardPage() {
       </div>
 
       {/* Быстрые действия */}
-      <div className="card p-6">
-        <h2 className="text-xl font-semibold mb-4">Быстрые действия</h2>
+      <div className="card p-6 bg-gradient-to-br from-white to-gray-50">
+        <h2 className="text-xl font-semibold mb-4 text-gray-900">Быстрые действия</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <Link href="/clients/new" className="flex items-center gap-3 p-3 rounded-xl border hover:bg-gray-50 transition">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <Link href="/clients/new" className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-gradient-to-br hover:from-green-50 hover:to-white transition-all duration-300 hover:shadow-md group">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
             </div>
             <div className="text-sm">
-              <div className="font-medium">Новый клиент</div>
-              <div className="text-gray-500">Добавить клиента</div>
+              <div className="font-semibold text-gray-900 group-hover:text-green-700 transition-colors">Новый клиент</div>
+              <div className="text-gray-500 text-xs">Добавить клиента</div>
             </div>
           </Link>
 
-          <Link href="/profiles/new" className="flex items-center gap-3 p-3 rounded-xl border hover:bg-gray-50 transition">
-            <div className="w-10 h-10 bg-brand-100 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <Link href="/profiles/new" className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-brand-300 hover:bg-gradient-to-br hover:from-brand-50 hover:to-white transition-all duration-300 hover:shadow-md group">
+            <div className="w-12 h-12 bg-gradient-to-br from-brand-400 to-brand-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
             <div className="text-sm">
-              <div className="font-medium">Новый расчёт</div>
-              <div className="text-gray-500">Создать профиль</div>
+              <div className="font-semibold text-gray-900 group-hover:text-brand-700 transition-colors">Новый расчёт</div>
+              <div className="text-gray-500 text-xs">Создать профиль</div>
             </div>
           </Link>
 
@@ -161,10 +173,10 @@ export default async function DashboardPage() {
       </div>
 
       {/* Недавние расчёты */}
-      <div className="card p-6">
+      <div className="card p-6 bg-gradient-to-br from-white to-gray-50">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Недавние расчёты</h2>
-          <Link href="/profiles" className="text-sm text-brand-600 hover:text-brand-700">Все →</Link>
+          <h2 className="text-xl font-semibold text-gray-900">Недавние расчёты</h2>
+          <Link href="/profiles" className="text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors">Все →</Link>
         </div>
         {recentProfiles.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
@@ -200,21 +212,27 @@ export default async function DashboardPage() {
               const birthDateStr = client?.birth_date ? new Date(client.birth_date).toLocaleDateString("ru-RU") : null;
               
               return (
-                <Link key={p.id} href={`/profiles/${p.id}`} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-all hover:border-blue-300">
+                <Link key={p.id} href={`/profiles/${p.id}`} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all duration-300 hover:border-blue-400 group">
                   <div className="space-y-3">
-                    <div className="font-semibold text-lg text-gray-900 break-words">{clientName}</div>
+                    <div className="font-semibold text-lg text-gray-900 break-words group-hover:text-blue-700 transition-colors">{clientName}</div>
                     <div className="space-y-1 text-sm text-gray-600">
                       <div className="flex items-center gap-2">
-                        <span>📅 Дата расчета: {dateStr}</span>
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Дата расчета: {dateStr}</span>
                       </div>
                       {birthDateStr && (
                         <div className="flex items-center gap-2">
-                          <span>🎂 Дата рождения: {birthDateStr}</span>
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span>Дата рождения: {birthDateStr}</span>
                         </div>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 border border-blue-200">
                         {consultationType}
                       </span>
                     </div>

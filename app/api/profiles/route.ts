@@ -48,6 +48,7 @@ export async function GET(req: NextRequest) {
       
       // Собираем все найденные ID клиентов
       const foundIds = new Set<number>();
+      const searchPromises: Promise<void>[] = [];
       
       // Поиск по имени (ищет и по имени и по фамилии, так как они в одном поле)
       const nameSearchParams = new URLSearchParams();
@@ -55,17 +56,23 @@ export async function GET(req: NextRequest) {
       nameSearchParams.set("fields", "id");
       nameSearchParams.set("limit", "1000");
       
-      const nameRes = await fetch(`${baseUrl}/items/clients?${nameSearchParams.toString()}`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-        cache: "no-store",
-      });
-      
-      if (nameRes.ok) {
-        const nameData = await nameRes.json().catch(() => ({ data: [] }));
-        (nameData?.data || []).forEach((c: any) => {
-          if (c.id) foundIds.add(c.id);
-        });
-      }
+      searchPromises.push(
+        fetch(`${baseUrl}/items/clients?${nameSearchParams.toString()}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+          cache: "no-store",
+        })
+          .then(async (nameRes) => {
+            if (nameRes.ok) {
+              const nameData = await nameRes.json().catch(() => ({ data: [] }));
+              (nameData?.data || []).forEach((c: any) => {
+                if (c.id) foundIds.add(c.id);
+              });
+            }
+          })
+          .catch((error) => {
+            console.error("Error searching clients by name:", error);
+          })
+      );
       
       // Поиск по дате рождения (если поисковый запрос похож на дату)
       if (dateFormats.length > 0 || yearFilter.start) {
@@ -75,17 +82,23 @@ export async function GET(req: NextRequest) {
           dateSearchParams.set("fields", "id");
           dateSearchParams.set("limit", "1000");
           
-          const dateRes = await fetch(`${baseUrl}/items/clients?${dateSearchParams.toString()}`, {
-            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-            cache: "no-store",
-          });
-          
-          if (dateRes.ok) {
-            const dateData = await dateRes.json().catch(() => ({ data: [] }));
-            (dateData?.data || []).forEach((c: any) => {
-              if (c.id) foundIds.add(c.id);
-            });
-          }
+          searchPromises.push(
+            fetch(`${baseUrl}/items/clients?${dateSearchParams.toString()}`, {
+              headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+              cache: "no-store",
+            })
+              .then(async (dateRes) => {
+                if (dateRes.ok) {
+                  const dateData = await dateRes.json().catch(() => ({ data: [] }));
+                  (dateData?.data || []).forEach((c: any) => {
+                    if (c.id) foundIds.add(c.id);
+                  });
+                }
+              })
+              .catch((error) => {
+                console.error("Error searching clients by date:", error);
+              })
+          );
         }
         
         // Поиск по году (диапазон дат)
@@ -96,20 +109,28 @@ export async function GET(req: NextRequest) {
           yearSearchParams.set("fields", "id");
           yearSearchParams.set("limit", "1000");
           
-          const yearRes = await fetch(`${baseUrl}/items/clients?${yearSearchParams.toString()}`, {
-            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-            cache: "no-store",
-          });
-          
-          if (yearRes.ok) {
-            const yearData = await yearRes.json().catch(() => ({ data: [] }));
-            (yearData?.data || []).forEach((c: any) => {
-              if (c.id) foundIds.add(c.id);
-            });
-          }
+          searchPromises.push(
+            fetch(`${baseUrl}/items/clients?${yearSearchParams.toString()}`, {
+              headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+              cache: "no-store",
+            })
+              .then(async (yearRes) => {
+                if (yearRes.ok) {
+                  const yearData = await yearRes.json().catch(() => ({ data: [] }));
+                  (yearData?.data || []).forEach((c: any) => {
+                    if (c.id) foundIds.add(c.id);
+                  });
+                }
+              })
+              .catch((error) => {
+                console.error("Error searching clients by year:", error);
+              })
+          );
         }
       }
       
+      // Ждем завершения всех поисковых запросов параллельно
+      await Promise.all(searchPromises);
       clientIds = Array.from(foundIds);
     } catch (error) {
       console.error("Error searching clients:", error);

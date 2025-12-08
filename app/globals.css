@@ -13,8 +13,44 @@
   }
 }
 
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
 .animate-fade-in {
   animation: fade-in 0.5s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(
+    to right,
+    #f0f0f0 0%,
+    #e0e0e0 20%,
+    #f0f0f0 40%,
+    #f0f0f0 100%
+  );
+  background-size: 1000px 100%;
 }
 
 /* Placeholder для contentEditable */
@@ -29,11 +65,46 @@
 }
 
 body {
-  @apply bg-gray-50 text-gray-900;
+  @apply bg-gradient-to-br from-gray-50 via-white to-gray-50 text-gray-900;
+  font-feature-settings: "rlig" 1, "calt" 1;
 }
 
 .card {
   @apply bg-white rounded-2xl shadow-soft p-6;
+  @apply border border-gray-100;
+  @apply transition-all duration-300;
+}
+
+.card:hover {
+  @apply shadow-lg;
+}
+
+/* Плавные переходы для всех интерактивных элементов */
+a, button {
+  @apply transition-all duration-200;
+}
+
+/* Улучшенная типографика */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-semibold tracking-tight;
+}
+
+/* Стили для скроллбара */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
 }
 
 /* Мобильные улучшения касаний и типографики */

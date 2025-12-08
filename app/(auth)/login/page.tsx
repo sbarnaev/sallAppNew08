@@ -44,8 +44,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
-      <div className="w-full max-w-md">
-        <div className="card shadow-xl border-0 space-y-6 p-8">
+      <div className="w-full max-w-md animate-fade-in">
+        <div className="card shadow-2xl border-0 space-y-6 p-8 bg-gradient-to-br from-white to-gray-50">
           <div className="text-center space-y-2">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4">
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -110,34 +110,39 @@ export async function GET(req: NextRequest) {
       yearFilter.end = `${searchTerm}-12-31`;
     }
 
+    // Параллельно выполняем все поисковые запросы
+    const searchPromises: Promise<void>[] = [];
+
     // 1. Поиск по имени, email, телефону
     const nameSearchParams = new URLSearchParams(sp);
     nameSearchParams.set("filter[_or][0][name][_icontains]", searchTerm);
     nameSearchParams.set("filter[_or][1][email][_icontains]", searchTerm);
     nameSearchParams.set("filter[_or][2][phone][_icontains]", searchTerm);
-    nameSearchParams.delete("search"); // Убираем общий search параметр
-    nameSearchParams.set("limit", "1000"); // Получаем все результаты для объединения
+    nameSearchParams.delete("search");
+    nameSearchParams.set("limit", "1000");
     nameSearchParams.set("offset", "0");
-    // Сохраняем фильтр owner_user если был
     if (currentUserId && !hasExplicitFilter) {
       nameSearchParams.set("filter[owner_user][_eq]", currentUserId);
     }
 
     const nameUrl = `${baseUrl}/items/clients?${nameSearchParams.toString()}`;
-    try {
-      const nameRes = await fetch(nameUrl, {
+    searchPromises.push(
+      fetch(nameUrl, {
         headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
         cache: "no-store",
-      });
-      if (nameRes.ok) {
-        const nameData = await nameRes.json().catch(() => ({ data: [] }));
-        (nameData?.data || []).forEach((c: any) => {
-          if (c.id) allClientIds.add(c.id);
-        });
-      }
-    } catch (error) {
-      logger.error("Error searching clients by name:", error);
-    }
+      })
+        .then(async (nameRes) => {
+          if (nameRes.ok) {
+            const nameData = await nameRes.json().catch(() => ({ data: [] }));
+            (nameData?.data || []).forEach((c: any) => {
+              if (c.id) allClientIds.add(c.id);
+            });
+          }
+        })
+        .catch((error) => {
+          logger.error("Error searching clients by name:", error);
+        })
+    );
 
     // 2. Поиск по дате рождения (если поисковый запрос похож на дату)
     if (dateFormats.length > 0) {
@@ -150,26 +155,28 @@ export async function GET(req: NextRequest) {
         dateSearchParams.delete("filter[_or][2][phone][_icontains]");
         dateSearchParams.set("limit", "1000");
         dateSearchParams.set("offset", "0");
-        // Сохраняем фильтр owner_user если был
         if (currentUserId && !hasExplicitFilter) {
           dateSearchParams.set("filter[owner_user][_eq]", currentUserId);
         }
 
         const dateUrl = `${baseUrl}/items/clients?${dateSearchParams.toString()}`;
-        try {
-          const dateRes = await fetch(dateUrl, {
+        searchPromises.push(
+          fetch(dateUrl, {
             headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
             cache: "no-store",
-          });
-          if (dateRes.ok) {
-            const dateData = await dateRes.json().catch(() => ({ data: [] }));
-            (dateData?.data || []).forEach((c: any) => {
-              if (c.id) allClientIds.add(c.id);
-            });
-          }
-        } catch (error) {
-          logger.error("Error searching clients by date:", error);
-        }
+          })
+            .then(async (dateRes) => {
+              if (dateRes.ok) {
+                const dateData = await dateRes.json().catch(() => ({ data: [] }));
+                (dateData?.data || []).forEach((c: any) => {
+                  if (c.id) allClientIds.add(c.id);
+                });
+              }
+            })
+            .catch((error) => {
+              logger.error("Error searching clients by date:", error);
+            })
+        );
       }
     }
 
@@ -184,27 +191,32 @@ export async function GET(req: NextRequest) {
       yearSearchParams.delete("filter[_or][2][phone][_icontains]");
       yearSearchParams.set("limit", "1000");
       yearSearchParams.set("offset", "0");
-      // Сохраняем фильтр owner_user если был
       if (currentUserId && !hasExplicitFilter) {
         yearSearchParams.set("filter[owner_user][_eq]", currentUserId);
       }
 
       const yearUrl = `${baseUrl}/items/clients?${yearSearchParams.toString()}`;
-      try {
-        const yearRes = await fetch(yearUrl, {
+      searchPromises.push(
+        fetch(yearUrl, {
           headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
           cache: "no-store",
-        });
-        if (yearRes.ok) {
-          const yearData = await yearRes.json().catch(() => ({ data: [] }));
-          (yearData?.data || []).forEach((c: any) => {
-            if (c.id) allClientIds.add(c.id);
-          });
-        }
-      } catch (error) {
-        logger.error("Error searching clients by year:", error);
-      }
+        })
+          .then(async (yearRes) => {
+            if (yearRes.ok) {
+              const yearData = await yearRes.json().catch(() => ({ data: [] }));
+              (yearData?.data || []).forEach((c: any) => {
+                if (c.id) allClientIds.add(c.id);
+              });
+            }
+          })
+          .catch((error) => {
+            logger.error("Error searching clients by year:", error);
+          })
+      );
     }
+
+    // Ждем завершения всех поисковых запросов параллельно
+    await Promise.all(searchPromises);
 
     // Если нашли клиентов, делаем финальный запрос с фильтром по ID
     if (allClientIds.size > 0) {
