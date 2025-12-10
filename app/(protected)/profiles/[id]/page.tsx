@@ -1887,39 +1887,55 @@ export default function ProfileDetail() {
           <div key={idx} className="space-y-6">
             {/* Скажите клиенту */}
                 {item.opener && (
-              <section id="opener" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
-                <h2 className="m-0 flex items-center gap-2 text-base font-bold text-gray-800 mb-3">
-                  <span className="text-lg">❗</span>
+              <section id="opener" className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-4">
+                  <span className="text-2xl">❗</span>
                       Скажите клиенту
                     </h2>
-                    <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800 text-base">{item.opener}</p>
+                    <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg font-medium">{item.opener}</p>
               </section>
                 )}
 
             {/* Описание личности - 3-4 абзаца */}
                 {item.personalitySummary && (
-              <section id="personality" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
-                <h2 className="m-0 text-base font-bold text-gray-800 mb-4">👤 Описание личности</h2>
+              <section id="personality" className="rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">👤</span>
+                  Описание личности
+                </h2>
                     {Array.isArray(item.personalitySummary) ? (
-                      <div className="mt-3 space-y-4">
+                      <div className="space-y-5">
                         {item.personalitySummary.map((t: string, idx: number) => (
-                          <p key={idx} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base">{t}</p>
+                          <p key={idx} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg first:font-semibold">{t}</p>
                         ))}
                       </div>
                     ) : (
-                      <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800 text-base">{item.personalitySummary}</p>
+                      <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg">{item.personalitySummary}</p>
                 )}
               </section>
             )}
 
             {/* Пояснение кодов - 5-6 абзацев с синтезом */}
             {Array.isArray(item.codesExplanation) && item.codesExplanation.length > 0 && (
-              <section id="codes" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
-                <h2 className="m-0 text-base font-bold text-gray-800 mb-4">🔢 Пояснение кодов</h2>
-                <div className="mt-3 space-y-4">
-                  {item.codesExplanation.map((t: string, i: number) => (
-                    <p key={i} className="whitespace-pre-wrap text-gray-800 text-base leading-relaxed">{t}</p>
-                  ))}
+              <section id="codes" className="rounded-2xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">🔢</span>
+                  Пояснение кодов
+                </h2>
+                <div className="space-y-5">
+                  {item.codesExplanation.map((t: string, i: number) => {
+                    const isLast = i === item.codesExplanation.length - 1;
+                    return (
+                      <p 
+                        key={i} 
+                        className={`whitespace-pre-wrap text-gray-800 text-base md:text-lg leading-relaxed ${
+                          isLast ? 'font-semibold text-gray-900 bg-purple-100 rounded-lg p-4 border-l-4 border-purple-400' : ''
+                        }`}
+                      >
+                        {t}
+                      </p>
+                    );
+                  })}
                 </div>
               </section>
             )}
@@ -1958,16 +1974,19 @@ export default function ProfileDetail() {
 
             {/* Формула счастья */}
             {item.happinessFormula && (
-              <section id="happiness" className="rounded-2xl border-2 border-sky-300 bg-sky-50 p-6 shadow-sm">
-                <h2 className="m-0 text-base font-bold text-gray-800 mb-4">☺️ Формула счастья</h2>
+              <section id="happiness" className="rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">☺️</span>
+                  Формула счастья
+                </h2>
                 {Array.isArray(item.happinessFormula) ? (
-                  <div className="mt-3 space-y-4">
+                  <div className="space-y-5">
                     {item.happinessFormula.map((t: string, i: number) => (
-                      <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base">{t}</p>
+                      <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg">{t}</p>
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800 text-base">{item.happinessFormula}</p>
+                  <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg">{item.happinessFormula}</p>
                 )}
               </section>
             )}
