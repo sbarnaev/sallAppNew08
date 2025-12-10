@@ -1905,7 +1905,21 @@ export default function ProfileDetail() {
           <div key={idx} className="space-y-6">
             {/* Скажите клиенту */}
                 {item.opener && (
-              <section id="opener" className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+              <section id="opener" className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow relative group">
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(item.opener);
+                      alert('Текст скопирован в буфер обмена');
+                    }}
+                    className="p-2 rounded-lg bg-white/80 hover:bg-white shadow-sm border border-gray-200 transition-colors"
+                    title="Копировать текст"
+                  >
+                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </div>
                 <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-4">
                   <span className="text-2xl">❗</span>
                       Скажите клиенту
