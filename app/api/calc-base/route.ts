@@ -156,7 +156,7 @@ async function saveToDirectus(
           Accept: "application/json",
         },
         body: JSON.stringify({
-          raw_json: partialData,
+          base_profile_json: partialData, // Новое поле для нового формата базового расчета
         }),
         cache: "no-store",
       });
@@ -708,11 +708,29 @@ ${codesDescription}`;
       );
     }
 
-    // Сохраняем в Directus
+    // Сохраняем в Directus в новое поле base_profile_json
     if (profileId) {
-      const saved = await saveToDirectus(profileId, parsed, token!, directusUrl, refreshToken);
-      if (!saved) {
-        console.error("[CALC-BASE] Failed to save data to Directus after retries");
+      try {
+        const response = await fetch(`${directusUrl}/items/profiles/${profileId}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token!}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            base_profile_json: parsed, // Сохраняем в новое поле
+          }),
+          cache: "no-store",
+        });
+        
+        if (!response.ok) {
+          console.error("[CALC-BASE] Failed to save base_profile_json:", response.status);
+        } else {
+          console.log("[CALC-BASE] Successfully saved base_profile_json to Directus");
+        }
+      } catch (error) {
+        console.error("[CALC-BASE] Error saving base_profile_json:", error);
       }
     }
 

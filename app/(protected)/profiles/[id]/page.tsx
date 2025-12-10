@@ -380,7 +380,12 @@ export default function ProfileDetail() {
       let deficitSignals: string[] = [];
       
       try {
-        let payload: any = profile?.raw_json;
+        // Выбираем источник данных: новый формат (base_profile_json) или старый (raw_json)
+        let payload: any = (profile as any)?.base_profile_json || profile?.raw_json;
+        if (!payload) {
+          alert('Нет данных для экспорта');
+          return;
+        }
         if (typeof payload === 'string') payload = JSON.parse(payload);
         const item = Array.isArray(payload) ? payload[0] : payload;
         
@@ -459,9 +464,17 @@ export default function ProfileDetail() {
       
       // Проверяем, что есть данные для экспорта
       if (strengths.length === 0 && weaknesses.length === 0 && resourceSignals.length === 0 && deficitSignals.length === 0) {
-        alert('Нет данных для экспорта');
+        alert('Нет данных для экспорта. Убедитесь, что базовый расчет завершен.');
+        console.error('PDF Export: No data found');
         return;
       }
+      
+      console.log('PDF Export: Data found', {
+        strengths: strengths.length,
+        weaknesses: weaknesses.length,
+        resourceSignals: resourceSignals.length,
+        deficitSignals: deficitSignals.length
+      });
       
       const dateStr = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('ru-RU') : '';
       
@@ -604,7 +617,7 @@ export default function ProfileDetail() {
   ${strengths.length > 0 ? `
   <div class="page">
     <div class="header">
-      <div class="title">${clientName ? clientName : 'Расчёт профиля'}</div>
+      <div class="title">${clientName ? clientName.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Расчёт профиля'}</div>
       ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
     </div>
     <div class="content">
@@ -612,7 +625,7 @@ export default function ProfileDetail() {
       <ul>
         ${strengths.map((s: string) => {
           const cleaned = cleanText(s);
-          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>` : '';
+          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;')}</li>` : '';
         }).filter(Boolean).join('')}
       </ul>
     </div>
@@ -625,7 +638,7 @@ export default function ProfileDetail() {
   ${weaknesses.length > 0 ? `
   <div class="page">
     <div class="header">
-      <div class="title">${clientName ? clientName : 'Расчёт профиля'}</div>
+      <div class="title">${clientName ? clientName.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Расчёт профиля'}</div>
       ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
     </div>
     <div class="content">
@@ -633,7 +646,7 @@ export default function ProfileDetail() {
       <ul>
         ${weaknesses.map((w: string) => {
           const cleaned = cleanText(w);
-          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>` : '';
+          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;')}</li>` : '';
         }).filter(Boolean).join('')}
       </ul>
     </div>
@@ -646,7 +659,7 @@ export default function ProfileDetail() {
   ${resourceSignals.length > 0 ? `
   <div class="page">
     <div class="header">
-      <div class="title">${clientName ? clientName : 'Расчёт профиля'}</div>
+      <div class="title">${clientName ? clientName.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Расчёт профиля'}</div>
       ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
     </div>
     <div class="content">
@@ -654,7 +667,7 @@ export default function ProfileDetail() {
       <ul>
         ${resourceSignals.map((r: string) => {
           const cleaned = cleanText(r);
-          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>` : '';
+          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;')}</li>` : '';
         }).filter(Boolean).join('')}
       </ul>
     </div>
@@ -667,7 +680,7 @@ export default function ProfileDetail() {
   ${deficitSignals.length > 0 ? `
   <div class="page">
     <div class="header">
-      <div class="title">${clientName ? clientName : 'Расчёт профиля'}</div>
+      <div class="title">${clientName ? clientName.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Расчёт профиля'}</div>
       ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
     </div>
     <div class="content">
@@ -675,7 +688,7 @@ export default function ProfileDetail() {
       <ul>
         ${deficitSignals.map((d: string) => {
           const cleaned = cleanText(d);
-          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>` : '';
+          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;')}</li>` : '';
         }).filter(Boolean).join('')}
       </ul>
     </div>
@@ -795,7 +808,8 @@ export default function ProfileDetail() {
       let checkedDeficit: Record<string, boolean> = {};
       
       try {
-        let payload: any = profile?.raw_json;
+        // Выбираем источник данных: новый формат (base_profile_json) или старый (raw_json)
+        let payload: any = (profile as any)?.base_profile_json || profile?.raw_json;
         if (typeof payload === 'string') payload = JSON.parse(payload);
         const item = Array.isArray(payload) ? payload[0] : payload;
         
@@ -1648,8 +1662,10 @@ export default function ProfileDetail() {
 
   // Определение типа консультации
   const consultationType = useMemo(() => {
-    if (!profile?.raw_json) return null;
-    let payload: any = profile.raw_json;
+    // Выбираем источник данных: новый формат (base_profile_json) или старый (raw_json)
+    const dataSource = (profile as any)?.base_profile_json || profile?.raw_json;
+    if (!dataSource) return null;
+    let payload: any = dataSource;
     try {
       if (typeof payload === "string") payload = JSON.parse(payload);
     } catch {
@@ -1678,14 +1694,16 @@ export default function ProfileDetail() {
     }
     
     return null;
-  }, [profile?.raw_json]);
+  }, [profile]);
 
   const renderedFromJson = useMemo(() => {
-    if (!profile?.raw_json) {
-      console.log("[DEBUG] renderedFromJson: no raw_json");
+    // Выбираем источник данных: новый формат (base_profile_json) или старый (raw_json)
+    const dataSource = (profile as any)?.base_profile_json || profile?.raw_json;
+    if (!dataSource) {
+      console.log("[DEBUG] renderedFromJson: no data source");
       return null;
     }
-    let payload: any = profile.raw_json;
+    let payload: any = dataSource;
     try {
       if (typeof payload === "string") payload = JSON.parse(payload);
     } catch (parseError) {
