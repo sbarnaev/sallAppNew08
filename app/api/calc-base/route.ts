@@ -297,7 +297,7 @@ ${codesDescription}`;
               Authorization: `Bearer ${openaiKey}`,
             },
             body: JSON.stringify({
-              model: "gpt-4o-mini", // Используем gpt-4o-mini, так как gpt-5-mini может быть недоступен
+              model: "gpt-5-mini",
               reasoning: { effort: "medium" },
               messages: [
                 { role: "system", content: systemPrompt },
@@ -431,7 +431,7 @@ ${codesDescription}`;
         Authorization: `Bearer ${openaiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini",
         reasoning: { effort: "medium" },
         messages: [
           { role: "system", content: systemPrompt },

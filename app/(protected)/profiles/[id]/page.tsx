@@ -1888,58 +1888,70 @@ export default function ProfileDetail() {
             {/* Скажите клиенту */}
                 {item.opener && (
               <section id="opener" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
-                <h2 className="m-0 flex items-center gap-2 text-sm font-bold text-gray-800 mb-3">
+                <h2 className="m-0 flex items-center gap-2 text-base font-bold text-gray-800 mb-3">
                   <span className="text-lg">❗</span>
                       Скажите клиенту
                     </h2>
-                    <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.opener}</p>
+                    <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800 text-base">{item.opener}</p>
               </section>
                 )}
 
-            {/* Описание личности */}
+            {/* Описание личности - 3-4 абзаца */}
                 {item.personalitySummary && (
               <section id="personality" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
-                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">👤 Описание личности</h2>
+                <h2 className="m-0 text-base font-bold text-gray-800 mb-4">👤 Описание личности</h2>
                     {Array.isArray(item.personalitySummary) ? (
-                      <div className="mt-3 space-y-2">
+                      <div className="mt-3 space-y-4">
                         {item.personalitySummary.map((t: string, idx: number) => (
-                          <p key={idx} className="whitespace-pre-wrap leading-relaxed text-gray-800">{t}</p>
+                          <p key={idx} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base">{t}</p>
                         ))}
                       </div>
                     ) : (
-                      <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.personalitySummary}</p>
+                      <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800 text-base">{item.personalitySummary}</p>
                 )}
               </section>
             )}
 
-            {/* Сильные и слабые стороны */}
-            {(item.strengths || item.strengths_text || item.weaknesses || item.weaknesses_text) && (
-              <section id="strengths-weaknesses" className="space-y-6">
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <article className="rounded-2xl border-2 border-orange-300 bg-orange-50 p-6 shadow-sm">
-                    <h3 className="m-0 text-base font-bold text-gray-900 mb-3">⚖️ Сильные стороны</h3>
-                  <div className="mt-3">
-                    {Array.isArray(item.strengths) ? (
-                      <CheckList list={item.strengths} section="strengths" />
-                    ) : (
-                      item.strengths_text && (
-                        <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.strengths_text}</pre>
-                      )
-                    )}
-                  </div>
-                </article>
-                  <article className="rounded-2xl border-2 border-orange-300 bg-orange-50 p-6 shadow-sm">
-                    <h3 className="m-0 text-base font-bold text-gray-900 mb-3">⚖️ Слабые стороны</h3>
-                  <div className="mt-3">
-                    {Array.isArray(item.weaknesses) ? (
-                      <CheckList list={item.weaknesses} section="weaknesses" />
-                    ) : (
-                      item.weaknesses_text && (
-                        <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.weaknesses_text}</pre>
-                      )
-                    )}
-                  </div>
-                </article>
+            {/* Пояснение кодов - 5-6 абзацев с синтезом */}
+            {Array.isArray(item.codesExplanation) && item.codesExplanation.length > 0 && (
+              <section id="codes" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-gray-800 mb-4">🔢 Пояснение кодов</h2>
+                <div className="mt-3 space-y-4">
+                  {item.codesExplanation.map((t: string, i: number) => (
+                    <p key={i} className="whitespace-pre-wrap text-gray-800 text-base leading-relaxed">{t}</p>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Сильные стороны */}
+            {(item.strengths || item.strengths_text) && (
+              <section id="strengths" className="rounded-2xl border-2 border-green-300 bg-green-50 p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-gray-900 mb-4">⚖️ Сильные стороны</h2>
+                <div className="mt-3">
+                  {Array.isArray(item.strengths) ? (
+                    <CheckList list={item.strengths} section="strengths" />
+                  ) : (
+                    item.strengths_text && (
+                      <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.strengths_text}</pre>
+                    )
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* Слабые стороны */}
+            {(item.weaknesses || item.weaknesses_text) && (
+              <section id="weaknesses" className="rounded-2xl border-2 border-orange-300 bg-orange-50 p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-gray-900 mb-4">⚖️ Слабые стороны</h2>
+                <div className="mt-3">
+                  {Array.isArray(item.weaknesses) ? (
+                    <CheckList list={item.weaknesses} section="weaknesses" />
+                  ) : (
+                    item.weaknesses_text && (
+                      <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.weaknesses_text}</pre>
+                    )
+                  )}
                 </div>
               </section>
             )}
@@ -1947,65 +1959,49 @@ export default function ProfileDetail() {
             {/* Формула счастья */}
             {item.happinessFormula && (
               <section id="happiness" className="rounded-2xl border-2 border-sky-300 bg-sky-50 p-6 shadow-sm">
-                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">☺️ Формула счастья</h2>
+                <h2 className="m-0 text-base font-bold text-gray-800 mb-4">☺️ Формула счастья</h2>
                 {Array.isArray(item.happinessFormula) ? (
-                  <div className="mt-3 space-y-2">
+                  <div className="mt-3 space-y-4">
                     {item.happinessFormula.map((t: string, i: number) => (
-                      <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800">{t}</p>
+                      <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base">{t}</p>
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.happinessFormula}</p>
+                  <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800 text-base">{item.happinessFormula}</p>
                 )}
               </section>
             )}
 
-            {/* Пояснение кодов */}
-            {Array.isArray(item.codesExplanation) && item.codesExplanation.length > 0 && (
-              <section id="codes" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
-                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">🔢 Пояснение кодов</h2>
-                <div className="mt-3 space-y-2">
-                  {item.codesExplanation.map((t: string, i: number) => (
-                    <p key={i} className="whitespace-pre-wrap text-gray-800">{t}</p>
-                  ))}
+            {/* Признаки плюса */}
+            {(item.resourceSignals || item.resourceSignals_text) && (
+              <section id="resource-signals" className="rounded-2xl border-2 border-green-300 bg-green-50 p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-gray-900 mb-4">✅ Признаки плюса</h2>
+                <div className="mt-3">
+                  {Array.isArray(item.resourceSignals) ? (
+                    <CheckList list={item.resourceSignals} section="resourceSignals" />
+                  ) : (
+                    item.resourceSignals_text && (
+                      <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.resourceSignals_text}</pre>
+                    )
+                  )}
                 </div>
               </section>
             )}
 
-            {/* Диагностика ресурсов */}
-            {(item.resourceSignals || item.resourceSignals_text || item.deficitSignals || item.deficitSignals_text) && (
-              <section id="diagnostics" className="space-y-6">
-                <article className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
-                  <h2 className="m-0 text-base font-bold text-gray-800 mb-3">🔍 Диагностика ресурсов</h2>
-                  <p className="mt-3 text-sm text-gray-700">Оцените совпадение пунктов «плюса» и «минуса», подведите итог и сделайте вывод о текущем ресурсе.</p>
-                </article>
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <article className="rounded-2xl border-2 border-green-300 bg-green-50 p-6 shadow-sm">
-                    <h3 className="m-0 text-base font-bold text-gray-900 mb-3">✅ Признаки плюса</h3>
-                    <div className="mt-3">
-                      {Array.isArray(item.resourceSignals) ? (
-                        <CheckList list={item.resourceSignals} section="resourceSignals" />
-                      ) : (
-                        item.resourceSignals_text && (
-                          <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.resourceSignals_text}</pre>
-                        )
-                      )}
-                    </div>
-                  </article>
-                  <article className="rounded-2xl border-2 border-red-300 bg-red-50 p-6 shadow-sm">
-                    <h3 className="m-0 text-base font-bold text-gray-900 mb-3">❌ Признаки минуса</h3>
-                    <div className="mt-3">
-                      {Array.isArray(item.deficitSignals) ? (
-                        <CheckList list={item.deficitSignals} section="deficitSignals" />
-                      ) : (
-                        item.deficitSignals_text && (
-                          <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.deficitSignals_text}</pre>
-                        )
-                      )}
-                    </div>
-                  </article>
+            {/* Признаки минуса */}
+            {(item.deficitSignals || item.deficitSignals_text) && (
+              <section id="deficit-signals" className="rounded-2xl border-2 border-red-300 bg-red-50 p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-gray-900 mb-4">❌ Признаки минуса</h2>
+                <div className="mt-3">
+                  {Array.isArray(item.deficitSignals) ? (
+                    <CheckList list={item.deficitSignals} section="deficitSignals" />
+                  ) : (
+                    item.deficitSignals_text && (
+                      <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.deficitSignals_text}</pre>
+                    )
+                  )}
                 </div>
-                </section>
+              </section>
             )}
 
             {/* Конфликты и проблемы */}
@@ -3148,10 +3144,12 @@ export default function ProfileDetail() {
           menuItems.push(
             { id: "opener", label: "Скажите клиенту", icon: "❗" },
             { id: "personality", label: "Описание личности", icon: "👤" },
-            { id: "strengths-weaknesses", label: "Сильные и слабые стороны", icon: "⚖️" },
-            { id: "happiness", label: "Формула счастья", icon: "☺️" },
             { id: "codes", label: "Пояснение кодов", icon: "🔢" },
-            { id: "diagnostics", label: "Диагностика ресурсов", icon: "🔍" },
+            { id: "strengths", label: "Сильные стороны", icon: "⚖️" },
+            { id: "weaknesses", label: "Слабые стороны", icon: "⚖️" },
+            { id: "happiness", label: "Формула счастья", icon: "☺️" },
+            { id: "resource-signals", label: "Признаки плюса", icon: "✅" },
+            { id: "deficit-signals", label: "Признаки минуса", icon: "❌" },
             { id: "conflicts", label: "Конфликты и проблемы", icon: "⚠️" },
             { id: "practices", label: "Практики", icon: "💡" }
           );
@@ -3192,12 +3190,24 @@ export default function ProfileDetail() {
         return (
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm sticky top-20 md:top-4 z-10 md:mt-0 mt-16 print:hidden">
             <button
-              onClick={() => setNavigationExpanded(!navigationExpanded)}
+              onClick={(e) => {
+                e.preventDefault();
+                // Сохраняем текущую позицию скролла перед изменением состояния
+                const currentScroll = window.pageYOffset;
+                setNavigationExpanded(!navigationExpanded);
+                // Восстанавливаем позицию после изменения DOM
+                requestAnimationFrame(() => {
+                  window.scrollTo({
+                    top: currentScroll,
+                    behavior: 'auto' // Мгновенно, без анимации
+                  });
+                });
+              }}
               className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-t-2xl"
             >
               <div className="text-sm font-semibold text-gray-700">Навигация по блокам</div>
               <svg 
-                className={`w-5 h-5 text-gray-500 transition-transform ${navigationExpanded ? 'rotate-180' : ''}`}
+                className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${navigationExpanded ? 'rotate-180' : ''}`}
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
@@ -3205,7 +3215,13 @@ export default function ProfileDetail() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
-            {navigationExpanded && (
+            <div 
+              className="overflow-hidden transition-all duration-300 ease-in-out"
+              style={{
+                maxHeight: navigationExpanded ? '1000px' : '0px',
+                opacity: navigationExpanded ? 1 : 0
+              }}
+            >
               <div className="p-4 pt-0 flex flex-wrap gap-2">
                 {menuItems.map((item) => (
                   <button
@@ -3241,8 +3257,8 @@ export default function ProfileDetail() {
                     <span>{item.label}</span>
                   </button>
         ))}
-      </div>
-            )}
+              </div>
+            </div>
           </div>
         );
       })()}
