@@ -137,7 +137,7 @@ async function saveToDirectus(
   directusUrl: string
 ): Promise<void> {
   try {
-    await fetch(`${directusUrl}/items/profiles/${profileId}`, {
+    const response = await fetch(`${directusUrl}/items/profiles/${profileId}`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -148,6 +148,17 @@ async function saveToDirectus(
         raw_json: partialData,
       }),
     });
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      console.error("[CALC-BASE] Error saving to Directus:", {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText.substring(0, 200)
+      });
+    } else {
+      console.log("[CALC-BASE] Successfully saved to Directus, profileId:", profileId);
+    }
   } catch (error) {
     console.error("[CALC-BASE] Error saving to Directus:", error);
     // Не прерываем процесс, если сохранение не удалось
