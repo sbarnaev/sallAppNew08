@@ -115,32 +115,32 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
   const hasPrev = page > 1;
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl md:text-3xl font-semibold">Расчёты</h1>
+    <div className="space-y-8 md:space-y-10">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">Расчёты</h1>
         <ClientSearchButton />
       </div>
 
-      <div className="card bg-gradient-to-br from-white to-gray-50 border border-gray-200">
-        <form className="flex flex-col sm:flex-row gap-3" action="/profiles" method="get">
+      <div className="card bg-gradient-to-br from-white via-gray-50/50 to-white p-8">
+        <form className="flex flex-col sm:flex-row gap-4" action="/profiles" method="get">
           <div className="flex-1">
-            <label className="block text-sm mb-1 font-medium text-gray-700">Поиск по имени или дате рождения</label>
+            <label className="block text-sm mb-2 font-bold text-gray-700">Поиск по имени или дате рождения</label>
             <div className="relative">
-              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input 
                 name="search" 
                 defaultValue={(searchParams.search as string) || ""} 
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 text-base transition-all duration-200 bg-white" 
+                className="w-full pl-12 pr-5 py-4 rounded-2xl border border-gray-300/80 focus:border-brand-500 focus:ring-2 focus:ring-brand-200/50 text-base transition-all duration-300 bg-white hover:border-gray-400" 
                 placeholder="Имя, фамилия или дата..." 
               />
             </div>
           </div>
-          <div className="flex gap-2 sm:flex-col sm:justify-end">
-            <button type="submit" className="flex-1 sm:flex-none rounded-xl bg-gradient-to-r from-gray-900 to-gray-800 text-white px-4 py-3 h-[42px] text-sm md:text-base whitespace-nowrap hover:from-gray-800 hover:to-gray-700 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 font-semibold">Искать</button>
+          <div className="flex gap-3 sm:flex-col sm:justify-end">
+            <button type="submit" className="flex-1 sm:flex-none rounded-2xl bg-gradient-to-r from-gray-900 to-gray-800 text-white px-6 py-4 h-[52px] text-sm md:text-base whitespace-nowrap hover:from-gray-800 hover:to-gray-700 shadow-lg shadow-gray-900/20 hover:shadow-xl hover:shadow-gray-900/30 transition-all duration-300 hover:scale-105 active:scale-[0.98] font-bold">Искать</button>
             {(searchParams.search as string) && (
-              <Link href="/profiles" className="flex-1 sm:flex-none rounded-xl border border-gray-300 px-4 py-3 h-[42px] flex items-center justify-center hover:bg-gray-50 text-sm md:text-base whitespace-nowrap transition-all duration-200 hover:shadow-md font-semibold">
+              <Link href="/profiles" className="flex-1 sm:flex-none rounded-2xl border border-gray-300/80 px-6 py-4 h-[52px] flex items-center justify-center hover:bg-gray-50 hover:border-gray-400 text-sm md:text-base whitespace-nowrap transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] font-bold">
                 Сбросить
               </Link>
             )}
@@ -148,8 +148,12 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
         </form>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {profiles.length === 0 && <div className="col-span-full card">Нет данных</div>}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {profiles.length === 0 && (
+          <div className="col-span-full card text-center py-16 bg-gradient-to-br from-white via-gray-50/50 to-white">
+            <p className="text-lg font-bold text-gray-900">Нет данных</p>
+          </div>
+        )}
         {profiles.map((p:any) => {
           // Определяем тип расчета из raw_json
           let consultationType = "Базовый";
@@ -175,32 +179,32 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
           const birthDateStr = client?.birth_date ? new Date(client.birth_date).toLocaleDateString("ru-RU") : null;
           
           return (
-            <div key={p.id} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all duration-300 hover:border-blue-400 relative group bg-gradient-to-br from-white to-gray-50">
-              <Link href={`/profiles/${p.id}`} className="block space-y-3">
-                <div className="font-semibold text-lg text-gray-900 break-words group-hover:text-blue-700 transition-colors">{clientName}</div>
-                <div className="space-y-1 text-sm text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div key={p.id} className="bg-white rounded-3xl border border-gray-200/80 p-6 shadow-sm hover:shadow-soft-lg hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 hover:border-blue-300 relative group bg-gradient-to-br from-white via-gray-50/30 to-white">
+              <Link href={`/profiles/${p.id}`} className="block space-y-4">
+                <div className="font-bold text-lg text-gray-900 break-words group-hover:text-blue-700 transition-colors leading-tight">{clientName}</div>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2.5">
+                    <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span>Дата расчета: {dateStr}</span>
+                    <span className="text-gray-600">Дата расчета: {dateStr}</span>
                   </div>
                   {birthDateStr && (
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-center gap-2.5">
+                      <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      <span>Дата рождения: {birthDateStr}</span>
+                      <span className="text-gray-600">Дата рождения: {birthDateStr}</span>
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 border border-blue-200">
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 border border-blue-200/60">
                     {consultationType}
                   </span>
                 </div>
               </Link>
-              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <DeleteProfile id={p.id} />
               </div>
             </div>
@@ -209,10 +213,28 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
       </div>
 
       {(hasPrev || hasNext) && (
-        <div className="flex items-center gap-2">
-          {hasPrev && <Link href={`/profiles?${new URLSearchParams({ ...Object.fromEntries(Object.entries(searchParams).map(([k,v])=>[k,String(v||"")])) as any, page: String(page-1), limit: String(limit) }).toString()}`} className="px-3 py-1 rounded-lg border">Назад</Link>}
-          <div className="text-sm text-gray-500">Стр. {page}{total ? ` · всего ${total}` : ""}</div>
-          {hasNext && <Link href={`/profiles?${new URLSearchParams({ ...Object.fromEntries(Object.entries(searchParams).map(([k,v])=>[k,String(v||"")])) as any, page: String(page+1), limit: String(limit) }).toString()}`} className="px-3 py-1 rounded-lg border">Вперёд</Link>}
+        <div className="flex items-center justify-between gap-6 pt-4">
+          <div className="flex items-center gap-3">
+            {hasPrev && (
+              <Link 
+                href={`/profiles?${new URLSearchParams({ ...Object.fromEntries(Object.entries(searchParams).map(([k,v])=>[k,String(v||"")])) as any, page: String(page-1), limit: String(limit) }).toString()}`} 
+                className="px-5 py-2.5 rounded-xl border border-gray-300/80 hover:bg-gray-50 hover:border-gray-400 text-sm font-bold transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
+              >
+                Назад
+              </Link>
+            )}
+            {hasNext && (
+              <Link 
+                href={`/profiles?${new URLSearchParams({ ...Object.fromEntries(Object.entries(searchParams).map(([k,v])=>[k,String(v||"")])) as any, page: String(page+1), limit: String(limit) }).toString()}`} 
+                className="px-5 py-2.5 rounded-xl border border-gray-300/80 hover:bg-gray-50 hover:border-gray-400 text-sm font-bold transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
+              >
+                Вперёд
+              </Link>
+            )}
+          </div>
+          <div className="text-sm text-gray-600 font-medium">
+            Стр. <span className="font-bold text-gray-900">{page}</span>{total ? ` · всего <span className="font-bold text-gray-900">${total}</span>` : ""}
+          </div>
         </div>
       )}
     </div>

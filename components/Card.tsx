@@ -1,4 +1,24 @@
 import { ReactNode } from "react";
-export function Card({ children }: { children: ReactNode }) {
-  return <div className="card">{children}</div>;
+import { clsx } from "clsx";
+
+export function Card({ 
+  children, 
+  className,
+  hover = true 
+}: { 
+  children: ReactNode;
+  className?: string;
+  hover?: boolean;
+}) {
+  return (
+    <div 
+      className={clsx(
+        "card",
+        hover && "hover:shadow-soft-lg hover:-translate-y-0.5",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
 }

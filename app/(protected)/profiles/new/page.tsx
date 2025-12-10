@@ -99,6 +99,71 @@ export default function NewCalculationPage() {
         payload.goal = cleanText(partnerGoal);
       }
 
+      // Для базового расчета используем новый автономный API
+      if (type === "base") {
+        payload.stream = true;
+        const res = await fetch("/api/calc-base?stream=1", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData?.message || "Calculation failed");
+        }
+
+        // Обрабатываем стриминг
+        const reader = res.body?.getReader();
+        const decoder = new TextDecoder();
+        if (!reader) {
+          throw new Error("No response body");
+        }
+
+        let profileId: number | null = null;
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (!line.trim() || !line.startsWith("data:")) continue;
+            const payload = line.slice(5).trim();
+            if (payload === "[DONE]") {
+              if (profileId) {
+                router.push(`/profiles/${profileId}`);
+              } else {
+                router.push("/profiles");
+              }
+              return;
+            }
+
+            try {
+              const data = JSON.parse(payload);
+              if (data.profileId) {
+                profileId = data.profileId;
+              }
+            } catch (e) {
+              // Игнорируем ошибки парсинга
+            }
+          }
+        }
+
+        // Если дошли до конца без [DONE], все равно редиректим
+        if (profileId) {
+          router.push(`/profiles/${profileId}`);
+        } else {
+          router.push("/profiles");
+        }
+        return;
+      }
+
+      // Для целевого и партнерского расчета используем старый API через n8n
       const res = await fetch("/api/calc", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -130,21 +195,64 @@ export default function NewCalculationPage() {
         name,
         birthday, // YYYY-MM-DD
         clientId: clientId ? Number(clientId) : undefined,
-        type: "base",
+        stream: true, // Включаем стриминг
       };
       
-      const res = await fetch("/api/calc", {
+      // Используем новый автономный API для базового расчета
+      const res = await fetch("/api/calc-base?stream=1", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       
-      const data = await res.json().catch(() => ({}));
-      
       if (!res.ok) {
-        throw new Error(data?.message || "Calculation failed");
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData?.message || "Calculation failed");
       }
-      const profileId = data?.profileId || data?.data?.profileId || data?.id; // accept common shapes
+
+      // Обрабатываем стриминг
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      let profileId: number | null = null;
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.trim() || !line.startsWith("data:")) continue;
+          const payload = line.slice(5).trim();
+          if (payload === "[DONE]") {
+            if (profileId) {
+              router.push(`/profiles/${profileId}`);
+            } else {
+              router.push("/profiles");
+            }
+            return;
+          }
+
+          try {
+            const data = JSON.parse(payload);
+            if (data.profileId) {
+              profileId = data.profileId;
+            }
+            // Игнорируем промежуточные данные стриминга
+          } catch (e) {
+            // Игнорируем ошибки парсинга
+          }
+        }
+      }
+
+      // Если дошли до конца без [DONE], все равно редиректим
       if (profileId) {
         router.push(`/profiles/${profileId}`);
       } else {
@@ -152,7 +260,6 @@ export default function NewCalculationPage() {
       }
     } catch (err: any) {
       setError(err.message || String(err));
-    } finally {
       setLoading(false);
     }
   }

@@ -372,6 +372,416 @@ export default function ProfileDetail() {
     } catch { }
   }, [chat]);
 
+  // Функция экспорта базовых блоков в PDF (только для базового расчета)
+  async function exportBasicPDF() {
+      let strengths: string[] = [];
+      let weaknesses: string[] = [];
+      let resourceSignals: string[] = [];
+      let deficitSignals: string[] = [];
+      
+      try {
+        let payload: any = profile?.raw_json;
+        if (typeof payload === 'string') payload = JSON.parse(payload);
+        const item = Array.isArray(payload) ? payload[0] : payload;
+        
+        // Обрабатываем сильные стороны
+        if (item?.strengths) {
+          if (Array.isArray(item.strengths)) {
+            strengths = item.strengths.map((s: any) => {
+              if (typeof s === 'string') return s;
+              if (typeof s === 'object' && s !== null) {
+                return s.text || s.value || s.content || JSON.stringify(s).replace(/[{}"]/g, '');
+              }
+              return String(s);
+            }).filter(Boolean);
+          } else if (typeof item.strengths === 'string') {
+            strengths = item.strengths.split(/\n+/).filter(Boolean);
+          } else if (item.strengths_text) {
+            strengths = String(item.strengths_text).split(/\n+/).filter(Boolean);
+          }
+        }
+        
+        // Обрабатываем слабые стороны
+        if (item?.weaknesses) {
+          if (Array.isArray(item.weaknesses)) {
+            weaknesses = item.weaknesses.map((w: any) => {
+              if (typeof w === 'string') return w;
+              if (typeof w === 'object' && w !== null) {
+                return w.text || w.value || w.content || JSON.stringify(w).replace(/[{}"]/g, '');
+              }
+              return String(w);
+            }).filter(Boolean);
+          } else if (typeof item.weaknesses === 'string') {
+            weaknesses = item.weaknesses.split(/\n+/).filter(Boolean);
+          } else if (item.weaknesses_text) {
+            weaknesses = String(item.weaknesses_text).split(/\n+/).filter(Boolean);
+          }
+        }
+        
+        // Обрабатываем признаки плюса
+        if (item?.resourceSignals) {
+          if (Array.isArray(item.resourceSignals)) {
+            resourceSignals = item.resourceSignals.map((r: any) => {
+              if (typeof r === 'string') return r;
+              if (typeof r === 'object' && r !== null) {
+                return r.text || r.value || r.content || JSON.stringify(r).replace(/[{}"]/g, '');
+              }
+              return String(r);
+            }).filter(Boolean);
+          } else if (typeof item.resourceSignals === 'string') {
+            resourceSignals = item.resourceSignals.split(/\n+/).filter(Boolean);
+          } else if (item.resourceSignals_text) {
+            resourceSignals = String(item.resourceSignals_text).split(/\n+/).filter(Boolean);
+          }
+        }
+        
+        // Обрабатываем признаки минуса
+        if (item?.deficitSignals) {
+          if (Array.isArray(item.deficitSignals)) {
+            deficitSignals = item.deficitSignals.map((d: any) => {
+              if (typeof d === 'string') return d;
+              if (typeof d === 'object' && d !== null) {
+                return d.text || d.value || d.content || JSON.stringify(d).replace(/[{}"]/g, '');
+              }
+              return String(d);
+            }).filter(Boolean);
+          } else if (typeof item.deficitSignals === 'string') {
+            deficitSignals = item.deficitSignals.split(/\n+/).filter(Boolean);
+          } else if (item.deficitSignals_text) {
+            deficitSignals = String(item.deficitSignals_text).split(/\n+/).filter(Boolean);
+          }
+        }
+      } catch (error) {
+        console.error('Error processing data for PDF:', error);
+        alert('Ошибка при обработке данных для PDF');
+        return;
+      }
+      
+      // Проверяем, что есть данные для экспорта
+      if (strengths.length === 0 && weaknesses.length === 0 && resourceSignals.length === 0 && deficitSignals.length === 0) {
+        alert('Нет данных для экспорта');
+        return;
+      }
+      
+      const dateStr = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('ru-RU') : '';
+      
+      // Функция для очистки текста
+      const cleanText = (text: string): string => {
+        if (!text) return '';
+        let cleaned = String(text);
+        cleaned = cleaned.replace(/\{[^}]*\}/g, '');
+        cleaned = cleaned.replace(/\s+/g, ' ').trim();
+        return cleaned;
+      };
+      
+      // Создаем HTML с красивым оформлением для мобильного чтения
+      const html = `
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.8;
+      color: #1a1a1a;
+      background: #ffffff;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .page {
+      page-break-after: always;
+      page-break-inside: avoid;
+      min-height: 250mm;
+      padding: 20mm 15mm;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(to bottom, #fafafa 0%, #ffffff 100%);
+    }
+    .page:last-child {
+      page-break-after: auto;
+    }
+    .header {
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 3px solid #4a61ff;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #666;
+      font-weight: 500;
+    }
+    .section-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin: 30px 0 25px 0;
+      padding-bottom: 15px;
+      border-bottom: 3px solid #e0e0e0;
+      letter-spacing: -0.01em;
+    }
+    .section-title.strengths {
+      color: #f97316;
+      border-bottom-color: #f97316;
+    }
+    .section-title.weaknesses {
+      color: #ea580c;
+      border-bottom-color: #ea580c;
+    }
+    .section-title.plus {
+      color: #059669;
+      border-bottom-color: #059669;
+    }
+    .section-title.minus {
+      color: #dc2626;
+      border-bottom-color: #dc2626;
+    }
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    li {
+      margin: 16px 0;
+      padding: 12px 0 12px 40px;
+      position: relative;
+      line-height: 1.9;
+      font-size: 16px;
+      color: #1a1a1a;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 8px;
+      padding-left: 45px;
+    }
+    li::before {
+      content: "•";
+      position: absolute;
+      left: 18px;
+      color: #4a61ff;
+      font-weight: bold;
+      font-size: 24px;
+      top: 10px;
+    }
+    .footer {
+      margin-top: auto;
+      padding-top: 20px;
+      border-top: 2px solid #e0e0e0;
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+    }
+    .icon {
+      font-size: 32px;
+      margin-right: 12px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  ${strengths.length > 0 ? `
+  <div class="page">
+    <div class="header">
+      <div class="title">${clientName ? clientName : 'Расчёт профиля'}</div>
+      ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
+    </div>
+    <div class="content">
+      <h2 class="section-title strengths">⚖️ Сильные стороны</h2>
+      <ul>
+        ${strengths.map((s: string) => {
+          const cleaned = cleanText(s);
+          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>` : '';
+        }).filter(Boolean).join('')}
+      </ul>
+    </div>
+    <div class="footer">
+      САЛ ПРОФИ
+    </div>
+  </div>
+  ` : ''}
+  
+  ${weaknesses.length > 0 ? `
+  <div class="page">
+    <div class="header">
+      <div class="title">${clientName ? clientName : 'Расчёт профиля'}</div>
+      ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
+    </div>
+    <div class="content">
+      <h2 class="section-title weaknesses">⚖️ Слабые стороны</h2>
+      <ul>
+        ${weaknesses.map((w: string) => {
+          const cleaned = cleanText(w);
+          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>` : '';
+        }).filter(Boolean).join('')}
+      </ul>
+    </div>
+    <div class="footer">
+      САЛ ПРОФИ
+    </div>
+  </div>
+  ` : ''}
+  
+  ${resourceSignals.length > 0 ? `
+  <div class="page">
+    <div class="header">
+      <div class="title">${clientName ? clientName : 'Расчёт профиля'}</div>
+      ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
+    </div>
+    <div class="content">
+      <h2 class="section-title plus">✅ Признаки плюса</h2>
+      <ul>
+        ${resourceSignals.map((r: string) => {
+          const cleaned = cleanText(r);
+          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>` : '';
+        }).filter(Boolean).join('')}
+      </ul>
+    </div>
+    <div class="footer">
+      САЛ ПРОФИ
+    </div>
+  </div>
+  ` : ''}
+  
+  ${deficitSignals.length > 0 ? `
+  <div class="page">
+    <div class="header">
+      <div class="title">${clientName ? clientName : 'Расчёт профиля'}</div>
+      ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
+    </div>
+    <div class="content">
+      <h2 class="section-title minus">❌ Признаки минуса</h2>
+      <ul>
+        ${deficitSignals.map((d: string) => {
+          const cleaned = cleanText(d);
+          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>` : '';
+        }).filter(Boolean).join('')}
+      </ul>
+    </div>
+    <div class="footer">
+      САЛ ПРОФИ
+    </div>
+  </div>
+  ` : ''}
+</body>
+</html>`;
+      
+      // Создаем временный элемент для генерации PDF
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      const parserError = doc.querySelector('parsererror');
+      if (parserError) {
+        console.error('HTML parsing error:', parserError.textContent);
+        alert('Ошибка парсинга HTML: ' + parserError.textContent);
+        return;
+      }
+      
+      const bodyContent = doc.body;
+      const styleElement = doc.querySelector('style');
+      
+      if (!bodyContent || bodyContent.children.length === 0) {
+        alert('Ошибка: не удалось создать содержимое для PDF');
+        return;
+      }
+      
+      // Создаем контейнер для PDF
+      const element = document.createElement('div');
+      element.style.width = '210mm';
+      element.style.minHeight = '297mm';
+      element.style.padding = '0';
+      element.style.margin = '0';
+      element.style.backgroundColor = 'white';
+      element.style.position = 'absolute';
+      element.style.top = '-9999px';
+      element.style.left = '0';
+      element.style.visibility = 'visible';
+      element.style.opacity = '1';
+      element.style.pointerEvents = 'none';
+      element.style.overflow = 'visible';
+      element.style.zIndex = '999999';
+      
+      // Копируем стили
+      if (styleElement) {
+        const style = document.createElement('style');
+        style.textContent = styleElement.textContent || '';
+        element.appendChild(style);
+      }
+      
+      // Копируем содержимое body
+      const bodyClone = bodyContent.cloneNode(true) as HTMLElement;
+      while (bodyClone.firstChild) {
+        element.appendChild(bodyClone.firstChild);
+      }
+      
+      document.body.appendChild(element);
+      
+      // Ждем рендеринг
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const textContent = element.textContent?.trim() || '';
+      const hasContent = element.children.length > 0 || textContent.length > 0;
+      
+      if (!hasContent) {
+        document.body.removeChild(element);
+        alert('Ошибка: контент не отрендерился для PDF');
+        return;
+      }
+      
+      // Настройки для html2pdf
+      const opt = {
+        margin: [0, 0, 0, 0] as [number, number, number, number],
+        filename: `Базовый_расчет_${clientName || 'профиль'}_${dateStr || new Date().toLocaleDateString('ru-RU')}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          width: element.scrollWidth || 794,
+          height: element.scrollHeight || 1123,
+          windowWidth: element.scrollWidth || 794,
+          windowHeight: element.scrollHeight || 1123,
+          removeContainer: false
+        },
+        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+      
+      // Генерируем и скачиваем PDF
+      try {
+        await html2pdf().set(opt).from(element).save();
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Ошибка при генерации PDF: ' + (error instanceof Error ? error.message : String(error)));
+      } finally {
+        if (element.parentNode) {
+          document.body.removeChild(element);
+        }
+      }
+    }
+
   function ActionBar() {
     async function exportPdf() {
       let strengths: string[] = [];
@@ -1451,8 +1861,28 @@ export default function ProfileDetail() {
     localUiStateRef: React.MutableRefObject<Record<string, boolean>>,
     saveChecked: (map: Record<string, boolean>) => void
   ) {
+    // Проверяем, есть ли данные для экспорта
+    const hasExportData = items.some((item) => 
+      (item.strengths || item.strengths_text || item.weaknesses || item.weaknesses_text || 
+       item.resourceSignals || item.resourceSignals_text || item.deficitSignals || item.deficitSignals_text)
+    );
+
     return (
       <div className="space-y-6">
+        {/* Кнопка экспорта в PDF */}
+        {hasExportData && (
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={exportBasicPDF}
+              className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-700 text-white font-bold text-sm hover:from-brand-700 hover:to-brand-800 shadow-lg shadow-brand-500/20 hover:shadow-xl hover:shadow-brand-500/30 transition-all duration-300 hover:scale-105 active:scale-[0.98]"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Экспорт в PDF
+            </button>
+          </div>
+        )}
         {items.map((item, idx) => (
           <div key={idx} className="space-y-6">
             {/* Скажите клиенту */}

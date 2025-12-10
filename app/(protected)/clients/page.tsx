@@ -61,17 +61,17 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
   const hasPrev = page > 1;
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-8 md:space-y-10">
       {/* Заголовок с статистикой */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Клиенты</h1>
-          <p className="text-sm md:text-base text-gray-500 mt-1">Всего клиентов: {total}</p>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+        <div className="space-y-2">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">Клиенты</h1>
+          <p className="text-base md:text-lg text-gray-600 font-medium">Всего клиентов: <span className="text-gray-900 font-bold">{total}</span></p>
         </div>
         <div className="flex gap-3">
-          <Link href="/clients/new" className="rounded-xl bg-green-100 text-green-700 px-4 md:px-6 py-2 md:py-3 hover:bg-green-200 border border-green-200 flex items-center gap-2 text-sm md:text-base whitespace-nowrap">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          <Link href="/clients/new" className="rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3.5 hover:from-green-600 hover:to-green-700 border-0 shadow-lg shadow-green-500/20 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300 hover:scale-105 active:scale-[0.98] flex items-center gap-2.5 text-sm font-bold whitespace-nowrap">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
             <span className="hidden sm:inline">Новый клиент</span>
             <span className="sm:hidden">Новый</span>
@@ -80,43 +80,43 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
       </div>
 
       {/* Поиск */}
-      <div className="card bg-gradient-to-br from-white to-gray-50 border border-gray-200">
-        <form className="flex flex-col sm:flex-row gap-3" action="/clients" method="get">
+      <div className="card bg-gradient-to-br from-white via-gray-50/50 to-white p-8">
+        <form className="flex flex-col sm:flex-row gap-4" action="/clients" method="get">
           <div className="flex-1 relative">
-            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               name="search"
               defaultValue={searchTerm}
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 text-base transition-all duration-200 bg-white"
+              className="w-full pl-12 pr-5 py-4 rounded-2xl border border-gray-300/80 focus:border-brand-500 focus:ring-2 focus:ring-brand-200/50 text-base transition-all duration-300 bg-white hover:border-gray-400"
               placeholder="Поиск по имени, email..."
             />
           </div>
-          <button type="submit" className="rounded-xl bg-gradient-to-r from-gray-900 to-gray-800 text-white px-4 md:px-6 py-3 hover:from-gray-800 hover:to-gray-700 flex items-center justify-center gap-2 whitespace-nowrap shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <button type="submit" className="rounded-2xl bg-gradient-to-r from-gray-900 to-gray-800 text-white px-6 py-4 hover:from-gray-800 hover:to-gray-700 flex items-center justify-center gap-2.5 whitespace-nowrap shadow-lg shadow-gray-900/20 hover:shadow-xl hover:shadow-gray-900/30 transition-all duration-300 hover:scale-105 active:scale-[0.98] font-bold">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <span className="hidden sm:inline font-semibold">Искать</span>
-            <span className="sm:hidden font-semibold">Найти</span>
+            <span className="hidden sm:inline">Искать</span>
+            <span className="sm:hidden">Найти</span>
           </button>
         </form>
       </div>
 
       {/* Список клиентов */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {data.length === 0 && (
-          <div className="card text-center py-12 col-span-full">
-            <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          <div className="card text-center py-16 col-span-full bg-gradient-to-br from-white via-gray-50/50 to-white">
+            <svg className="w-20 h-20 mx-auto mb-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Клиенты не найдены</h3>
-            <p className="text-gray-500 mb-4">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Клиенты не найдены</h3>
+            <p className="text-gray-600 mb-6 text-base">
               {searchTerm ? "Попробуйте изменить параметры поиска" : "Создайте первого клиента"}
             </p>
-            <Link href="/clients/new" className="inline-flex items-center gap-2 rounded-xl bg-green-100 text-green-700 px-4 py-2 hover:bg-green-200 border border-green-200">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            <Link href="/clients/new" className="inline-flex items-center gap-2.5 rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 hover:from-green-600 hover:to-green-700 shadow-lg shadow-green-500/20 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300 hover:scale-105 active:scale-[0.98] font-bold">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               Создать клиента
             </Link>
@@ -124,20 +124,20 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
         )}
         
         {data.map((c: any) => (
-          <div key={c.id} className="card p-5 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border border-gray-200 group">
+          <div key={c.id} className="card p-6 hover:shadow-soft-lg hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 border border-gray-200/80 group bg-gradient-to-br from-white via-gray-50/30 to-white">
             {/* Заголовок с аватаром и именем */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 rounded-2xl flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+            <div className="flex items-center gap-4 mb-5">
+              <div className="w-14 h-14 bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 rounded-3xl flex items-center justify-center text-white font-bold text-xl shrink-0 shadow-lg shadow-brand-500/20 group-hover:shadow-xl group-hover:shadow-brand-500/30 group-hover:scale-110 transition-all duration-300">
                 {c.name ? c.name.charAt(0).toUpperCase() : '?'}
               </div>
               <div className="flex-1 min-w-0">
                 <Link href={`/clients/${c.id}`} className="block">
-                  <h3 className="text-base font-semibold text-gray-900 truncate hover:text-brand-600">
+                  <h3 className="text-lg font-bold text-gray-900 truncate hover:text-brand-600 transition-colors leading-tight">
                     {c.name || 'Без имени'}
                   </h3>
                 </Link>
                 {c.birth_date && (
-                  <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
+                  <span className="inline-block mt-1.5 text-xs text-gray-600 bg-gray-100/80 px-3 py-1 rounded-full whitespace-nowrap font-medium">
                     {new Date(c.birth_date).toLocaleDateString('ru-RU')}
                   </span>
                 )}
@@ -145,7 +145,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
             </div>
             
             {/* Контакты */}
-            <div className="flex flex-wrap gap-3 text-xs text-gray-600 mb-3">
+            <div className="flex flex-wrap gap-2.5 text-xs text-gray-600 mb-5">
               {c.email && (
                 <div className="flex items-center gap-1 min-w-0">
                   <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,17 +181,17 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
             </div>
             
             {/* Действия */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
-              <Link href={`/clients/${c.id}`} className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gradient-to-r hover:from-gray-50 hover:to-white text-sm font-semibold transition-all duration-200 text-center hover:shadow-md hover:scale-105">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-5">
+              <Link href={`/clients/${c.id}`} className="px-4 py-2.5 rounded-xl border border-gray-300/80 hover:bg-gradient-to-r hover:from-gray-50 hover:to-white text-xs font-bold transition-all duration-300 text-center hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]">
                 Открыть
               </Link>
-              <Link href={`/forecast/${c.id}`} className="px-3 py-2 rounded-xl bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 hover:from-purple-200 hover:to-purple-100 border border-purple-200 text-sm font-semibold transition-all duration-200 text-center hover:shadow-md hover:scale-105">
+              <Link href={`/forecast/${c.id}`} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 hover:from-purple-200 hover:to-purple-100 border border-purple-200/60 text-xs font-bold transition-all duration-300 text-center hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]">
                 Прогноз
               </Link>
-              <Link href={`/profiles?filter[client_id][_eq]=${c.id}`} className="px-3 py-2 rounded-xl border border-gray-300 hover:bg-gradient-to-r hover:from-gray-50 hover:to-white text-sm font-semibold transition-all duration-200 text-center hover:shadow-md hover:scale-105">
+              <Link href={`/profiles?filter[client_id][_eq]=${c.id}`} className="px-4 py-2.5 rounded-xl border border-gray-300/80 hover:bg-gradient-to-r hover:from-gray-50 hover:to-white text-xs font-bold transition-all duration-300 text-center hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]">
                 Расчёты
               </Link>
-              <Link href={`/profiles/new?clientId=${c.id}`} className="px-3 py-2 rounded-xl bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 hover:from-blue-200 hover:to-blue-100 border border-blue-200 text-sm font-semibold transition-all duration-200 text-center hover:shadow-md hover:scale-105">
+              <Link href={`/profiles/new?clientId=${c.id}`} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 hover:from-blue-200 hover:to-blue-100 border border-blue-200/60 text-xs font-bold transition-all duration-300 text-center hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]">
                 Расчёт
               </Link>
             </div>
@@ -201,12 +201,12 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
 
       {/* Пагинация */}
       {(hasPrev || hasNext) && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-4">
+          <div className="flex items-center gap-3">
             {hasPrev && (
               <Link
                 href={`/clients?search=${encodeURIComponent(searchTerm)}&page=${page-1}&limit=${limit}`}
-                className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors"
+                className="px-5 py-2.5 rounded-xl border border-gray-300/80 hover:bg-gray-50 hover:border-gray-400 text-sm font-bold transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
               >
                 ← Назад
               </Link>
@@ -214,14 +214,14 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
             {hasNext && (
               <Link
                 href={`/clients?search=${encodeURIComponent(searchTerm)}&page=${page+1}&limit=${limit}`}
-                className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium transition-colors"
+                className="px-5 py-2.5 rounded-xl border border-gray-300/80 hover:bg-gray-50 hover:border-gray-400 text-sm font-bold transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
               >
                 Вперёд →
               </Link>
             )}
           </div>
-          <div className="text-xs sm:text-sm text-gray-500 text-center">
-            Страница {displayPage} из {totalPages} • Всего {total} клиентов
+          <div className="text-sm text-gray-600 text-center font-medium">
+            Страница <span className="font-bold text-gray-900">{displayPage}</span> из <span className="font-bold text-gray-900">{totalPages}</span> • Всего <span className="font-bold text-gray-900">{total}</span> клиентов
           </div>
         </div>
       )}
