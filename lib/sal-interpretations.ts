@@ -6,24 +6,68 @@ import { calculateSALCodes, SALCodes } from "./sal-codes";
 import { readFileSync } from "fs";
 import { join } from "path";
 
-// Загружаем JSON файлы с трактовками
-function loadJsonFile(filename: string): any[] {
+// Кэш для загруженных данных
+let dataCache: {
+  generator?: any[];
+  konnector?: any[];
+  lichost?: any[];
+  mission?: any[];
+  realization?: any[];
+} = {};
+
+// Загружаем JSON файлы с трактовками (с кэшированием)
+function loadJsonFile(filename: string, cacheKey: keyof typeof dataCache): any[] {
+  // Проверяем кэш
+  if (dataCache[cacheKey]) {
+    return dataCache[cacheKey]!;
+  }
+
   try {
     // Папка называется "от меня " (с пробелом в конце)
     const filePath = join(process.cwd(), "от меня ", filename);
     const content = readFileSync(filePath, "utf-8");
-    return JSON.parse(content);
-  } catch (error) {
-    console.error(`Error loading ${filename}:`, error);
+    const parsed = JSON.parse(content);
+    
+    // Кэшируем результат
+    if (Array.isArray(parsed)) {
+      dataCache[cacheKey] = parsed;
+      return parsed;
+    }
+    
+    console.error(`[SAL-INTERPRETATIONS] ${filename} is not an array`);
+    return [];
+  } catch (error: any) {
+    console.error(`[SAL-INTERPRETATIONS] Error loading ${filename}:`, {
+      error: error?.message || String(error),
+      code: error?.code,
+      path: join(process.cwd(), "от меня ", filename)
+    });
+    // Возвращаем пустой массив, чтобы не ломать работу
+    dataCache[cacheKey] = [];
     return [];
   }
 }
 
-const generatorData = loadJsonFile("generator.json");
-const konnectorData = loadJsonFile("konnector.json");
-const lichostData = loadJsonFile("lichost.json");
-const missionData = loadJsonFile("mission.json");
-const realizationData = loadJsonFile("realization.json");
+// Ленивая загрузка данных
+function getGeneratorData() {
+  return loadJsonFile("generator.json", "generator");
+}
+
+function getKonnectorData() {
+  return loadJsonFile("konnector.json", "konnector");
+}
+
+function getLichostData() {
+  return loadJsonFile("lichost.json", "lichost");
+}
+
+function getMissionData() {
+  return loadJsonFile("mission.json", "mission");
+}
+
+function getRealizationData() {
+  return loadJsonFile("realization.json", "realization");
+}
 
 export interface CodeInterpretation {
   code: number;
@@ -55,7 +99,17 @@ function getInterpretation(data: any[], code: number): CodeInterpretation | null
  */
 export function getProfileCodes(birthday: string): ProfileCodes | null {
   const codes = calculateSALCodes(birthday);
-  if (!codes) return null;
+  if (!codes) {
+    console.error("[SAL-INTERPRETATIONS] Failed to calculate codes for birthday:", birthday);
+    return null;
+  }
+
+  // Загружаем данные лениво
+  const lichostData = getLichostData();
+  const konnectorData = getKonnectorData();
+  const realizationData = getRealizationData();
+  const generatorData = getGeneratorData();
+  const missionData = getMissionData();
 
   const personality = getInterpretation(lichostData, codes.personality);
   const connector = getInterpretation(konnectorData, codes.connector);
@@ -64,6 +118,14 @@ export function getProfileCodes(birthday: string): ProfileCodes | null {
   const mission = getInterpretation(missionData, codes.mission);
 
   if (!personality || !connector || !realization || !generator || !mission) {
+    console.error("[SAL-INTERPRETATIONS] Missing interpretations:", {
+      personality: !!personality,
+      connector: !!connector,
+      realization: !!realization,
+      generator: !!generator,
+      mission: !!mission,
+      codes
+    });
     return null;
   }
 

@@ -14,6 +14,7 @@ export default function NewCalculationPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [client, setClient] = useState<any | null>(null);
+  const [streamingProgress, setStreamingProgress] = useState<{ length: number; profileId?: number } | null>(null);
   const canStart = Boolean(name && birthday);
   // Поля для целевого расчета
   const [targetCurrent, setTargetCurrent] = useState(""); // что есть сейчас
@@ -101,66 +102,96 @@ export default function NewCalculationPage() {
 
       // Для базового расчета используем новый автономный API
       if (type === "base") {
-        payload.stream = true;
-        const res = await fetch("/api/calc-base?stream=1", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+        try {
+          payload.stream = true;
+          const res = await fetch("/api/calc-base?stream=1", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
 
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData?.message || "Calculation failed");
-        }
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData?.message || "Calculation failed");
+          }
 
-        // Обрабатываем стриминг
-        const reader = res.body?.getReader();
-        const decoder = new TextDecoder();
-        if (!reader) {
-          throw new Error("No response body");
-        }
+          // Обрабатываем стриминг с визуальным отображением прогресса
+          const reader = res.body?.getReader();
+          const decoder = new TextDecoder();
+          if (!reader) {
+            throw new Error("No response body");
+          }
 
-        let profileId: number | null = null;
-        let buffer = "";
+          let profileId: number | null = null;
+          let buffer = "";
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
 
-          for (const line of lines) {
-            if (!line.trim() || !line.startsWith("data:")) continue;
-            const payload = line.slice(5).trim();
-            if (payload === "[DONE]") {
-              if (profileId) {
-                router.push(`/profiles/${profileId}`);
-              } else {
-                router.push("/profiles");
+            for (const line of lines) {
+              if (!line.trim() || !line.startsWith("data:")) continue;
+              const payload = line.slice(5).trim();
+              if (payload === "[DONE]") {
+                // Данные уже сохранены в Directus, редиректим на профиль
+                setStreamingProgress(null);
+                if (profileId) {
+                  router.push(`/profiles/${profileId}`);
+                } else {
+                  router.push("/profiles");
+                }
+                return;
               }
-              return;
-            }
 
-            try {
-              const data = JSON.parse(payload);
-              if (data.profileId) {
-                profileId = data.profileId;
+              try {
+                const data = JSON.parse(payload);
+                if (data.profileId) {
+                  profileId = data.profileId;
+                  setStreamingProgress(prev => ({ ...prev, profileId }));
+                }
+                // Обновляем прогресс стриминга
+                if (data.type === "progress") {
+                  setStreamingProgress(prev => ({ 
+                    length: data.length || 0, 
+                    profileId: prev?.profileId || profileId || undefined 
+                  }));
+                }
+                if (data.type === "complete") {
+                  setStreamingProgress(prev => ({ 
+                    length: 10000, // Показываем завершение
+                    profileId: data.profileId || prev?.profileId || profileId || undefined 
+                  }));
+                }
+                // Обрабатываем ошибки
+                if (data.error) {
+                  setStreamingProgress(null);
+                  throw new Error(data.error);
+                }
+              } catch (e) {
+                // Игнорируем ошибки парсинга отдельных чанков
               }
-            } catch (e) {
-              // Игнорируем ошибки парсинга
             }
           }
-        }
 
-        // Если дошли до конца без [DONE], все равно редиректим
-        if (profileId) {
-          router.push(`/profiles/${profileId}`);
-        } else {
-          router.push("/profiles");
+          // Если дошли до конца без [DONE], все равно редиректим
+          // Данные должны были сохраниться в процессе стриминга
+          setStreamingProgress(null);
+          if (profileId) {
+            router.push(`/profiles/${profileId}`);
+          } else {
+            router.push("/profiles");
+          }
+          return;
+        } catch (err: any) {
+          setStreamingProgress(null);
+          setError(err.message || String(err));
+          setLoading(false);
+          return;
         }
-        return;
       }
 
       // Для целевого и партнерского расчета используем старый API через n8n
@@ -232,6 +263,7 @@ export default function NewCalculationPage() {
           if (!line.trim() || !line.startsWith("data:")) continue;
           const payload = line.slice(5).trim();
           if (payload === "[DONE]") {
+            setStreamingProgress(null);
             if (profileId) {
               router.push(`/profiles/${profileId}`);
             } else {
@@ -244,8 +276,25 @@ export default function NewCalculationPage() {
             const data = JSON.parse(payload);
             if (data.profileId) {
               profileId = data.profileId;
+              setStreamingProgress(prev => ({ ...prev, profileId }));
             }
-            // Игнорируем промежуточные данные стриминга
+            // Обновляем прогресс стриминга
+            if (data.type === "progress") {
+              setStreamingProgress(prev => ({ 
+                length: data.length || 0, 
+                profileId: prev?.profileId || profileId || undefined 
+              }));
+            }
+            if (data.type === "complete") {
+              setStreamingProgress(prev => ({ 
+                length: 10000,
+                profileId: data.profileId || prev?.profileId || profileId || undefined 
+              }));
+            }
+            if (data.error) {
+              setStreamingProgress(null);
+              throw new Error(data.error);
+            }
           } catch (e) {
             // Игнорируем ошибки парсинга
           }
@@ -253,6 +302,7 @@ export default function NewCalculationPage() {
       }
 
       // Если дошли до конца без [DONE], все равно редиректим
+      setStreamingProgress(null);
       if (profileId) {
         router.push(`/profiles/${profileId}`);
       } else {
@@ -260,6 +310,7 @@ export default function NewCalculationPage() {
       }
     } catch (err: any) {
       setError(err.message || String(err));
+      setStreamingProgress(null);
       setLoading(false);
     }
   }
@@ -303,6 +354,38 @@ export default function NewCalculationPage() {
             <div className="text-sm text-amber-800">
               <div className="font-medium mb-1">Автозаполнение данных</div>
               <div>Автозаполняем имя и дату рождения... Если не подтянулось, проверьте данные клиента и повторите попытку.</div>
+            </div>
+          </div>
+        )}
+
+        {streamingProgress && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 p-6 shadow-lg">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex-shrink-0">
+                <svg className="w-8 h-8 animate-spin text-blue-600" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+              </div>
+              <div className="flex-grow">
+                <div className="font-semibold text-gray-900 mb-1">Генерация профиля...</div>
+                <div className="text-sm text-gray-600">
+                  {streamingProgress.profileId 
+                    ? `Профиль #${streamingProgress.profileId} создан, данные сохраняются...`
+                    : "Создание профиля и расчет кодов..."}
+                </div>
+              </div>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+              <div 
+                className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2.5 rounded-full transition-all duration-300"
+                style={{ 
+                  width: `${Math.min(95, (streamingProgress.length / 1000) * 10)}%` 
+                }}
+              />
+            </div>
+            <div className="text-xs text-gray-500 mt-2 text-center">
+              Данные автоматически сохраняются в процессе генерации
             </div>
           </div>
         )}

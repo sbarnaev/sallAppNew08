@@ -129,40 +129,78 @@ const SAL_BASE_SCHEMA = {
 
 /**
  * Сохраняет промежуточные результаты в Directus
+ * Гарантирует сохранение данных даже при ошибках
  */
 async function saveToDirectus(
   profileId: number,
   partialData: any,
   token: string,
-  directusUrl: string
-): Promise<void> {
-  try {
-    const response = await fetch(`${directusUrl}/items/profiles/${profileId}`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        raw_json: partialData,
-      }),
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-      console.error("[CALC-BASE] Error saving to Directus:", {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText.substring(0, 200)
+  directusUrl: string,
+  refreshToken: string | undefined,
+  retries: number = 3
+): Promise<boolean> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      // Обновляем токен перед каждой попыткой
+      let currentToken = token;
+      if (refreshToken && attempt > 1) {
+        const freshToken = await refreshAccessToken(refreshToken);
+        if (freshToken) currentToken = freshToken;
+      }
+
+      const response = await fetch(`${directusUrl}/items/profiles/${profileId}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${currentToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          raw_json: partialData,
+        }),
+        cache: "no-store",
       });
-    } else {
-      console.log("[CALC-BASE] Successfully saved to Directus, profileId:", profileId);
+      
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "");
+        console.error(`[CALC-BASE] Error saving to Directus (attempt ${attempt}/${retries}):`, {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText.substring(0, 200),
+          profileId
+        });
+        
+        // Если это 401 и есть refresh token, попробуем обновить
+        if (response.status === 401 && attempt < retries && refreshToken) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+        
+        if (attempt === retries) {
+          return false;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        continue;
+      }
+      
+      console.log(`[CALC-BASE] Successfully saved to Directus, profileId: ${profileId}, attempt: ${attempt}`);
+      return true;
+    } catch (error: any) {
+      console.error(`[CALC-BASE] Error saving to Directus (attempt ${attempt}/${retries}):`, {
+        error: error?.message || String(error),
+        profileId
+      });
+      
+      if (attempt === retries) {
+        return false;
+      }
+      
+      // Экспоненциальная задержка перед повтором
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
     }
-  } catch (error) {
-    console.error("[CALC-BASE] Error saving to Directus:", error);
-    // Не прерываем процесс, если сохранение не удалось
   }
+  
+  return false;
 }
 
 export async function POST(req: Request) {
@@ -347,78 +385,154 @@ ${codesDescription}`;
           let accumulatedContent = "";
           let lastSaveTime = Date.now();
           const SAVE_INTERVAL = 5000; // Сохраняем каждые 5 секунд
+          let hasFinalMessage = false;
+          let finalParsedData: any = null;
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
 
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || "";
 
-            for (const line of lines) {
-              if (!line.trim() || !line.startsWith("data:")) continue;
-              const payload = line.slice(5).trim();
-              if (payload === "[DONE]") {
-                // Сохраняем финальный результат в Directus
-                try {
-                  const parsed = JSON.parse(accumulatedContent);
-                  if (parsed && profileId) {
-                    await saveToDirectus(profileId, parsed, token!, directusUrl);
-                    console.log("[CALC-BASE] Final data saved to Directus");
-                  }
-                } catch (e) {
-                  console.error("[CALC-BASE] Error parsing final content:", e);
-                }
-                controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                controller.close();
-                return;
-              }
-
-              try {
-                const json = JSON.parse(payload);
-                const delta = json?.choices?.[0]?.delta;
-                
-                // При JSON schema streaming, content может приходить частями
-                if (delta?.content) {
-                  accumulatedContent += delta.content;
-                  controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify(delta.content)}\n\n`)
-                  );
-
-                  // Периодически сохраняем промежуточные результаты
-                  const now = Date.now();
-                  if (now - lastSaveTime > SAVE_INTERVAL) {
+              for (const line of lines) {
+                if (!line.trim() || !line.startsWith("data:")) continue;
+                const payload = line.slice(5).trim();
+                if (payload === "[DONE]") {
+                  // Сохраняем финальный результат в Directus
+                  if (finalParsedData && profileId) {
+                    const saved = await saveToDirectus(profileId, finalParsedData, token!, directusUrl, refreshToken);
+                    if (saved) {
+                      console.log("[CALC-BASE] Final data saved to Directus");
+                    } else {
+                      console.error("[CALC-BASE] Failed to save final data after retries");
+                    }
+                  } else if (accumulatedContent && profileId) {
+                    // Пытаемся сохранить накопленный контент, даже если не полный
                     try {
-                      const partial = JSON.parse(accumulatedContent);
-                      if (partial && profileId) {
-                        await saveToDirectus(profileId, partial, token!, directusUrl);
-                        console.log("[CALC-BASE] Intermediate data saved to Directus");
-                        lastSaveTime = now;
+                      const parsed = JSON.parse(accumulatedContent);
+                      const saved = await saveToDirectus(profileId, parsed, token!, directusUrl, refreshToken);
+                      if (saved) {
+                        console.log("[CALC-BASE] Final data saved to Directus (from accumulated)");
                       }
                     } catch (e) {
-                      // Игнорируем ошибки парсинга неполного JSON
+                      console.error("[CALC-BASE] Error parsing final content, saving raw:", e);
+                      // Сохраняем хотя бы сырые данные
+                      await saveToDirectus(profileId, { raw_content: accumulatedContent }, token!, directusUrl, refreshToken);
                     }
                   }
+                  controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                  controller.close();
+                  return;
                 }
 
-                // Если пришел полный message (в конце стрима)
-                if (json?.choices?.[0]?.message?.content) {
-                  accumulatedContent = json.choices[0].message.content;
+                try {
+                  const json = JSON.parse(payload);
+                  
+                  // При JSON schema streaming, полный message приходит в конце
+                  if (json?.choices?.[0]?.message?.content) {
+                    accumulatedContent = json.choices[0].message.content;
+                    hasFinalMessage = true;
+                    try {
+                      finalParsedData = JSON.parse(accumulatedContent);
+                      // Сохраняем сразу, когда получили полный JSON
+                      if (finalParsedData && profileId && typeof finalParsedData === 'object') {
+                        const saved = await saveToDirectus(profileId, finalParsedData, token!, directusUrl, refreshToken);
+                        if (saved) {
+                          console.log("[CALC-BASE] Complete data saved to Directus");
+                          lastSaveTime = Date.now();
+                          // Отправляем клиенту сигнал о завершении
+                          controller.enqueue(
+                            encoder.encode(`data: ${JSON.stringify({ type: "complete", profileId })}\n\n`)
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      console.error("[CALC-BASE] Error parsing final message:", e, "Content:", accumulatedContent.substring(0, 200));
+                    }
+                  }
+                  
+                  const delta = json?.choices?.[0]?.delta;
+                  
+                  // При JSON schema streaming, content может приходить частями как JSON строка
+                  if (delta?.content) {
+                    accumulatedContent += delta.content;
+                    
+                    // Отправляем клиенту для визуального отображения прогресса
+                    controller.enqueue(
+                      encoder.encode(`data: ${JSON.stringify({ type: "progress", length: accumulatedContent.length })}\n\n`)
+                    );
+
+                    // Периодически пытаемся сохранить промежуточные результаты
+                    const now = Date.now();
+                    if (now - lastSaveTime > SAVE_INTERVAL && accumulatedContent.length > 100) {
+                      try {
+                        const partial = JSON.parse(accumulatedContent);
+                        if (partial && profileId && typeof partial === 'object') {
+                          const saved = await saveToDirectus(profileId, partial, token!, directusUrl, refreshToken);
+                          if (saved) {
+                            console.log("[CALC-BASE] Intermediate data saved to Directus");
+                            lastSaveTime = now;
+                          }
+                        }
+                      } catch (e) {
+                        // Игнорируем ошибки парсинга неполного JSON - это нормально
+                      }
+                    }
+                  }
+                } catch (e) {
+                  // Игнорируем ошибки парсинга отдельных чанков
+                  console.warn("[CALC-BASE] Failed to parse chunk:", e);
                 }
-              } catch (e) {
-                // Игнорируем ошибки парсинга
               }
             }
-          }
 
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            // Если стрим закончился без [DONE], все равно пытаемся сохранить
+            if (accumulatedContent && profileId && !hasFinalMessage) {
+              try {
+                const parsed = JSON.parse(accumulatedContent);
+                if (parsed && typeof parsed === 'object') {
+                  const saved = await saveToDirectus(profileId, parsed, token!, directusUrl, refreshToken);
+                  if (saved) {
+                    console.log("[CALC-BASE] Data saved to Directus (stream ended without DONE)");
+                  }
+                } else {
+                  // Сохраняем сырые данные как fallback
+                  await saveToDirectus(profileId, { raw_content: accumulatedContent, error: "invalid_json" }, token!, directusUrl, refreshToken);
+                  console.log("[CALC-BASE] Saved raw content as fallback");
+                }
+              } catch (e) {
+                console.error("[CALC-BASE] Error parsing content at stream end:", e);
+                // Сохраняем сырые данные как fallback
+                await saveToDirectus(profileId, { raw_content: accumulatedContent, error: "parse_error", errorMessage: String(e) }, token!, directusUrl, refreshToken);
+                console.log("[CALC-BASE] Saved raw content after parse error");
+              }
+            }
+
+            // Гарантируем, что финальные данные сохранены
+            if (finalParsedData && profileId && !hasFinalMessage) {
+              const saved = await saveToDirectus(profileId, finalParsedData, token!, directusUrl, refreshToken);
+              if (saved) {
+                console.log("[CALC-BASE] Final data saved to Directus (fallback)");
+              }
+            }
+
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          } catch (error: any) {
+            console.error("[CALC-BASE] Stream error:", error);
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ error: error.message })}\n\n`)
+            );
+          } finally {
+            controller.close();
+          }
         } catch (error: any) {
-          console.error("[CALC-BASE] Stream error:", error);
+          console.error("[CALC-BASE] Outer stream error:", error);
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ error: error.message })}\n\n`)
           );
-        } finally {
           controller.close();
         }
       },
@@ -491,7 +605,10 @@ ${codesDescription}`;
 
     // Сохраняем в Directus
     if (profileId) {
-      await saveToDirectus(profileId, parsed, token!, directusUrl);
+      const saved = await saveToDirectus(profileId, parsed, token!, directusUrl, refreshToken);
+      if (!saved) {
+        console.error("[CALC-BASE] Failed to save data to Directus after retries");
+      }
     }
 
     return NextResponse.json({
