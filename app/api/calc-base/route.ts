@@ -2,290 +2,100 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 import { refreshAccessToken } from "@/lib/auth";
-import { getProfileCodes, formatCodesForPrompt } from "@/lib/sal-interpretations";
-import { SYSTEM_PROMPT_BASE_CALCULATION, createUserPromptForBaseCalculation } from "@/lib/prompt-base-calculation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// JSON Schema для структурированного ответа GPT
-export const SAL_BASE_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    opener: {
-      type: "string",
-      description: "Вводная фраза, которую консультант прочитает клиенту для установления доверия. Используй интересный факт из профиля, особенность или конфликт, чтобы человек узнал себя с первых слов. Простым, понятным языком."
-    },
-    personalitySummary: {
-      type: "array",
-      description: "Ровно 3 абзаца описания личности простым, понятным языком. В тексте указываются ресурсы с цифрами. Используй бытовые примеры и ситуации из жизни.",
-      minItems: 3,
-      maxItems: 3,
-      items: { type: "string" }
-    },
-    strengths: {
-      type: "array",
-      minItems: 7,
-      maxItems: 7,
-      description: "Ровно 7 сильных сторон клиента — его таланты и способности. Указывай ресурс с цифрой, например: 'Лидерские качества — Личность (1)'. НЕ ПУТАТЬ с resourceSignals!",
-      items: { type: "string" }
-    },
-    weaknesses: {
-      type: "array",
-      minItems: 7,
-      maxItems: 7,
-      description: "Ровно 7 слабых сторон клиента — риски, сложности, то, что может мешать. Указывай ресурс с цифрой, например: 'Импульсивность и рассеянность — Личность (3): риск недоведения дел до конца'. НЕ ПУТАТЬ с deficitSignals!",
-      items: { type: "string" }
-    },
-    happinessFormula: {
-      type: "array",
-      description: "2–3 абзаца формулы счастья простым, понятным языком. Первые два абзаца — объяснение, последний (если есть) — примеры/сцены из жизни. Указывать ресурсы и цифры.",
-      minItems: 2,
-      maxItems: 3,
-      items: { type: "string" }
-    },
-    resourceSignals: {
-      type: "array",
-      minItems: 10,
-      maxItems: 10,
-      description: "Ровно 10 признаков плюса — конкретные признаки, что ресурс работает хорошо. Например: 'Вы легко начинаете разговоры и люди тянутся — признак активной Личности (3)'. НЕ ПУТАТЬ с strengths!",
-      items: { type: "string" }
-    },
-    deficitSignals: {
-      type: "array",
-      minItems: 10,
-      maxItems: 10,
-      description: "Ровно 10 признаков минуса — конкретные признаки, что ресурс в дефиците. Например: 'Трудно начать разговор, чувствуете себя неловко — признак дефицита Личности (3)'. НЕ ПУТАТЬ с weaknesses!",
-      items: { type: "string" }
-    },
-    codesExplanation: {
-      type: "array",
-      description: "3-5 абзацев пояснения кодов простым, понятным языком. Объясни, из каких ресурсов состоит человек, как они сочетаются или конфликтуют, с бытовыми примерами. Указывать ресурсы и цифры.",
-      minItems: 3,
-      maxItems: 5,
-      items: { type: "string" }
-    },
-    conflicts: {
-      type: "array",
-      description: "Конфликты и проблемы — внутренние противоречия в профиле клиента. Описывай простым языком с примерами.",
-      minItems: 5,
-      maxItems: 5,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          title: { type: "string" },
-          description: { type: "string" },
-          manifestations: { type: "array", items: { type: "string" } },
-          advice: { type: "string" }
-        },
-        required: ["title", "description", "manifestations", "advice"]
-      }
-    },
-    practices: {
-      type: "object",
-      description: "Практики для развития каждого ресурса. Для каждого ресурса (personality, connector, realization, generator, mission) — ровно 3 практики. Каждая практика содержит title, p1, p2. Описывай простым языком.",
-      additionalProperties: false,
-      properties: {
-        personality: { "$ref": "#/$defs/practiceTriplet" },
-        connector: { "$ref": "#/$defs/practiceTriplet" },
-        realization: { "$ref": "#/$defs/practiceTriplet" },
-        generator: { "$ref": "#/$defs/practiceTriplet" },
-        mission: { "$ref": "#/$defs/practiceTriplet" }
-      },
-      required: ["personality", "connector", "realization", "generator", "mission"]
-    }
-  },
-  required: [
-    "opener",
-    "personalitySummary",
-    "strengths",
-    "weaknesses",
-  "happinessFormula",
-    "resourceSignals",
-    "deficitSignals",
-    "codesExplanation",
-    "conflicts",
-    "practices"
-  ],
-  $defs: {
-    practiceTriplet: {
-      type: "array",
-      minItems: 3,
-      maxItems: 3,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          title: { type: "string" },
-          p1: { type: "string" },
-          p2: { type: "string" }
-        },
-        required: ["title", "p1", "p2"]
-      }
-    }
+function generatePublicCode(): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // без 0/O/1/I
+  const len = 5 + Math.floor(Math.random() * 3); // 5-7
+  let out = "";
+  for (let i = 0; i < len; i++) {
+    out += alphabet[Math.floor(Math.random() * alphabet.length)];
   }
-};
-
-/**
- * Сохраняет промежуточные результаты в Directus
- * Гарантирует сохранение данных даже при ошибках
- */
-async function saveToDirectus(
-  profileId: number,
-  partialData: any,
-  token: string,
-  directusUrl: string,
-  refreshToken: string | undefined,
-  retries: number = 3
-): Promise<boolean> {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      // Обновляем токен перед каждой попыткой
-      let currentToken = token;
-      if (refreshToken && attempt > 1) {
-        const freshToken = await refreshAccessToken(refreshToken);
-        if (freshToken) currentToken = freshToken;
-      }
-
-      const response = await fetch(`${directusUrl}/items/profiles/${profileId}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${currentToken}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          base_profile_json: partialData, // Новое поле для нового формата базового расчета
-        }),
-        cache: "no-store",
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "");
-        console.error(`[CALC-BASE] Error saving to Directus (attempt ${attempt}/${retries}):`, {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorText.substring(0, 200),
-          profileId
-        });
-        
-        // Если это 401 и есть refresh token, попробуем обновить
-        if (response.status === 401 && attempt < retries && refreshToken) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-          continue;
-        }
-        
-        if (attempt === retries) {
-          return false;
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-        continue;
-      }
-      
-      console.log(`[CALC-BASE] Successfully saved to Directus, profileId: ${profileId}, attempt: ${attempt}`);
-      return true;
-    } catch (error: any) {
-      console.error(`[CALC-BASE] Error saving to Directus (attempt ${attempt}/${retries}):`, {
-        error: error?.message || String(error),
-        profileId
-      });
-      
-      if (attempt === retries) {
-        return false;
-      }
-      
-      // Экспоненциальная задержка перед повтором
-      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-    }
-  }
-  
-  return false;
+  return out;
 }
 
 export async function POST(req: Request) {
   console.log("[CALC-BASE] ===== POST /api/calc-base called =====");
-  console.log("[CALC-BASE] Request URL:", req.url);
-  console.log("[CALC-BASE] Request method:", req.method);
-  console.log("[CALC-BASE] Request headers:", Object.fromEntries(req.headers.entries()));
-
+  
   let token = cookies().get("directus_access_token")?.value;
   const refreshToken = cookies().get("directus_refresh_token")?.value;
   const directusUrl = getDirectusUrl();
-  const openaiKey = process.env.OPENAI_API_KEY;
+  const n8nUrl = process.env.N8N_CALC_URL;
 
-  if (!token && refreshToken) {
+  console.log("[CALC-BASE] Initial check:", {
+    hasToken: !!token,
+    hasRefreshToken: !!refreshToken,
+    hasDirectusUrl: !!directusUrl,
+    hasN8nUrl: !!n8nUrl,
+    n8nUrl: n8nUrl || "NOT SET"
+  });
+
+  if (!token && !refreshToken) {
+    console.error("[CALC-BASE] No tokens found, returning 401");
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+  if (!n8nUrl) {
+    console.error("[CALC-BASE] N8N_CALC_URL is not configured");
+    return NextResponse.json({ message: "No N8N_CALC_URL configured" }, { status: 400 });
+  }
+  
+  console.log("[CALC-BASE] Starting calculation request", {
+    hasToken: !!token,
+    hasRefreshToken: !!refreshToken,
+    n8nUrl: n8nUrl,
+    directusUrl: directusUrl
+  });
+
+  // ОБЯЗАТЕЛЬНЫЙ REFRESH перед отправкой в n8n для получения свежего токена
+  if (refreshToken) {
+    console.log("[CALC-BASE] Refreshing token before n8n request...");
     const freshToken = await refreshAccessToken(refreshToken);
-    if (freshToken) token = freshToken;
+    if (freshToken) {
+      token = freshToken;
+      console.log("[CALC-BASE] Token refreshed successfully");
+    } else {
+      console.warn("[CALC-BASE] Token refresh failed, using existing token");
+    }
   }
 
   if (!token) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
-
-  if (!openaiKey) {
-    return NextResponse.json(
-      { message: "OPENAI_API_KEY is not configured" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Unauthorized - no valid token" }, { status: 401 });
   }
 
   let payload: any = {};
   try {
     payload = await req.json();
   } catch {
-    return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
+    payload = {};
   }
 
-  const { clientId, name, birthday, stream: wantStream } = payload;
-  
-  // Логируем входящие параметры
-  console.log("[CALC-BASE] ===== INCOMING REQUEST PARAMS =====");
-  console.log("[CALC-BASE] clientId:", clientId);
-  console.log("[CALC-BASE] name:", name);
-  console.log("[CALC-BASE] birthday:", birthday);
-  console.log("[CALC-BASE] stream (wantStream):", wantStream);
-  console.log("[CALC-BASE] ===== END INCOMING PARAMS =====");
+  const { clientId, name, birthday } = payload || {};
+  const publicCode = generatePublicCode();
 
-  // Валидация входных данных
-  if (!name || typeof name !== 'string' || name.trim().length === 0) {
-    return NextResponse.json(
-      { message: "Имя клиента обязательно и не может быть пустым" },
-      { status: 400 }
-    );
+  // 0) Получаем gender из данных клиента, если clientId указан
+  let clientGender: string | null = null;
+  if (clientId && directusUrl) {
+    try {
+      const clientRes = await fetch(`${directusUrl}/items/clients/${clientId}?fields=gender`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        cache: "no-store",
+      });
+      if (clientRes.ok) {
+        const clientData = await clientRes.json().catch(() => ({}));
+        clientGender = clientData?.data?.gender || null;
+      }
+    } catch (error) {
+      console.warn("[CALC-BASE] Failed to fetch client gender:", error);
+    }
   }
 
-  if (!birthday || typeof birthday !== 'string') {
-    return NextResponse.json(
-      { message: "Дата рождения обязательна" },
-      { status: 400 }
-    );
-  }
-
-  // Проверяем формат даты (YYYY-MM-DD)
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  if (!dateRegex.test(birthday)) {
-    return NextResponse.json(
-      { message: "Неверный формат даты рождения. Ожидается формат YYYY-MM-DD" },
-      { status: 400 }
-    );
-  }
-
-  // Рассчитываем коды и получаем трактовки
-  const profileCodes = getProfileCodes(birthday);
-  if (!profileCodes) {
-    console.error("[CALC-BASE] Failed to calculate codes for birthday:", birthday);
-    return NextResponse.json(
-      { message: "Не удалось рассчитать коды САЛ по указанной дате рождения. Проверьте корректность даты." },
-      { status: 400 }
-    );
-  }
-
-  // Создаем профиль в Directus
+  // 1) Пытаемся создать пустой профиль в Directus, чтобы получить profileId для дальнейшего поллинга
   let profileId: number | null = null;
   if (directusUrl) {
     try {
+      // Получим текущего пользователя, чтобы проставить owner_user
       let ownerUserId: string | null = null;
       try {
         const meRes = await fetch(`${directusUrl}/users/me`, {
@@ -296,7 +106,7 @@ export async function POST(req: Request) {
           const me = await meRes.json().catch(() => ({}));
           ownerUserId = me?.data?.id || null;
         }
-      } catch {}
+      } catch { }
 
       const createRes = await fetch(`${directusUrl}/items/profiles`, {
         method: "POST",
@@ -308,522 +118,199 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           client_id: clientId ? Number(clientId) : null,
           ...(ownerUserId ? { owner_user: ownerUserId } : {}),
-          digits: profileCodes.codes, // Сохраняем коды сразу
         }),
       });
       const createData = await createRes.json().catch(() => ({}));
       if (createRes.ok && createData?.data?.id) {
         profileId = Number(createData.data.id);
-        console.log("[CALC-BASE] Profile created:", profileId);
+        console.log("[CALC-BASE] Profile created, profileId:", profileId);
       }
     } catch (error) {
-      console.error("[CALC-BASE] Error creating profile:", error);
+      console.error("[CALC-BASE] Failed to create profile:", error);
     }
   }
 
-  if (!profileId) {
-    return NextResponse.json(
-      { message: "Failed to create profile" },
-      { status: 500 }
-    );
-  }
-
-  // Формируем промпт
-  const codesDescription = formatCodesForPrompt(profileCodes);
-
-  // Проверяем, что у нас есть все необходимые данные для промпта
-  if (!codesDescription || codesDescription.trim().length === 0) {
-    console.error("[CALC-BASE] Empty codes description");
-    return NextResponse.json(
-      { message: "Не удалось сформировать описание кодов. Проверьте данные профиля." },
-      { status: 500 }
-    );
-  }
-
-  // Детальное логирование для отладки
-  console.log("[CALC-BASE] ===== PROMPT DEBUG INFO =====");
-  console.log("[CALC-BASE] Profile ID:", profileId);
-  console.log("[CALC-BASE] Client name:", name);
-  console.log("[CALC-BASE] Birthday:", birthday);
-  console.log("[CALC-BASE] Codes calculated:", profileCodes.codes);
-  console.log("[CALC-BASE] Codes description length:", codesDescription.length);
-  console.log("[CALC-BASE] Codes description preview:", codesDescription.substring(0, 200) + "...");
-
-  // Используем готовый промпт из оптимизированного файла
-  const systemPrompt = SYSTEM_PROMPT_BASE_CALCULATION;
-  const userPrompt = createUserPromptForBaseCalculation(name, birthday, codesDescription);
-
-  // Логируем полный промпт для отладки
-  console.log("[CALC-BASE] ===== FULL PROMPT =====");
-  console.log("[CALC-BASE] System prompt length:", systemPrompt.length);
-  console.log("[CALC-BASE] User prompt length:", userPrompt.length);
-  console.log("[CALC-BASE] System prompt preview:", systemPrompt.substring(0, 300) + "...");
-  console.log("[CALC-BASE] User prompt:", userPrompt);
-  console.log("[CALC-BASE] ===== END PROMPT DEBUG =====");
-
-  // Проверяем, нужен ли стриминг
-  const streamParam = new URL(req.url).searchParams.get("stream");
-  const shouldStream = wantStream !== false && (wantStream === true || streamParam === "1");
-  
-  console.log("[CALC-BASE] ===== STREAMING CHECK =====");
-  console.log("[CALC-BASE] wantStream:", wantStream);
-  console.log("[CALC-BASE] streamParam:", streamParam);
-  console.log("[CALC-BASE] shouldStream:", shouldStream);
-  console.log("[CALC-BASE] ===== END STREAMING CHECK =====");
-
-  if (shouldStream) {
-    console.log("[CALC-BASE] Using STREAMING mode");
-    // Реализуем стриминг с сохранением в Directus
-    const encoder = new TextEncoder();
-    
-    // Сначала отправляем profileId клиенту
-    const stream = new ReadableStream<Uint8Array>({
-      async start(controller) {
-        // Отправляем profileId сразу
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ profileId })}\n\n`)
-        );
-
-        try {
-          const requestBody = {
-            model: "gpt-5-mini",
-            reasoning: { effort: "medium" },
-            input: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt },
-            ],
-            text: {
-              format: {
-                type: "json_schema",
-                name: "sal_consult_prep",
-                strict: true,
-                schema: SAL_BASE_SCHEMA,
-              },
-            },
-            stream: true,
-          };
-
-          console.log("[CALC-BASE] ===== OPENAI REQUEST =====");
-          console.log("[CALC-BASE] Model: gpt-5-mini");
-          console.log("[CALC-BASE] Input count:", requestBody.input.length);
-          console.log("[CALC-BASE] System message length:", systemPrompt.length);
-          console.log("[CALC-BASE] User message length:", userPrompt.length);
-          console.log("[CALC-BASE] Has OpenAI key:", !!openaiKey);
-          console.log("[CALC-BASE] ===== SENDING REQUEST =====");
-
-          console.log("[CALC-BASE] ===== SENDING REQUEST TO OPENAI =====");
-          console.log("[CALC-BASE] Request body keys:", Object.keys(requestBody));
-          console.log("[CALC-BASE] Request body preview:", JSON.stringify(requestBody).substring(0, 500));
-          
-          const response = await fetch("https://api.openai.com/v1/responses", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${openaiKey}`,
-            },
-            body: JSON.stringify(requestBody),
-          });
-
-          console.log("[CALC-BASE] ===== OPENAI RESPONSE =====");
-          console.log("[CALC-BASE] Status:", response.status);
-          console.log("[CALC-BASE] Status text:", response.statusText);
-          console.log("[CALC-BASE] OK:", response.ok);
-          console.log("[CALC-BASE] Headers:", Object.fromEntries(response.headers.entries()));
-
-          if (!response.ok) {
-            const errorText = await response.text().catch(() => "");
-            let errorMessage = "Ошибка при обращении к OpenAI API";
-            
-            console.error("[CALC-BASE] ===== OPENAI ERROR =====");
-            console.error("[CALC-BASE] Status:", response.status);
-            console.error("[CALC-BASE] Status text:", response.statusText);
-            console.error("[CALC-BASE] Error text:", errorText);
-            console.error("[CALC-BASE] Response headers:", Object.fromEntries(response.headers.entries()));
-            
-            // Улучшенная обработка ошибок OpenAI
-            try {
-              const errorData = JSON.parse(errorText);
-              console.error("[CALC-BASE] Parsed error data:", errorData);
-              if (errorData?.error?.message) {
-                errorMessage = errorData.error.message;
-              } else if (errorData?.message) {
-                errorMessage = errorData.message;
-              }
-            } catch {
-              // Если не удалось распарсить, используем текст ошибки
-              if (errorText) {
-                errorMessage = errorText.substring(0, 200);
-              }
-            }
-
-            // Специфичные сообщения для разных статусов
-            if (response.status === 401) {
-              errorMessage = "Неверный API ключ OpenAI. Проверьте настройки сервера.";
-            } else if (response.status === 429) {
-              errorMessage = "Превышен лимит запросов к OpenAI API. Попробуйте позже.";
-            } else if (response.status === 500) {
-              errorMessage = "Внутренняя ошибка OpenAI. Попробуйте позже.";
-            }
-
-            console.error("[CALC-BASE] Final error message:", errorMessage);
-
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ error: errorMessage })}\n\n`)
-            );
-            controller.close();
-            return;
-          }
-
-          console.log("[CALC-BASE] ===== STREAM STARTED =====");
-          console.log("[CALC-BASE] Response OK, starting to read stream");
-
-          const reader = response.body?.getReader();
-          const decoder = new TextDecoder();
-          if (!reader) {
-            controller.close();
-            return;
-          }
-
-          let buffer = "";
-          let accumulatedContent = "";
-          let lastSaveTime = Date.now();
-          const SAVE_INTERVAL = 5000; // Сохраняем каждые 5 секунд
-          let hasFinalMessage = false;
-          let finalParsedData: any = null;
-
-          try {
-            let chunkIndex = 0;
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) {
-                console.log("[CALC-BASE] Stream done, total chunks:", chunkIndex);
-                break;
-              }
-
-              chunkIndex++;
-              const decoded = decoder.decode(value, { stream: true });
-              console.log(`[CALC-BASE] Chunk ${chunkIndex} received, length:`, decoded.length);
-              console.log(`[CALC-BASE] Chunk ${chunkIndex} preview:`, decoded.substring(0, 200));
-              
-              buffer += decoded;
-              const lines = buffer.split("\n");
-              buffer = lines.pop() || "";
-
-              console.log(`[CALC-BASE] Processing ${lines.length} lines from buffer`);
-
-              let currentEvent = "";
-              for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                if (!line.trim()) {
-                  console.log("[CALC-BASE] Skipping empty line");
-                  continue;
-                }
-                
-                // Responses API использует формат: event: <type> и data: <json>
-                if (line.startsWith("event:")) {
-                  currentEvent = line.slice(6).trim();
-                  console.log("[CALC-BASE] Event type:", currentEvent);
-                  continue;
-                }
-                
-                if (!line.startsWith("data:")) {
-                  console.log("[CALC-BASE] Skipping non-data line:", line.substring(0, 100));
-                  continue;
-                }
-                
-                const payload = line.slice(5).trim();
-                console.log("[CALC-BASE] Processing payload for event:", currentEvent, "payload:", payload.substring(0, 200));
-                
-                if (payload === "[DONE]" || currentEvent === "response.done") {
-                  // Сохраняем финальный результат в Directus
-                  if (finalParsedData && profileId) {
-                    const saved = await saveToDirectus(profileId, finalParsedData, token!, directusUrl, refreshToken);
-                    if (saved) {
-                      console.log("[CALC-BASE] Final data saved to Directus");
-                    } else {
-                      console.error("[CALC-BASE] Failed to save final data after retries");
-                    }
-                  } else if (accumulatedContent && profileId) {
-                    // Пытаемся сохранить накопленный контент, даже если не полный
-                    try {
-                      const parsed = JSON.parse(accumulatedContent);
-                      const saved = await saveToDirectus(profileId, parsed, token!, directusUrl, refreshToken);
-                      if (saved) {
-                        console.log("[CALC-BASE] Final data saved to Directus (from accumulated)");
-                      }
-                    } catch (e) {
-                      console.error("[CALC-BASE] Error parsing final content, saving raw:", e);
-                      // Сохраняем хотя бы сырые данные
-                      await saveToDirectus(profileId, { raw_content: accumulatedContent }, token!, directusUrl, refreshToken);
-                    }
-                  }
-                  controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                  controller.close();
-                  return;
-                }
-
-                try {
-                  const json = JSON.parse(payload);
-                  console.log("[CALC-BASE] Parsed JSON keys:", Object.keys(json));
-                  
-                  // Responses API формат: события response.output_item.added и response.output_item.delta
-                  if (currentEvent === "response.output_item.added" || currentEvent === "response.output_item.delta") {
-                    // Текст может быть в item.text или item.delta.text
-                    const item = json?.item || json;
-                    if (item?.text) {
-                      console.log("[CALC-BASE] Found item.text, length:", item.text.length);
-                      accumulatedContent += item.text;
-                    } else if (item?.delta?.text) {
-                      console.log("[CALC-BASE] Found item.delta.text, length:", item.delta.text.length);
-                      accumulatedContent += item.delta.text;
-                    } else if (item?.type === "text" && item?.text) {
-                      console.log("[CALC-BASE] Found text item, length:", item.text.length);
-                      accumulatedContent += item.text;
-                    }
-                  } else if (currentEvent === "response.done" || json?.response?.status === "completed") {
-                    // Финальный ответ может быть в response.output
-                    const output = json?.response?.output || json?.output;
-                    if (Array.isArray(output)) {
-                      for (const item of output) {
-                        if (item?.type === "text" && item?.text) {
-                          console.log("[CALC-BASE] Found final output text, length:", item.text.length);
-                          accumulatedContent += item.text;
-                          hasFinalMessage = true;
-                        }
-                      }
-                    }
-                  } else if (json?.response?.output) {
-                    // Проверяем response.output для любых событий
-                    const output = json.response.output;
-                    if (Array.isArray(output)) {
-                      for (const item of output) {
-                        if (item?.type === "text" && item?.text) {
-                          console.log("[CALC-BASE] Found response.output text, length:", item.text.length);
-                          accumulatedContent += item.text;
-                        }
-                      }
-                    }
-                  }
-                  
-                  console.log("[CALC-BASE] Accumulated content length:", accumulatedContent.length);
-                  if (accumulatedContent.length > 0) {
-                    console.log("[CALC-BASE] Accumulated content preview:", accumulatedContent.substring(0, 300));
-                  }
-                  
-                  // Если получили полный ответ, парсим и сохраняем
-                  if (hasFinalMessage || (accumulatedContent && accumulatedContent.trim().startsWith('{'))) {
-                    try {
-                      const parsed = JSON.parse(accumulatedContent);
-                      if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
-                        finalParsedData = parsed;
-                        console.log("[CALC-BASE] ===== FINAL MESSAGE RECEIVED =====");
-                        console.log("[CALC-BASE] Parsed data keys:", Object.keys(finalParsedData));
-                        
-                        if (profileId) {
-                          const saved = await saveToDirectus(profileId, finalParsedData, token!, directusUrl, refreshToken);
-                          if (saved) {
-                            console.log("[CALC-BASE] ✅ Complete data saved to Directus successfully");
-                            lastSaveTime = Date.now();
-                            controller.enqueue(
-                              encoder.encode(`data: ${JSON.stringify({ type: "complete", profileId })}\n\n`)
-                            );
-                          }
-                        }
-                      }
-                    } catch (e) {
-                      // Игнорируем ошибки парсинга неполного JSON
-                    }
-                  }
-                  
-                  // Отправляем клиенту для визуального отображения прогресса
-                  if (accumulatedContent.length > 0) {
-                    controller.enqueue(
-                      encoder.encode(`data: ${JSON.stringify({ type: "progress", length: accumulatedContent.length })}\n\n`)
-                    );
-                  }
-
-                  // Периодически пытаемся сохранить промежуточные результаты
-                  const now = Date.now();
-                  if (now - lastSaveTime > SAVE_INTERVAL && accumulatedContent.length > 100) {
-                    try {
-                      const partial = JSON.parse(accumulatedContent);
-                      if (partial && profileId && typeof partial === 'object') {
-                        const saved = await saveToDirectus(profileId, partial, token!, directusUrl, refreshToken);
-                        if (saved) {
-                          console.log("[CALC-BASE] Intermediate data saved to Directus");
-                          lastSaveTime = now;
-                        }
-                      }
-                    } catch (e) {
-                      // Игнорируем ошибки парсинга неполного JSON - это нормально
-                    }
-                  }
-                } catch (e) {
-                  // Игнорируем ошибки парсинга отдельных чанков
-                  console.warn("[CALC-BASE] Failed to parse chunk:", e);
-                }
-              }
-            }
-
-            // Если стрим закончился без [DONE], все равно пытаемся сохранить
-            if (accumulatedContent && profileId && !hasFinalMessage) {
-              try {
-                const parsed = JSON.parse(accumulatedContent);
-                if (parsed && typeof parsed === 'object') {
-                  const saved = await saveToDirectus(profileId, parsed, token!, directusUrl, refreshToken);
-                  if (saved) {
-                    console.log("[CALC-BASE] Data saved to Directus (stream ended without DONE)");
-                  }
-                } else {
-                  // Сохраняем сырые данные как fallback
-                  await saveToDirectus(profileId, { raw_content: accumulatedContent, error: "invalid_json" }, token!, directusUrl, refreshToken);
-                  console.log("[CALC-BASE] Saved raw content as fallback");
-                }
-              } catch (e) {
-                console.error("[CALC-BASE] Error parsing content at stream end:", e);
-                // Сохраняем сырые данные как fallback
-                await saveToDirectus(profileId, { raw_content: accumulatedContent, error: "parse_error", errorMessage: String(e) }, token!, directusUrl, refreshToken);
-                console.log("[CALC-BASE] Saved raw content after parse error");
-              }
-            }
-
-            // Гарантируем, что финальные данные сохранены
-            if (finalParsedData && profileId && !hasFinalMessage) {
-              const saved = await saveToDirectus(profileId, finalParsedData, token!, directusUrl, refreshToken);
-              if (saved) {
-                console.log("[CALC-BASE] Final data saved to Directus (fallback)");
-              }
-            }
-
-            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-          } catch (error: any) {
-            console.error("[CALC-BASE] Stream error:", error);
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ error: error.message })}\n\n`)
-            );
-          } finally {
-            controller.close();
-          }
-        } catch (error: any) {
-          console.error("[CALC-BASE] Outer stream error:", error);
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ error: error.message })}\n\n`)
-          );
-          controller.close();
-        }
-      },
-    });
-
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/event-stream; charset=utf-8",
-        "Cache-Control": "no-cache, no-transform",
-        Connection: "keep-alive",
-      },
-    });
-  }
-
-  // Non-streaming вариант
-  console.log("[CALC-BASE] Using NON-STREAMING mode");
-  try {
-    const requestBody = {
-      model: "gpt-5-mini",
-      reasoning: { effort: "medium" },
-      input: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "sal_consult_prep",
-          strict: true,
-          schema: SAL_BASE_SCHEMA,
+  // 1.1) Best-effort: попробуем записать public_code в профиль, если поле существует
+  if (directusUrl && profileId) {
+    try {
+      await fetch(`${directusUrl}/items/profiles/${profileId}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-      },
+        body: JSON.stringify({ public_code: publicCode }),
+      }).catch(() => { });
+    } catch { }
+  }
+
+  // 2) Вызываем n8n, передаём profileId (если удалось создать) и publicCode
+  let r: Response;
+  let data: any = null;
+  try {
+    // Retry logic for n8n
+    let attempts = 0;
+    const maxAttempts = 2;
+
+    // Убеждаемся, что directusUrl правильный и без слеша в конце
+    const cleanDirectusUrl = directusUrl ? directusUrl.replace(/\/+$/, '') : null;
+
+    const n8nPayload = {
+      name,
+      birthday,
+      clientId,
+      type: "base_new", // Новый тип для тестовой среды
+      profileId, // важно для последующего обновления профиля n8n
+      public_code: publicCode,
+      // Gender клиента (если есть)
+      gender: clientGender || null,
+      // Передаем URL Directus для n8n workflow (без слеша в конце)
+      directusUrl: cleanDirectusUrl,
+      // Передаем токены в body для n8n workflow
+      token: token, // access token (может истечь)
+      refreshToken: refreshToken, // refresh token для обновления access token в n8n
     };
 
-    console.log("[CALC-BASE] ===== OPENAI REQUEST (NON-STREAMING) =====");
-    console.log("[CALC-BASE] Model: gpt-5-mini");
-    console.log("[CALC-BASE] Input count:", requestBody.input.length);
-    console.log("[CALC-BASE] Has OpenAI key:", !!openaiKey);
-    console.log("[CALC-BASE] ===== SENDING REQUEST =====");
-
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${openaiKey}`,
-      },
-      body: JSON.stringify(requestBody),
+    console.log("[CALC-BASE] Payload to n8n:", {
+      directusUrl: n8nPayload.directusUrl,
+      hasToken: !!n8nPayload.token,
+      hasRefreshToken: !!n8nPayload.refreshToken,
+      type: n8nPayload.type,
+      profileId: n8nPayload.profileId,
+      clientId: n8nPayload.clientId,
+      name: n8nPayload.name,
+      birthday: n8nPayload.birthday
     });
 
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-      return NextResponse.json(
-        { message: "OpenAI API error", error: errorText },
-        { status: response.status }
-      );
-    }
+    console.log("[CALC-BASE] Calling n8n workflow:", {
+      url: n8nUrl,
+      type: "base_new",
+      profileId,
+      directusUrl: directusUrl,
+      hasDirectusUrl: !!directusUrl,
+      hasToken: !!token,
+      hasRefreshToken: !!refreshToken
+    });
 
-    const data = await response.json().catch(() => ({}));
-    // Responses API возвращает данные в другом формате
-    const content = data?.output?.[0]?.text || data?.text || data?.choices?.[0]?.message?.content;
-    
-    if (!content) {
-      return NextResponse.json(
-        { message: "No content in response" },
-        { status: 500 }
-      );
-    }
-
-    // Парсим JSON ответ
-    let parsed: any;
-    try {
-      parsed = JSON.parse(content);
-    } catch (e) {
-      return NextResponse.json(
-        { message: "Failed to parse response", error: String(e) },
-        { status: 500 }
-      );
-    }
-
-    // Сохраняем в Directus в новое поле base_profile_json
-    if (profileId) {
+    while (attempts < maxAttempts) {
+      attempts++;
       try {
-        const response = await fetch(`${directusUrl}/items/profiles/${profileId}`, {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token!}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            base_profile_json: parsed, // Сохраняем в новое поле
-          }),
-          cache: "no-store",
-        });
+        console.log(`[CALC-BASE] Attempt ${attempts}/${maxAttempts} - Sending request to n8n...`);
         
-        if (!response.ok) {
-          console.error("[CALC-BASE] Failed to save base_profile_json:", response.status);
-        } else {
-          console.log("[CALC-BASE] Successfully saved base_profile_json to Directus");
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30_000);
+
+        const fetchStartTime = Date.now();
+        r = await fetch(n8nUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(n8nPayload),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        
+        const fetchDuration = Date.now() - fetchStartTime;
+        console.log(`[CALC-BASE] n8n request completed in ${fetchDuration}ms, status: ${r.status}`);
+
+        // If successful or client error (4xx), break loop
+        // Only retry on server errors (5xx)
+        if (r.ok || r.status < 500) {
+          break;
         }
-      } catch (error) {
-        console.error("[CALC-BASE] Error saving base_profile_json:", error);
+
+        console.warn(`[CALC-BASE] n8n attempt ${attempts} failed with status ${r.status}`);
+        const errorText = await r.text().catch(() => "");
+        console.warn(`[CALC-BASE] n8n error response:`, errorText.substring(0, 500));
+      } catch (e: any) {
+        console.error(`[CALC-BASE] n8n attempt ${attempts} failed with error:`, {
+          message: e?.message || String(e),
+          name: e?.name,
+          stack: e?.stack?.substring(0, 500)
+        });
+        if (attempts === maxAttempts) {
+          console.error("[CALC-BASE] All attempts failed, throwing error");
+          throw e;
+        }
       }
+
+      // Wait before retry if not last attempt
+      if (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    // @ts-ignore
+    if (!r) throw new Error("No response from n8n");
+
+    data = await r.json().catch(() => ({}));
+
+    console.log("[CALC-BASE] n8n response:", {
+      status: r.status,
+      statusText: r.statusText,
+      hasData: !!data,
+      error: data?.error || data?.message
+    });
+  } catch (error: any) {
+    console.error("[CALC-BASE] Error calling n8n:", {
+      message: error?.message || String(error),
+      name: error?.name,
+      stack: error?.stack?.substring(0, 500),
+      n8nUrl: n8nUrl,
+      hasN8nUrl: !!n8nUrl
+    });
+    return NextResponse.json({ 
+      message: "Cannot connect to n8n", 
+      error: error?.message || String(error),
+      n8nUrl: n8nUrl ? "configured" : "not configured"
+    }, { status: 502 });
+  }
+
+  if (!r.ok) {
+    let msg = data?.message || data?.error || "Calculation failed";
+    // Улучшенная обработка ошибок n8n
+    if (data?.error?.message) {
+      msg = data.error.message;
+    } else if (data?.error?.name) {
+      msg = `${data.error.name}: ${data.error.message || msg}`;
+    } else if (typeof data === 'string') {
+      msg = data;
+    } else if (data?.errors && Array.isArray(data.errors)) {
+      msg = data.errors.map((e: any) => e.message || String(e)).join('; ');
+    }
+
+    // Логируем полную ошибку для диагностики
+    console.error("[CALC-BASE] n8n calculation error:", {
+      status: r.status,
+      statusText: r.statusText,
+      data: data,
+      message: msg
+    });
+
+    // Специальная обработка ошибки с directus node - показываем детали
+    if (msg.includes('directus') || msg.includes('n8n-nodes-directus') || msg.includes('Unrecognized node type')) {
+      const detailMsg = data?.error?.message || data?.message || msg;
+      msg = `Ошибка в n8n workflow: ${detailMsg}. Проверьте настройки Directus node в n8n workflow (URL: ${directusUrl || 'не указан'}).`;
     }
 
     return NextResponse.json({
-      profileId,
-      data: parsed,
-    });
-  } catch (error: any) {
-    console.error("[CALC-BASE] Error:", error);
-    return NextResponse.json(
-      { message: "Calculation failed", error: error.message },
-      { status: 500 }
-    );
+      ...data,
+      message: msg,
+      errorDetails: data?.error || data?.errors || null
+    }, { status: r.status });
   }
-}
 
+  // 3) Гарантируем возврат profileId + publicCode для мгновенного редиректа и отображения
+  const returnedId =
+    profileId || data?.profileId || data?.data?.profileId || data?.id || data?.data?.id || null;
+
+  if (returnedId) {
+    return NextResponse.json({ profileId: Number(returnedId), public_code: publicCode });
+  }
+
+  // Fallback: если id так и нет, возвращаем как есть (клиентская логика отправит на список)
+  return NextResponse.json({ ...data, public_code: publicCode });
+}
