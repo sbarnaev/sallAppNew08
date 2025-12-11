@@ -2,7 +2,8 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 import { refreshAccessToken } from "@/lib/auth";
-import { getProfileCodes, formatCodesForPrompt, getCodeLegend } from "@/lib/sal-interpretations";
+import { getProfileCodes, formatCodesForPrompt } from "@/lib/sal-interpretations";
+import { SYSTEM_PROMPT_BASE_CALCULATION, createUserPromptForBaseCalculation } from "@/lib/prompt-base-calculation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -329,7 +330,6 @@ export async function POST(req: Request) {
 
   // Формируем промпт
   const codesDescription = formatCodesForPrompt(profileCodes);
-  const codeLegend = getCodeLegend();
 
   // Проверяем, что у нас есть все необходимые данные для промпта
   if (!codesDescription || codesDescription.trim().length === 0) {
@@ -349,25 +349,9 @@ export async function POST(req: Request) {
   console.log("[CALC-BASE] Codes description length:", codesDescription.length);
   console.log("[CALC-BASE] Codes description preview:", codesDescription.substring(0, 200) + "...");
 
-  const systemPrompt = `Ты — эксперт по системному анализу личности (САЛ), который помогает консультанту провести консультацию для клиента. Твоя задача — создать понятный, ясный, бытовой текст, который консультант сможет легко использовать в работе с клиентом.
-
-${codeLegend}
-
-ВАЖНО: Пиши простым, понятным языком, как будто объясняешь другу. Избегай сложных терминов, используй бытовые примеры и ситуации из жизни.
-
-ЖЁСТКИЕ ПРАВИЛА ПО СТРУКТУРЕ:
-- strengths (сильные стороны) — ровно 7 пунктов. Это то, что у человека хорошо получается, его таланты и способности. Указывай ресурс с цифрой, например: "Лидерские качества — Личность (1)".
-- weaknesses (слабые стороны) — ровно 7 пунктов. Это риски, сложности, то, что может мешать. НЕ ПУТАТЬ с resourceSignals! Указывай ресурс с цифрой, например: "Импульсивность и рассеянность — Личность (3): риск недоведения дел до конца".
-- resourceSignals (признаки плюса) — ровно 10 пунктов. Это конкретные признаки, что ресурс работает хорошо, например: "Вы легко начинаете разговоры и люди тянутся — признак активной Личности (3)".
-- deficitSignals (признаки минуса) — ровно 10 пунктов. Это конкретные признаки, что ресурс в дефиците, например: "Трудно начать разговор, чувствуете себя неловко — признак дефицита Личности (3)".
-
-Во всех описательных местах явно указывай ресурс и его цифру в скобках, например: "Коннектор (2)".
-
-В opener напиши вводную фразу, которую консультант прочитает клиенту для установления доверия. Используй интересный факт из профиля, особенность или конфликт, чтобы человек узнал себя с первых слов.`;
-
-  const userPrompt = `Входные данные профиля САЛ клиента ${name} ${birthday.split('-').reverse().join('.')} в поле codes:
-
-${codesDescription}`;
+  // Используем готовый промпт из оптимизированного файла
+  const systemPrompt = SYSTEM_PROMPT_BASE_CALCULATION;
+  const userPrompt = createUserPromptForBaseCalculation(name, birthday, codesDescription);
 
   // Логируем полный промпт для отладки
   console.log("[CALC-BASE] ===== FULL PROMPT =====");
@@ -403,6 +387,7 @@ ${codesDescription}`;
         try {
           const requestBody = {
             model: "gpt-5-mini",
+            reasoning: { effort: "medium" },
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt },
@@ -679,6 +664,7 @@ ${codesDescription}`;
   try {
     const requestBody = {
       model: "gpt-5-mini",
+      reasoning: { effort: "medium" },
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
