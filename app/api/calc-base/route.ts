@@ -754,7 +754,6 @@ ${codesDescription}`;
       },
       body: JSON.stringify({
         model: "gpt-5-mini",
-        reasoning: { effort: "medium" },
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
