@@ -1780,7 +1780,7 @@ export default function ProfileDetail() {
     // Выбираем источник данных: новый формат (base_profile_json) или старый (raw_json)
     const dataSource = (profile as any)?.base_profile_json || profile?.raw_json;
     if (!dataSource) {
-      console.log("[DEBUG] renderedFromJson: no data source");
+      // Debug logging removed to reduce console noise
       return null;
     }
     let payload: any = dataSource;
