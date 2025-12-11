@@ -136,38 +136,76 @@ export default function NewCalculationPage() {
           }
           
           console.log("[CLIENT] ===== Response OK, starting to read stream =====");
+          console.log("[CLIENT] Response body:", res.body);
+          console.log("[CLIENT] Response body type:", typeof res.body);
 
           // Обрабатываем стриминг с визуальным отображением прогресса
           const reader = res.body?.getReader();
           const decoder = new TextDecoder();
+          
+          console.log("[CLIENT] Reader:", reader);
+          console.log("[CLIENT] Decoder:", decoder);
+          
           if (!reader) {
+            console.error("[CLIENT] ❌ No reader available!");
             throw new Error("No response body");
           }
 
+          console.log("[CLIENT] ✅ Reader obtained, starting to read...");
+
           let profileId: number | null = null;
           let buffer = "";
+          let chunkCount = 0;
 
           while (true) {
+            console.log(`[CLIENT] Reading chunk ${chunkCount}...`);
             const { done, value } = await reader.read();
-            if (done) break;
+            
+            console.log(`[CLIENT] Chunk ${chunkCount} read:`, { 
+              done, 
+              hasValue: !!value, 
+              valueLength: value?.length 
+            });
+            
+            if (done) {
+              console.log("[CLIENT] Stream done, breaking loop");
+              break;
+            }
 
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
+            if (value) {
+              chunkCount++;
+              const decoded = decoder.decode(value, { stream: true });
+              console.log(`[CLIENT] Chunk ${chunkCount} decoded:`, {
+                length: decoded.length,
+                preview: decoded.substring(0, 100)
+              });
+              
+              buffer += decoded;
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || "";
 
-            for (const line of lines) {
-              if (!line.trim() || !line.startsWith("data:")) continue;
-              const payload = line.slice(5).trim();
-              if (payload === "[DONE]") {
-                // Данные уже сохранены в Directus, редиректим на профиль
-                setStreamingProgress(null);
-                if (profileId) {
-                  router.push(`/profiles/${profileId}`);
-                } else {
-                  router.push("/profiles");
+              console.log(`[CLIENT] Processing ${lines.length} lines from buffer`);
+
+              for (const line of lines) {
+                if (!line.trim() || !line.startsWith("data:")) {
+                  console.log(`[CLIENT] Skipping line (empty or not data:):`, line.substring(0, 50));
+                  continue;
                 }
-                return;
-              }
+                
+                const payload = line.slice(5).trim();
+                console.log(`[CLIENT] Processing data line:`, payload.substring(0, 100));
+                
+                if (payload === "[DONE]") {
+                  console.log("[CLIENT] ✅ Received [DONE], redirecting...");
+                  // Данные уже сохранены в Directus, редиректим на профиль
+                  setStreamingProgress(null);
+                  if (profileId) {
+                    router.push(`/profiles/${profileId}`);
+                  } else {
+                    router.push("/profiles");
+                  }
+                  return;
+                }
 
               try {
                 const data = JSON.parse(payload);
