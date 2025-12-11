@@ -108,15 +108,14 @@ export default function NewCalculationPage() {
         payload.goal = cleanText(partnerGoal);
       }
 
-      // Для базового расчета используем новый автономный API
+      // Для базового расчета используем n8n через /api/calc-base
       if (type === "base") {
         console.log("[CLIENT] ===== Starting BASE calculation =====");
         console.log("[CLIENT] Payload:", JSON.stringify(payload, null, 2));
-        console.log("[CLIENT] URL: /api/calc-base?stream=1");
+        console.log("[CLIENT] URL: /api/calc-base");
         
         try {
-          payload.stream = true;
-          const res = await fetch("/api/calc-base?stream=1", {
+          const res = await fetch("/api/calc-base", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
