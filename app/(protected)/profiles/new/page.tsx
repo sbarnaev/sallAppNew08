@@ -57,13 +57,21 @@ export default function NewCalculationPage() {
   }
 
   async function startCalc(type: "base" | "target" | "partner") {
+    console.log("[CLIENT] ===== startCalc CALLED =====");
+    console.log("[CLIENT] Type:", type);
+    console.log("[CLIENT] Name:", name);
+    console.log("[CLIENT] Birthday:", birthday);
+    console.log("[CLIENT] ClientIdParam:", clientIdParam);
+    
     setError(null);
     if (!name || !birthday) {
+      console.error("[CLIENT] Validation failed: missing name or birthday");
       setError("Нет имени или даты рождения. Подождите автозаполнение или используйте форму ниже.");
       return;
     }
     if (type === "partner") {
       if (!partnerName || !partnerBirthday || !partnerGoal) {
+        console.error("[CLIENT] Validation failed: missing partner data");
         setError("Для партнерского расчета заполните все поля: имя и дата рождения второго человека, цель расчета.");
         return;
       }
@@ -102,6 +110,10 @@ export default function NewCalculationPage() {
 
       // Для базового расчета используем новый автономный API
       if (type === "base") {
+        console.log("[CLIENT] ===== Starting BASE calculation =====");
+        console.log("[CLIENT] Payload:", JSON.stringify(payload, null, 2));
+        console.log("[CLIENT] URL: /api/calc-base?stream=1");
+        
         try {
           payload.stream = true;
           const res = await fetch("/api/calc-base?stream=1", {
@@ -110,10 +122,20 @@ export default function NewCalculationPage() {
             body: JSON.stringify(payload),
           });
 
+          console.log("[CLIENT] ===== Response received =====");
+          console.log("[CLIENT] Response status:", res.status);
+          console.log("[CLIENT] Response OK:", res.ok);
+          console.log("[CLIENT] Response statusText:", res.statusText);
+          console.log("[CLIENT] Content-Type:", res.headers.get("content-type"));
+
           if (!res.ok) {
             const errorData = await res.json().catch(() => ({}));
+            console.error("[CLIENT] ===== Error response =====");
+            console.error("[CLIENT] Error data:", errorData);
             throw new Error(errorData?.message || "Calculation failed");
           }
+          
+          console.log("[CLIENT] ===== Response OK, starting to read stream =====");
 
           // Обрабатываем стриминг с визуальным отображением прогресса
           const reader = res.body?.getReader();
@@ -219,8 +241,15 @@ export default function NewCalculationPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    console.log("[CLIENT] ===== onSubmit CALLED =====");
+    console.log("[CLIENT] Event:", e);
+    console.log("[CLIENT] Name:", name);
+    console.log("[CLIENT] Birthday:", birthday);
+    console.log("[CLIENT] ClientId:", clientId);
+    
     setError(null);
     setLoading(true);
+    
     try {
       const payload = {
         name,
@@ -230,8 +259,9 @@ export default function NewCalculationPage() {
       };
       
       // Используем новый автономный API для базового расчета
-      console.log("[CLIENT] Starting base calculation...");
-      console.log("[CLIENT] Payload:", payload);
+      console.log("[CLIENT] ===== Starting base calculation =====");
+      console.log("[CLIENT] Payload:", JSON.stringify(payload, null, 2));
+      console.log("[CLIENT] URL: /api/calc-base?stream=1");
       
       const res = await fetch("/api/calc-base?stream=1", {
         method: "POST",
@@ -239,17 +269,21 @@ export default function NewCalculationPage() {
         body: JSON.stringify(payload),
       });
       
+      console.log("[CLIENT] ===== Response received =====");
       console.log("[CLIENT] Response status:", res.status);
       console.log("[CLIENT] Response OK:", res.ok);
+      console.log("[CLIENT] Response statusText:", res.statusText);
       console.log("[CLIENT] Content-Type:", res.headers.get("content-type"));
+      console.log("[CLIENT] Headers:", Object.fromEntries(res.headers.entries()));
       
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        console.error("[CLIENT] Error response:", errorData);
+        console.error("[CLIENT] ===== Error response =====");
+        console.error("[CLIENT] Error data:", errorData);
         throw new Error(errorData?.message || "Calculation failed");
       }
       
-      console.log("[CLIENT] Response OK, starting to read stream...");
+      console.log("[CLIENT] ===== Response OK, starting to read stream =====");
 
       // Обрабатываем стриминг
       const reader = res.body?.getReader();

@@ -205,6 +205,9 @@ async function saveToDirectus(
 
 export async function POST(req: Request) {
   console.log("[CALC-BASE] ===== POST /api/calc-base called =====");
+  console.log("[CALC-BASE] Request URL:", req.url);
+  console.log("[CALC-BASE] Request method:", req.method);
+  console.log("[CALC-BASE] Request headers:", Object.fromEntries(req.headers.entries()));
 
   let token = cookies().get("directus_access_token")?.value;
   const refreshToken = cookies().get("directus_refresh_token")?.value;
