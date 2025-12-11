@@ -18,9 +18,9 @@ export const SAL_BASE_SCHEMA = {
     },
     personalitySummary: {
       type: "array",
-      description: "Ровно 3-4 абзаца описания личности простым, понятным языком. В тексте указываются ресурсы с цифрами. Используй бытовые примеры и ситуации из жизни.",
+      description: "Ровно 3 абзаца описания личности простым, понятным языком. В тексте указываются ресурсы с цифрами. Используй бытовые примеры и ситуации из жизни.",
       minItems: 3,
-      maxItems: 4,
+      maxItems: 3,
       items: { type: "string" }
     },
     strengths: {
@@ -60,9 +60,9 @@ export const SAL_BASE_SCHEMA = {
     },
     codesExplanation: {
       type: "array",
-      description: "5-6 абзацев пояснения кодов простым, понятным языком. Объясни, из каких ресурсов состоит человек, как они сочетаются или конфликтуют, с бытовыми примерами. Указывать ресурсы и цифры. В конце должен быть синтез — к чему этот синтез приводит и что дает.",
-      minItems: 5,
-      maxItems: 6,
+      description: "3-5 абзацев пояснения кодов простым, понятным языком. Объясни, из каких ресурсов состоит человек, как они сочетаются или конфликтуют, с бытовыми примерами. Указывать ресурсы и цифры.",
+      minItems: 3,
+      maxItems: 5,
       items: { type: "string" }
     },
     conflicts: {
@@ -449,7 +449,6 @@ ${codesDescription}`;
         try {
           const requestBody = {
             model: "gpt-5-mini",
-            reasoning: "medium",
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt },
@@ -726,7 +725,6 @@ ${codesDescription}`;
   try {
     const requestBody = {
       model: "gpt-5-mini",
-      reasoning: "medium",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
