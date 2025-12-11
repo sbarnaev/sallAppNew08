@@ -1403,31 +1403,7 @@ export default function ProfileDetail() {
       if (!mounted) return;
       const p = data?.data || null;
       
-      // Логируем данные для диагностики
-      console.log("API response:", {
-        status: responseStatus,
-        hasData: !!data,
-        hasDataData: !!data?.data,
-        profileKeys: p ? Object.keys(p) : [],
-        fullResponse: data
-      });
-      
-      if (p) {
-        console.log("Profile data received:", {
-          id: p.id,
-          hasHtml: !!(p.html || p.raw_html || p.content || p.html_content),
-          htmlValue: p.html ? String(p.html).substring(0, 100) : null,
-          hasRawJson: !!p.raw_json,
-          rawJsonType: typeof p.raw_json,
-          rawJsonLength: p.raw_json ? (typeof p.raw_json === 'string' ? p.raw_json.length : JSON.stringify(p.raw_json).length) : 0,
-          rawJsonPreview: p.raw_json ? (typeof p.raw_json === 'string' ? p.raw_json.substring(0, 100) : JSON.stringify(p.raw_json).substring(0, 100)) : null,
-          hasDigits: !!p.digits,
-          digitsType: typeof p.digits,
-          digitsValue: p.digits
-        });
-      } else {
-        console.warn("⚠️ Profile data is null!", { data, status: responseStatus });
-      }
+      // Debug logging removed to reduce console noise
       
       // если идёт локальное сохранение чекбоксов — не перетирать ui_state
       setProfile(prev => {
@@ -1511,14 +1487,7 @@ export default function ProfileDetail() {
         if (pollingRef.current) {
         setPolling(false);
         pollingRef.current = false;
-          console.log("✅ Polling stopped:", { 
-            hasRenderableHtml, 
-            hasRaw, 
-            hasDigits, 
-            tries,
-            profileId: p?.id,
-            htmlLength: htmlCandidate ? String(htmlCandidate).length : 0
-          });
+          // Debug logging removed to reduce console noise
         }
       } else {
         if (pollingRef.current) {
@@ -1803,19 +1772,7 @@ export default function ProfileDetail() {
       items = [];
     }
     
-    console.log("[DEBUG] renderedFromJson: parsed items", {
-      itemsCount: items.length,
-      firstItemKeys: items[0] ? Object.keys(items[0]) : [],
-      hasOpener: items[0]?.opener,
-      hasPersonalitySummary: items[0]?.personalitySummary,
-      hasStrengths: items[0]?.strengths,
-      hasWeaknesses: items[0]?.weaknesses,
-      hasHappinessFormula: items[0]?.happinessFormula,
-      hasCodesExplanation: items[0]?.codesExplanation,
-      hasResourceSignals: items[0]?.resourceSignals,
-      hasDeficitSignals: items[0]?.deficitSignals,
-      hasConflicts: items[0]?.conflicts,
-      hasPractices: items[0]?.practices,
+    // Debug logging removed to reduce console noise
       // Поля целевой консультации
       hasWarnings: Array.isArray(items[0]?.warnings),
       hasGoalDecomposition: Array.isArray(items[0]?.goalDecomposition),
@@ -1913,11 +1870,7 @@ export default function ProfileDetail() {
       );
     });
     
-    console.log("[DEBUG] renderedFromJson: hasAnyData check", {
-      hasAnyData,
-      itemsLength: items.length,
-      firstItemType: items[0] ? typeof items[0] : 'none'
-    });
+    // Debug logging removed to reduce console noise
     
     if (!hasAnyData) {
       console.warn("[DEBUG] renderedFromJson: no recognizable data fields in items", {
