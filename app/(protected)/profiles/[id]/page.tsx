@@ -1773,17 +1773,6 @@ export default function ProfileDetail() {
     }
     
     // Debug logging removed to reduce console noise
-      // Поля целевой консультации
-      hasWarnings: Array.isArray(items[0]?.warnings),
-      hasGoalDecomposition: Array.isArray(items[0]?.goalDecomposition),
-      hasResourcesForStages: Array.isArray(items[0]?.resourcesForStages),
-      hasCurrentDiagnostics: !!items[0]?.currentDiagnostics,
-      hasPlan123: Array.isArray(items[0]?.plan123),
-      hasProgressMetrics: !!items[0]?.progressMetrics,
-      hasWhatIf: !!items[0]?.whatIf,
-      hasObjectionHandling: Array.isArray(items[0]?.objectionHandling),
-      hasFinalStrategy: Array.isArray(items[0]?.finalStrategy),
-    });
 
     const makeHashKey = (section: string, text: string): string => `${section}:h:${hashString(normalizeTextForHash(text))}`;
     const makeLegacyKey = (section: string, text: string, index: number): string => {
