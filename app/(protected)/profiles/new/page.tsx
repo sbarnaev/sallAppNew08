@@ -230,16 +230,26 @@ export default function NewCalculationPage() {
       };
       
       // Используем новый автономный API для базового расчета
+      console.log("[CLIENT] Starting base calculation...");
+      console.log("[CLIENT] Payload:", payload);
+      
       const res = await fetch("/api/calc-base?stream=1", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       
+      console.log("[CLIENT] Response status:", res.status);
+      console.log("[CLIENT] Response OK:", res.ok);
+      console.log("[CLIENT] Content-Type:", res.headers.get("content-type"));
+      
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
+        console.error("[CLIENT] Error response:", errorData);
         throw new Error(errorData?.message || "Calculation failed");
       }
+      
+      console.log("[CLIENT] Response OK, starting to read stream...");
 
       // Обрабатываем стриминг
       const reader = res.body?.getReader();

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import html2pdf from "html2pdf.js";
+import jsPDF from "jspdf";
 import RichEditor from "@/components/RichEditor";
 import DeleteProfile from "../DeleteProfile";
 import { calculateSALCodes, getCodeShortLabel } from "@/lib/sal-codes";
@@ -530,13 +531,15 @@ export default function ProfileDetail() {
     .page {
       page-break-after: always;
       page-break-inside: avoid;
-      height: 100vh;
+      width: 210mm;
+      min-height: 273mm;
       max-height: 273mm;
       padding: 18mm 15mm;
       display: flex;
       flex-direction: column;
       background: linear-gradient(to bottom, #f8fafc 0%, #ffffff 50%);
       overflow: hidden;
+      box-sizing: border-box;
     }
     .page:last-child {
       page-break-after: auto;
@@ -753,27 +756,29 @@ export default function ProfileDetail() {
         return;
       }
       
-      // Создаем контейнер для PDF
+      // Создаем контейнер для PDF - видимый, но вне экрана
       const element = document.createElement('div');
+      element.id = 'pdf-export-container';
+      element.style.position = 'fixed';
+      element.style.left = '0';
+      element.style.top = '0';
       element.style.width = '210mm';
       element.style.minHeight = '297mm';
       element.style.padding = '0';
       element.style.margin = '0';
       element.style.backgroundColor = 'white';
-      element.style.position = 'absolute';
-      element.style.top = '-9999px';
-      element.style.left = '0';
+      element.style.zIndex = '999999';
       element.style.visibility = 'visible';
       element.style.opacity = '1';
-      element.style.pointerEvents = 'none';
-      element.style.overflow = 'visible';
-      element.style.zIndex = '999999';
+      element.style.transform = 'translateX(-100%)'; // Скрываем за левым краем
+      element.style.display = 'block';
       
-      // Копируем стили
+      // Копируем стили в head документа
       if (styleElement) {
         const style = document.createElement('style');
+        style.id = 'pdf-export-styles';
         style.textContent = styleElement.textContent || '';
-        element.appendChild(style);
+        document.head.appendChild(style);
       }
       
       // Копируем содержимое body
@@ -784,45 +789,86 @@ export default function ProfileDetail() {
       
       document.body.appendChild(element);
       
-      // Ждем рендеринг
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Ждем полный рендеринг с проверками
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Проверяем контент
       const textContent = element.textContent?.trim() || '';
-      const hasContent = element.children.length > 0 || textContent.length > 0;
+      const hasContent = element.children.length > 0 && textContent.length > 0;
+      
+      console.log('[PDF Export] Debug info:', {
+        hasContent,
+        childrenCount: element.children.length,
+        textLength: textContent.length,
+        elementHeight: element.scrollHeight,
+        elementWidth: element.scrollWidth,
+        computedStyle: window.getComputedStyle(element).display
+      });
       
       if (!hasContent) {
+        const styleEl = document.getElementById('pdf-export-styles');
+        if (styleEl) styleEl.remove();
         document.body.removeChild(element);
-        alert('Ошибка: контент не отрендерился для PDF');
+        alert('Ошибка: контент не отрендерился для PDF. Проверьте консоль для деталей.');
+        console.error('[PDF Export] Content check failed:', {
+          elementHTML: element.innerHTML.substring(0, 500),
+          bodyContentHTML: bodyContent.innerHTML.substring(0, 500)
+        });
         return;
       }
       
-      // Настройки для html2pdf
+      // Настройки для html2pdf с улучшенными параметрами
+      const filename = `Базовый_расчет_${clientNameForPdf || 'профиль'}_${dateStr || new Date().toLocaleDateString('ru-RU')}.pdf`;
+      
       const opt = {
         margin: [0, 0, 0, 0] as [number, number, number, number],
-        filename: `Базовый_расчет_${clientNameForPdf || 'профиль'}_${dateStr || new Date().toLocaleDateString('ru-RU')}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
+        filename: filename,
+        image: { type: 'jpeg' as const, quality: 0.95 },
         html2canvas: { 
-          scale: 2, 
+          scale: 2,
           useCORS: true,
-          logging: false,
+          logging: true, // Включаем логирование для отладки
           backgroundColor: '#ffffff',
-          width: element.scrollWidth || 794,
-          height: element.scrollHeight || 1123,
-          windowWidth: element.scrollWidth || 794,
-          windowHeight: element.scrollHeight || 1123,
-          removeContainer: false
+          width: 794, // A4 width в пикселях (210mm * 96 DPI / 25.4)
+          height: 1123, // A4 height в пикселях (297mm * 96 DPI / 25.4)
+          windowWidth: 794,
+          windowHeight: 1123,
+          removeContainer: false,
+          letterRendering: true,
+          allowTaint: false,
+          onclone: (clonedDoc: Document) => {
+            // Убеждаемся, что клонированный документ видим
+            const clonedElement = clonedDoc.getElementById('pdf-export-container');
+            if (clonedElement) {
+              (clonedElement as HTMLElement).style.transform = 'translateX(0)';
+              (clonedElement as HTMLElement).style.position = 'relative';
+            }
+          }
         },
-        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        jsPDF: { 
+          unit: 'mm' as const, 
+          format: 'a4' as const, 
+          orientation: 'portrait' as const,
+          compress: true
+        },
+        pagebreak: { 
+          mode: ['css', 'legacy'],
+          avoid: ['.page']
+        }
       };
       
       // Генерируем и скачиваем PDF
       try {
+        console.log('[PDF Export] Starting PDF generation with options:', opt);
         await html2pdf().set(opt).from(element).save();
+        console.log('[PDF Export] PDF generated successfully');
       } catch (error) {
-        console.error('Error generating PDF:', error);
+        console.error('[PDF Export] Error generating PDF:', error);
         alert('Ошибка при генерации PDF: ' + (error instanceof Error ? error.message : String(error)));
       } finally {
+        // Очистка
+        const styleEl = document.getElementById('pdf-export-styles');
+        if (styleEl) styleEl.remove();
         if (element.parentNode) {
           document.body.removeChild(element);
         }

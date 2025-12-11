@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // JSON Schema для структурированного ответа GPT
-const SAL_BASE_SCHEMA = {
+export const SAL_BASE_SCHEMA = {
   type: "object",
   additionalProperties: false,
   properties: {
@@ -329,6 +329,15 @@ export async function POST(req: Request) {
     );
   }
 
+  // Детальное логирование для отладки
+  console.log("[CALC-BASE] ===== PROMPT DEBUG INFO =====");
+  console.log("[CALC-BASE] Profile ID:", profileId);
+  console.log("[CALC-BASE] Client name:", name);
+  console.log("[CALC-BASE] Birthday:", birthday);
+  console.log("[CALC-BASE] Codes calculated:", profileCodes.codes);
+  console.log("[CALC-BASE] Codes description length:", codesDescription.length);
+  console.log("[CALC-BASE] Codes description preview:", codesDescription.substring(0, 200) + "...");
+
   const systemPrompt = `Ты — эксперт по системному анализу личности (САЛ), который помогает консультанту провести консультацию для клиента. Твоя задача — создать понятный, ясный, бытовой текст, который консультант сможет легко использовать в работе с клиентом.
 
 ${codeLegend}
@@ -395,6 +404,14 @@ ${codeLegend}
 
 ${codesDescription}`;
 
+  // Логируем полный промпт для отладки
+  console.log("[CALC-BASE] ===== FULL PROMPT =====");
+  console.log("[CALC-BASE] System prompt length:", systemPrompt.length);
+  console.log("[CALC-BASE] User prompt length:", userPrompt.length);
+  console.log("[CALC-BASE] System prompt preview:", systemPrompt.substring(0, 300) + "...");
+  console.log("[CALC-BASE] User prompt:", userPrompt);
+  console.log("[CALC-BASE] ===== END PROMPT DEBUG =====");
+
   // Проверяем, нужен ли стриминг
   const streamParam = new URL(req.url).searchParams.get("stream");
   const shouldStream = wantStream || streamParam === "1";
@@ -412,39 +429,59 @@ ${codesDescription}`;
         );
 
         try {
+          const requestBody = {
+            model: "gpt-5-mini",
+            reasoning: { effort: "medium" },
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt },
+            ],
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: "sal_consult_prep",
+                strict: true,
+                schema: SAL_BASE_SCHEMA,
+              },
+            },
+            temperature: 0.7,
+            stream: true,
+          };
+
+          console.log("[CALC-BASE] ===== OPENAI REQUEST =====");
+          console.log("[CALC-BASE] Model: gpt-5-mini");
+          console.log("[CALC-BASE] Messages count:", requestBody.messages.length);
+          console.log("[CALC-BASE] System message length:", systemPrompt.length);
+          console.log("[CALC-BASE] User message length:", userPrompt.length);
+          console.log("[CALC-BASE] Has OpenAI key:", !!openaiKey);
+          console.log("[CALC-BASE] ===== SENDING REQUEST =====");
+
           const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${openaiKey}`,
             },
-            body: JSON.stringify({
-              model: "gpt-5-mini",
-              reasoning: { effort: "medium" },
-              messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userPrompt },
-              ],
-              response_format: {
-                type: "json_schema",
-                json_schema: {
-                  name: "sal_consult_prep",
-                  strict: true,
-                  schema: SAL_BASE_SCHEMA,
-                },
-              },
-              temperature: 0.7,
-              stream: true,
-            }),
+            body: JSON.stringify(requestBody),
           });
+
+          console.log("[CALC-BASE] ===== OPENAI RESPONSE =====");
+          console.log("[CALC-BASE] Status:", response.status);
+          console.log("[CALC-BASE] Status text:", response.statusText);
+          console.log("[CALC-BASE] OK:", response.ok);
 
           if (!response.ok) {
             const errorText = await response.text().catch(() => "");
             let errorMessage = "Ошибка при обращении к OpenAI API";
             
+            console.error("[CALC-BASE] ===== OPENAI ERROR =====");
+            console.error("[CALC-BASE] Status:", response.status);
+            console.error("[CALC-BASE] Error text:", errorText);
+            
             // Улучшенная обработка ошибок OpenAI
             try {
               const errorData = JSON.parse(errorText);
+              console.error("[CALC-BASE] Parsed error data:", errorData);
               if (errorData?.error?.message) {
                 errorMessage = errorData.error.message;
               } else if (errorData?.message) {
@@ -466,11 +503,7 @@ ${codesDescription}`;
               errorMessage = "Внутренняя ошибка OpenAI. Попробуйте позже.";
             }
 
-            console.error("[CALC-BASE] OpenAI API error:", {
-              status: response.status,
-              statusText: response.statusText,
-              error: errorMessage
-            });
+            console.error("[CALC-BASE] Final error message:", errorMessage);
 
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ error: errorMessage })}\n\n`)
@@ -478,6 +511,9 @@ ${codesDescription}`;
             controller.close();
             return;
           }
+
+          console.log("[CALC-BASE] ===== STREAM STARTED =====");
+          console.log("[CALC-BASE] Response OK, starting to read stream");
 
           const reader = response.body?.getReader();
           const decoder = new TextDecoder();
@@ -540,22 +576,37 @@ ${codesDescription}`;
                   if (json?.choices?.[0]?.message?.content) {
                     accumulatedContent = json.choices[0].message.content;
                     hasFinalMessage = true;
+                    console.log("[CALC-BASE] ===== FINAL MESSAGE RECEIVED =====");
+                    console.log("[CALC-BASE] Content length:", accumulatedContent.length);
+                    console.log("[CALC-BASE] Content preview:", accumulatedContent.substring(0, 300) + "...");
                     try {
                       finalParsedData = JSON.parse(accumulatedContent);
+                      console.log("[CALC-BASE] Successfully parsed JSON");
+                      console.log("[CALC-BASE] Parsed data keys:", Object.keys(finalParsedData));
                       // Сохраняем сразу, когда получили полный JSON
                       if (finalParsedData && profileId && typeof finalParsedData === 'object') {
+                        console.log("[CALC-BASE] Attempting to save to Directus...");
                         const saved = await saveToDirectus(profileId, finalParsedData, token!, directusUrl, refreshToken);
                         if (saved) {
-                          console.log("[CALC-BASE] Complete data saved to Directus");
+                          console.log("[CALC-BASE] ✅ Complete data saved to Directus successfully");
                           lastSaveTime = Date.now();
                           // Отправляем клиенту сигнал о завершении
                           controller.enqueue(
                             encoder.encode(`data: ${JSON.stringify({ type: "complete", profileId })}\n\n`)
                           );
+                        } else {
+                          console.error("[CALC-BASE] ❌ Failed to save complete data to Directus");
                         }
+                      } else {
+                        console.error("[CALC-BASE] Invalid parsed data:", { 
+                          hasData: !!finalParsedData, 
+                          profileId, 
+                          isObject: typeof finalParsedData === 'object' 
+                        });
                       }
                     } catch (e) {
-                      console.error("[CALC-BASE] Error parsing final message:", e, "Content:", accumulatedContent.substring(0, 200));
+                      console.error("[CALC-BASE] ❌ Error parsing final message:", e);
+                      console.error("[CALC-BASE] Content that failed to parse:", accumulatedContent.substring(0, 500));
                     }
                   }
                   
