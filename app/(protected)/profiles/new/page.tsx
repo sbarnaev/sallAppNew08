@@ -207,33 +207,46 @@ export default function NewCalculationPage() {
                   return;
                 }
 
-              try {
-                const data = JSON.parse(payload);
-                if (data.profileId) {
-                  profileId = data.profileId;
-                  setStreamingProgress(prev => ({ ...prev, profileId }));
+                try {
+                  const data = JSON.parse(payload);
+                  console.log("[CLIENT] ✅ Parsed data chunk:", { 
+                    hasProfileId: !!data.profileId, 
+                    type: data.type, 
+                    hasError: !!data.error,
+                    length: data.length,
+                    fullData: data
+                  });
+                  
+                  if (data.profileId) {
+                    profileId = data.profileId;
+                    console.log("[CLIENT] ✅ Profile ID received:", profileId);
+                    setStreamingProgress(prev => ({ ...prev, profileId }));
+                  }
+                  // Обновляем прогресс стриминга
+                  if (data.type === "progress") {
+                    console.log("[CLIENT] Progress update:", data.length);
+                    setStreamingProgress(prev => ({ 
+                      length: data.length || 0, 
+                      profileId: prev?.profileId || profileId || undefined 
+                    }));
+                  }
+                  if (data.type === "complete") {
+                    console.log("[CLIENT] ✅ Generation complete!");
+                    setStreamingProgress(prev => ({ 
+                      length: 10000, // Показываем завершение
+                      profileId: data.profileId || prev?.profileId || profileId || undefined 
+                    }));
+                  }
+                  // Обрабатываем ошибки
+                  if (data.error) {
+                    console.error("[CLIENT] ❌ Error in stream:", data.error);
+                    setStreamingProgress(null);
+                    throw new Error(data.error);
+                  }
+                } catch (e) {
+                  // Игнорируем ошибки парсинга отдельных чанков
+                  console.warn("[CLIENT] ⚠️ Failed to parse chunk:", e, "Payload:", payload.substring(0, 100));
                 }
-                // Обновляем прогресс стриминга
-                if (data.type === "progress") {
-                  setStreamingProgress(prev => ({ 
-                    length: data.length || 0, 
-                    profileId: prev?.profileId || profileId || undefined 
-                  }));
-                }
-                if (data.type === "complete") {
-                  setStreamingProgress(prev => ({ 
-                    length: 10000, // Показываем завершение
-                    profileId: data.profileId || prev?.profileId || profileId || undefined 
-                  }));
-                }
-                // Обрабатываем ошибки
-                if (data.error) {
-                  setStreamingProgress(null);
-                  throw new Error(data.error);
-                }
-              } catch (e) {
-                // Игнорируем ошибки парсинга отдельных чанков
-              }
             }
           }
 
