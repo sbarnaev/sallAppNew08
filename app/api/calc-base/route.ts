@@ -511,18 +511,30 @@ export async function POST(req: Request) {
 
               console.log(`[CALC-BASE] Processing ${lines.length} lines from buffer`);
 
-              for (const line of lines) {
+              let currentEvent = "";
+              for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
                 if (!line.trim()) {
                   console.log("[CALC-BASE] Skipping empty line");
                   continue;
                 }
+                
+                // Responses API использует формат: event: <type> и data: <json>
+                if (line.startsWith("event:")) {
+                  currentEvent = line.slice(6).trim();
+                  console.log("[CALC-BASE] Event type:", currentEvent);
+                  continue;
+                }
+                
                 if (!line.startsWith("data:")) {
                   console.log("[CALC-BASE] Skipping non-data line:", line.substring(0, 100));
                   continue;
                 }
+                
                 const payload = line.slice(5).trim();
-                console.log("[CALC-BASE] Processing payload:", payload.substring(0, 200));
-                if (payload === "[DONE]") {
+                console.log("[CALC-BASE] Processing payload for event:", currentEvent, "payload:", payload.substring(0, 200));
+                
+                if (payload === "[DONE]" || currentEvent === "response.done") {
                   // Сохраняем финальный результат в Directus
                   if (finalParsedData && profileId) {
                     const saved = await saveToDirectus(profileId, finalParsedData, token!, directusUrl, refreshToken);
@@ -553,33 +565,50 @@ export async function POST(req: Request) {
                 try {
                   const json = JSON.parse(payload);
                   console.log("[CALC-BASE] Parsed JSON keys:", Object.keys(json));
-                  console.log("[CALC-BASE] Parsed JSON:", JSON.stringify(json).substring(0, 500));
                   
-                  // Responses API формат: text приходит в json.text или json.delta.text
-                  if (json?.text) {
-                    console.log("[CALC-BASE] Found json.text, length:", json.text.length);
-                    accumulatedContent += json.text;
-                  } else if (json?.delta?.text) {
-                    console.log("[CALC-BASE] Found json.delta.text, length:", json.delta.text.length);
-                    accumulatedContent += json.delta.text;
-                  } else if (json?.output?.[0]?.text) {
-                    console.log("[CALC-BASE] Found json.output[0].text, length:", json.output[0].text.length);
-                    accumulatedContent += json.output[0].text;
-                    hasFinalMessage = true;
-                  } else if (json?.choices?.[0]?.message?.content) {
-                    // Fallback для Chat Completions API
-                    console.log("[CALC-BASE] Found json.choices[0].message.content");
-                    accumulatedContent = json.choices[0].message.content;
-                    hasFinalMessage = true;
-                  } else if (json?.choices?.[0]?.delta?.content) {
-                    // Fallback для Chat Completions API streaming
-                    console.log("[CALC-BASE] Found json.choices[0].delta.content");
-                    accumulatedContent += json.choices[0].delta.content;
-                  } else {
-                    console.log("[CALC-BASE] ⚠️ Unknown JSON structure, keys:", Object.keys(json));
+                  // Responses API формат: события response.output_item.added и response.output_item.delta
+                  if (currentEvent === "response.output_item.added" || currentEvent === "response.output_item.delta") {
+                    // Текст может быть в item.text или item.delta.text
+                    const item = json?.item || json;
+                    if (item?.text) {
+                      console.log("[CALC-BASE] Found item.text, length:", item.text.length);
+                      accumulatedContent += item.text;
+                    } else if (item?.delta?.text) {
+                      console.log("[CALC-BASE] Found item.delta.text, length:", item.delta.text.length);
+                      accumulatedContent += item.delta.text;
+                    } else if (item?.type === "text" && item?.text) {
+                      console.log("[CALC-BASE] Found text item, length:", item.text.length);
+                      accumulatedContent += item.text;
+                    }
+                  } else if (currentEvent === "response.done" || json?.response?.status === "completed") {
+                    // Финальный ответ может быть в response.output
+                    const output = json?.response?.output || json?.output;
+                    if (Array.isArray(output)) {
+                      for (const item of output) {
+                        if (item?.type === "text" && item?.text) {
+                          console.log("[CALC-BASE] Found final output text, length:", item.text.length);
+                          accumulatedContent += item.text;
+                          hasFinalMessage = true;
+                        }
+                      }
+                    }
+                  } else if (json?.response?.output) {
+                    // Проверяем response.output для любых событий
+                    const output = json.response.output;
+                    if (Array.isArray(output)) {
+                      for (const item of output) {
+                        if (item?.type === "text" && item?.text) {
+                          console.log("[CALC-BASE] Found response.output text, length:", item.text.length);
+                          accumulatedContent += item.text;
+                        }
+                      }
+                    }
                   }
                   
                   console.log("[CALC-BASE] Accumulated content length:", accumulatedContent.length);
+                  if (accumulatedContent.length > 0) {
+                    console.log("[CALC-BASE] Accumulated content preview:", accumulatedContent.substring(0, 300));
+                  }
                   
                   // Если получили полный ответ, парсим и сохраняем
                   if (hasFinalMessage || (accumulatedContent && accumulatedContent.trim().startsWith('{'))) {
