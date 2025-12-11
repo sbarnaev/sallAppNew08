@@ -234,7 +234,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
   }
 
-  const { clientId, name, birthday, stream: wantStream = true } = payload;
+  const { clientId, name, birthday, stream: wantStream } = payload;
+  
+  // Логируем входящие параметры
+  console.log("[CALC-BASE] ===== INCOMING REQUEST PARAMS =====");
+  console.log("[CALC-BASE] clientId:", clientId);
+  console.log("[CALC-BASE] name:", name);
+  console.log("[CALC-BASE] birthday:", birthday);
+  console.log("[CALC-BASE] stream (wantStream):", wantStream);
+  console.log("[CALC-BASE] ===== END INCOMING PARAMS =====");
 
   // Валидация входных данных
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -414,9 +422,16 @@ ${codesDescription}`;
 
   // Проверяем, нужен ли стриминг
   const streamParam = new URL(req.url).searchParams.get("stream");
-  const shouldStream = wantStream || streamParam === "1";
+  const shouldStream = wantStream !== false && (wantStream === true || streamParam === "1");
+  
+  console.log("[CALC-BASE] ===== STREAMING CHECK =====");
+  console.log("[CALC-BASE] wantStream:", wantStream);
+  console.log("[CALC-BASE] streamParam:", streamParam);
+  console.log("[CALC-BASE] shouldStream:", shouldStream);
+  console.log("[CALC-BASE] ===== END STREAMING CHECK =====");
 
   if (shouldStream) {
+    console.log("[CALC-BASE] Using STREAMING mode");
     // Реализуем стриминг с сохранением в Directus
     const encoder = new TextEncoder();
     
@@ -704,7 +719,32 @@ ${codesDescription}`;
   }
 
   // Non-streaming вариант
+  console.log("[CALC-BASE] Using NON-STREAMING mode");
   try {
+    const requestBody = {
+      model: "gpt-5-mini",
+      reasoning: { effort: "medium" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "sal_consult_prep",
+          strict: true,
+          schema: SAL_BASE_SCHEMA,
+        },
+      },
+      temperature: 0.7,
+    };
+
+    console.log("[CALC-BASE] ===== OPENAI REQUEST (NON-STREAMING) =====");
+    console.log("[CALC-BASE] Model: gpt-5-mini");
+    console.log("[CALC-BASE] Messages count:", requestBody.messages.length);
+    console.log("[CALC-BASE] Has OpenAI key:", !!openaiKey);
+    console.log("[CALC-BASE] ===== SENDING REQUEST =====");
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
