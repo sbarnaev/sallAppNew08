@@ -411,6 +411,10 @@ export async function POST(req: Request) {
           console.log("[CALC-BASE] Has OpenAI key:", !!openaiKey);
           console.log("[CALC-BASE] ===== SENDING REQUEST =====");
 
+          console.log("[CALC-BASE] ===== SENDING REQUEST TO OPENAI =====");
+          console.log("[CALC-BASE] Request body keys:", Object.keys(requestBody));
+          console.log("[CALC-BASE] Request body preview:", JSON.stringify(requestBody).substring(0, 500));
+          
           const response = await fetch("https://api.openai.com/v1/responses", {
             method: "POST",
             headers: {
@@ -424,6 +428,7 @@ export async function POST(req: Request) {
           console.log("[CALC-BASE] Status:", response.status);
           console.log("[CALC-BASE] Status text:", response.statusText);
           console.log("[CALC-BASE] OK:", response.ok);
+          console.log("[CALC-BASE] Headers:", Object.fromEntries(response.headers.entries()));
 
           if (!response.ok) {
             const errorText = await response.text().catch(() => "");
@@ -431,7 +436,9 @@ export async function POST(req: Request) {
             
             console.error("[CALC-BASE] ===== OPENAI ERROR =====");
             console.error("[CALC-BASE] Status:", response.status);
+            console.error("[CALC-BASE] Status text:", response.statusText);
             console.error("[CALC-BASE] Error text:", errorText);
+            console.error("[CALC-BASE] Response headers:", Object.fromEntries(response.headers.entries()));
             
             // Улучшенная обработка ошибок OpenAI
             try {

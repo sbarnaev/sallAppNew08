@@ -156,8 +156,31 @@ export default function NewCalculationPage() {
           let profileId: number | null = null;
           let buffer = "";
           let chunkCount = 0;
+          let lastDataTime = Date.now();
+          const REDIRECT_TIMEOUT = 30000; // 30 секунд после получения profileId
+          const MAX_WAIT_TIME = 60000; // Максимум 60 секунд ожидания
 
           while (true) {
+            // Проверяем таймаут - если после получения profileId прошло больше 30 секунд без данных, редиректим
+            if (profileId && Date.now() - lastDataTime > REDIRECT_TIMEOUT) {
+              console.log("[CLIENT] ⏱️ Timeout after receiving profileId, redirecting...");
+              setStreamingProgress(null);
+              router.push(`/profiles/${profileId}`);
+              return;
+            }
+            
+            // Максимальное время ожидания
+            if (Date.now() - lastDataTime > MAX_WAIT_TIME) {
+              console.log("[CLIENT] ⏱️ Max wait time exceeded, redirecting...");
+              setStreamingProgress(null);
+              if (profileId) {
+                router.push(`/profiles/${profileId}`);
+              } else {
+                router.push("/profiles");
+              }
+              return;
+            }
+            
             console.log(`[CLIENT] Reading chunk ${chunkCount}...`);
             const { done, value } = await reader.read();
             
@@ -219,11 +242,23 @@ export default function NewCalculationPage() {
                   
                   if (data.profileId) {
                     profileId = data.profileId;
+                    lastDataTime = Date.now();
                     console.log("[CLIENT] ✅ Profile ID received:", profileId);
                     setStreamingProgress(prev => ({ ...prev, profileId }));
+                    
+                    // После получения profileId, даем 5 секунд на начало генерации, затем редиректим
+                    // Генерация может идти долго, но профиль уже создан
+                    setTimeout(() => {
+                      if (profileId) {
+                        console.log("[CLIENT] ⏱️ Redirecting after profileId received (generation continues in background)");
+                        setStreamingProgress(null);
+                        router.push(`/profiles/${profileId}`);
+                      }
+                    }, 5000);
                   }
                   // Обновляем прогресс стриминга
                   if (data.type === "progress") {
+                    lastDataTime = Date.now();
                     console.log("[CLIENT] Progress update:", data.length);
                     setStreamingProgress(prev => ({ 
                       length: data.length || 0, 
@@ -231,6 +266,7 @@ export default function NewCalculationPage() {
                     }));
                   }
                   if (data.type === "complete") {
+                    lastDataTime = Date.now();
                     console.log("[CLIENT] ✅ Generation complete!");
                     setStreamingProgress(prev => ({ 
                       length: 10000, // Показываем завершение
