@@ -492,17 +492,36 @@ export async function POST(req: Request) {
           let finalParsedData: any = null;
 
           try {
+            let chunkIndex = 0;
             while (true) {
               const { done, value } = await reader.read();
-              if (done) break;
+              if (done) {
+                console.log("[CALC-BASE] Stream done, total chunks:", chunkIndex);
+                break;
+              }
 
-              buffer += decoder.decode(value, { stream: true });
+              chunkIndex++;
+              const decoded = decoder.decode(value, { stream: true });
+              console.log(`[CALC-BASE] Chunk ${chunkIndex} received, length:`, decoded.length);
+              console.log(`[CALC-BASE] Chunk ${chunkIndex} preview:`, decoded.substring(0, 200));
+              
+              buffer += decoded;
               const lines = buffer.split("\n");
               buffer = lines.pop() || "";
 
+              console.log(`[CALC-BASE] Processing ${lines.length} lines from buffer`);
+
               for (const line of lines) {
-                if (!line.trim() || !line.startsWith("data:")) continue;
+                if (!line.trim()) {
+                  console.log("[CALC-BASE] Skipping empty line");
+                  continue;
+                }
+                if (!line.startsWith("data:")) {
+                  console.log("[CALC-BASE] Skipping non-data line:", line.substring(0, 100));
+                  continue;
+                }
                 const payload = line.slice(5).trim();
+                console.log("[CALC-BASE] Processing payload:", payload.substring(0, 200));
                 if (payload === "[DONE]") {
                   // Сохраняем финальный результат в Directus
                   if (finalParsedData && profileId) {
@@ -533,23 +552,34 @@ export async function POST(req: Request) {
 
                 try {
                   const json = JSON.parse(payload);
+                  console.log("[CALC-BASE] Parsed JSON keys:", Object.keys(json));
+                  console.log("[CALC-BASE] Parsed JSON:", JSON.stringify(json).substring(0, 500));
                   
                   // Responses API формат: text приходит в json.text или json.delta.text
                   if (json?.text) {
+                    console.log("[CALC-BASE] Found json.text, length:", json.text.length);
                     accumulatedContent += json.text;
                   } else if (json?.delta?.text) {
+                    console.log("[CALC-BASE] Found json.delta.text, length:", json.delta.text.length);
                     accumulatedContent += json.delta.text;
                   } else if (json?.output?.[0]?.text) {
+                    console.log("[CALC-BASE] Found json.output[0].text, length:", json.output[0].text.length);
                     accumulatedContent += json.output[0].text;
                     hasFinalMessage = true;
                   } else if (json?.choices?.[0]?.message?.content) {
                     // Fallback для Chat Completions API
+                    console.log("[CALC-BASE] Found json.choices[0].message.content");
                     accumulatedContent = json.choices[0].message.content;
                     hasFinalMessage = true;
                   } else if (json?.choices?.[0]?.delta?.content) {
                     // Fallback для Chat Completions API streaming
+                    console.log("[CALC-BASE] Found json.choices[0].delta.content");
                     accumulatedContent += json.choices[0].delta.content;
+                  } else {
+                    console.log("[CALC-BASE] ⚠️ Unknown JSON structure, keys:", Object.keys(json));
                   }
+                  
+                  console.log("[CALC-BASE] Accumulated content length:", accumulatedContent.length);
                   
                   // Если получили полный ответ, парсим и сохраняем
                   if (hasFinalMessage || (accumulatedContent && accumulatedContent.trim().startsWith('{'))) {
