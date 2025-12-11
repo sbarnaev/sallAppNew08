@@ -349,15 +349,14 @@ export default function NewCalculationPage() {
         name,
         birthday, // YYYY-MM-DD
         clientId: clientId ? Number(clientId) : undefined,
-        stream: true, // Включаем стриминг
       };
       
-      // Используем новый автономный API для базового расчета
+      // Используем n8n через /api/calc-base для базового расчета
       console.log("[CLIENT] ===== Starting base calculation =====");
       console.log("[CLIENT] Payload:", JSON.stringify(payload, null, 2));
-      console.log("[CLIENT] URL: /api/calc-base?stream=1");
+      console.log("[CLIENT] URL: /api/calc-base");
       
-      const res = await fetch("/api/calc-base?stream=1", {
+      const res = await fetch("/api/calc-base", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -377,73 +376,17 @@ export default function NewCalculationPage() {
         throw new Error(errorData?.message || "Calculation failed");
       }
       
-      console.log("[CLIENT] ===== Response OK, starting to read stream =====");
-
-      // Обрабатываем стриминг
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      if (!reader) {
-        throw new Error("No response body");
-      }
-
-      let profileId: number | null = null;
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (!line.trim() || !line.startsWith("data:")) continue;
-          const payload = line.slice(5).trim();
-          if (payload === "[DONE]") {
-            setStreamingProgress(null);
-            if (profileId) {
-              router.push(`/profiles/${profileId}`);
-            } else {
-              router.push("/profiles");
-            }
-            return;
-          }
-
-          try {
-            const data = JSON.parse(payload);
-            if (data.profileId) {
-              profileId = data.profileId;
-              setStreamingProgress(prev => ({ ...prev, profileId }));
-            }
-            // Обновляем прогресс стриминга
-            if (data.type === "progress") {
-              setStreamingProgress(prev => ({ 
-                length: data.length || 0, 
-                profileId: prev?.profileId || profileId || undefined 
-              }));
-            }
-            if (data.type === "complete") {
-              setStreamingProgress(prev => ({ 
-                length: 10000,
-                profileId: data.profileId || prev?.profileId || profileId || undefined 
-              }));
-            }
-            if (data.error) {
-              setStreamingProgress(null);
-              throw new Error(data.error);
-            }
-          } catch (e) {
-            // Игнорируем ошибки парсинга
-          }
-        }
-      }
-
-      // Если дошли до конца без [DONE], все равно редиректим
-      setStreamingProgress(null);
+      // Обычный JSON ответ от n8n
+      const data = await res.json().catch(() => ({}));
+      console.log("[CLIENT] ===== Response data =====");
+      console.log("[CLIENT] Data:", data);
+      
+      const profileId = data?.profileId || data?.data?.profileId || data?.id || data?.data?.id;
       if (profileId) {
+        console.log("[CLIENT] ✅ Profile ID received:", profileId);
         router.push(`/profiles/${profileId}`);
       } else {
+        console.warn("[CLIENT] ⚠️ No profileId in response, redirecting to profiles list");
         router.push("/profiles");
       }
     } catch (err: any) {
