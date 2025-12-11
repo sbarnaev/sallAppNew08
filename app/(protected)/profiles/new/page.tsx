@@ -247,8 +247,16 @@ export default function NewCalculationPage() {
                   // Игнорируем ошибки парсинга отдельных чанков
                   console.warn("[CLIENT] ⚠️ Failed to parse chunk:", e, "Payload:", payload.substring(0, 100));
                 }
+              }
+            } else {
+              console.warn(`[CLIENT] ⚠️ Chunk ${chunkCount} has no value`);
             }
           }
+          
+          console.log("[CLIENT] ===== Stream reading finished =====");
+          console.log("[CLIENT] Total chunks read:", chunkCount);
+          console.log("[CLIENT] Final buffer:", buffer.substring(0, 200));
+          console.log("[CLIENT] Final profileId:", profileId);
 
           // Если дошли до конца без [DONE], все равно редиректим
           // Данные должны были сохраниться в процессе стриминга
