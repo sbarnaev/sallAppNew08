@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getProfileCodes, formatCodesForPrompt } from "@/lib/sal-interpretations";
 import { SYSTEM_PROMPT_BASE_CALCULATION, createUserPromptForBaseCalculation } from "@/lib/prompt-base-calculation";
-import { SAL_BASE_SCHEMA } from "../route";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,20 +48,16 @@ export async function GET(req: Request) {
         full: codesDescription,
       },
       requestExample: {
-        model: "gpt-5-mini",
-        reasoning: { effort: "medium" },
-        input: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        text: {
-          format: {
-            type: "json_schema",
-            name: "sal_consult_prep",
-            strict: true,
-            schema: SAL_BASE_SCHEMA,
-          },
-        },
+        type: "base_new",
+        name: name,
+        birthday: birthday,
+        clientId: null,
+        profileId: null,
+        public_code: "EXAMPLE",
+        gender: null,
+        directusUrl: "https://example.com",
+        token: "***",
+        refreshToken: "***",
       },
     });
   } catch (error: any) {
