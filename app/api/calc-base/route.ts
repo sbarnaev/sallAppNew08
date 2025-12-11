@@ -449,6 +449,7 @@ ${codesDescription}`;
         try {
           const requestBody = {
             model: "gpt-5-mini",
+            reasoning: "medium",
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt },
@@ -725,6 +726,7 @@ ${codesDescription}`;
   try {
     const requestBody = {
       model: "gpt-5-mini",
+      reasoning: "medium",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
