@@ -379,6 +379,20 @@ export default function ProfileDetail() {
       let resourceSignals: string[] = [];
       let deficitSignals: string[] = [];
       
+      // Получаем имя клиента
+      let clientNameForPdf = "";
+      try {
+        if (profile?.client_id) {
+          const clientRes = await fetch(`/api/clients/${profile.client_id}`);
+          if (clientRes.ok) {
+            const clientData = await clientRes.json().catch(() => ({}));
+            clientNameForPdf = clientData?.data?.name || "";
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to fetch client name for PDF:", e);
+      }
+      
       try {
         // Выбираем источник данных: новый формат (base_profile_json) или старый (raw_json)
         let payload: any = (profile as any)?.base_profile_json || profile?.raw_json;
@@ -497,7 +511,7 @@ export default function ProfileDetail() {
   <style>
     @page {
       size: A4;
-      margin: 15mm;
+      margin: 12mm;
     }
     * {
       box-sizing: border-box;
@@ -506,8 +520,8 @@ export default function ProfileDetail() {
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      font-size: 16px;
-      line-height: 1.8;
+      font-size: 15px;
+      line-height: 1.7;
       color: #1a1a1a;
       background: #ffffff;
       -webkit-font-smoothing: antialiased;
@@ -516,40 +530,44 @@ export default function ProfileDetail() {
     .page {
       page-break-after: always;
       page-break-inside: avoid;
-      min-height: 250mm;
-      padding: 20mm 15mm;
+      height: 100vh;
+      max-height: 273mm;
+      padding: 18mm 15mm;
       display: flex;
       flex-direction: column;
-      background: linear-gradient(to bottom, #fafafa 0%, #ffffff 100%);
+      background: linear-gradient(to bottom, #f8fafc 0%, #ffffff 50%);
+      overflow: hidden;
     }
     .page:last-child {
       page-break-after: auto;
     }
     .header {
-      margin-bottom: 25px;
-      padding-bottom: 15px;
-      border-bottom: 3px solid #4a61ff;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e2e8f0;
+      flex-shrink: 0;
     }
     .title {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 700;
       color: #1a1a1a;
-      margin-bottom: 6px;
-      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+      letter-spacing: -0.01em;
     }
     .subtitle {
-      font-size: 13px;
-      color: #666;
+      font-size: 12px;
+      color: #64748b;
       font-weight: 500;
     }
     .section-title {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 700;
       color: #1a1a1a;
-      margin: 30px 0 25px 0;
-      padding-bottom: 15px;
-      border-bottom: 3px solid #e0e0e0;
+      margin: 20px 0 18px 0;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e0e0e0;
       letter-spacing: -0.01em;
+      flex-shrink: 0;
     }
     .section-title.strengths {
       color: #f97316;
@@ -572,52 +590,68 @@ export default function ProfileDetail() {
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
+      overflow: hidden;
+      min-height: 0;
     }
     ul {
       list-style: none;
       padding: 0;
       margin: 0;
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
     li {
-      margin: 16px 0;
-      padding: 12px 0 12px 40px;
+      margin: 0;
+      padding: 10px 12px 10px 38px;
       position: relative;
-      line-height: 1.9;
-      font-size: 16px;
-      color: #1a1a1a;
-      background: rgba(255, 255, 255, 0.7);
-      border-radius: 8px;
-      padding-left: 45px;
+      line-height: 1.6;
+      font-size: 14px;
+      color: #1e293b;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 6px;
+      border-left: 3px solid #e2e8f0;
+      flex-shrink: 0;
     }
     li::before {
       content: "•";
       position: absolute;
-      left: 18px;
-      color: #4a61ff;
+      left: 16px;
+      color: #64748b;
       font-weight: bold;
-      font-size: 24px;
-      top: 10px;
+      font-size: 18px;
+      top: 8px;
+    }
+    .page.strengths li::before {
+      color: #f97316;
+    }
+    .page.weaknesses li::before {
+      color: #ea580c;
+    }
+    .page.plus li::before {
+      color: #059669;
+    }
+    .page.minus li::before {
+      color: #dc2626;
     }
     .footer {
       margin-top: auto;
-      padding-top: 20px;
-      border-top: 2px solid #e0e0e0;
-      font-size: 12px;
-      color: #666;
+      padding-top: 15px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 11px;
+      color: #94a3b8;
       text-align: center;
-    }
-    .icon {
-      font-size: 32px;
-      margin-right: 12px;
-      vertical-align: middle;
+      flex-shrink: 0;
     }
   </style>
 </head>
 <body>
   ${strengths.length > 0 ? `
-  <div class="page">
+  <div class="page strengths">
     <div class="header">
-      <div class="title">${clientName ? clientName.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Расчёт профиля'}</div>
+      <div class="title">${clientNameForPdf ? clientNameForPdf.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;') : 'Расчёт профиля'}</div>
       ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
     </div>
     <div class="content">
@@ -636,9 +670,9 @@ export default function ProfileDetail() {
   ` : ''}
   
   ${weaknesses.length > 0 ? `
-  <div class="page">
+  <div class="page weaknesses">
     <div class="header">
-      <div class="title">${clientName ? clientName.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Расчёт профиля'}</div>
+      <div class="title">${clientNameForPdf ? clientNameForPdf.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;') : 'Расчёт профиля'}</div>
       ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
     </div>
     <div class="content">
@@ -657,9 +691,9 @@ export default function ProfileDetail() {
   ` : ''}
   
   ${resourceSignals.length > 0 ? `
-  <div class="page">
+  <div class="page plus">
     <div class="header">
-      <div class="title">${clientName ? clientName.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Расчёт профиля'}</div>
+      <div class="title">${clientNameForPdf ? clientNameForPdf.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;') : 'Расчёт профиля'}</div>
       ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
     </div>
     <div class="content">
@@ -678,9 +712,9 @@ export default function ProfileDetail() {
   ` : ''}
   
   ${deficitSignals.length > 0 ? `
-  <div class="page">
+  <div class="page minus">
     <div class="header">
-      <div class="title">${clientName ? clientName.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Расчёт профиля'}</div>
+      <div class="title">${clientNameForPdf ? clientNameForPdf.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;') : 'Расчёт профиля'}</div>
       ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
     </div>
     <div class="content">
@@ -765,7 +799,7 @@ export default function ProfileDetail() {
       // Настройки для html2pdf
       const opt = {
         margin: [0, 0, 0, 0] as [number, number, number, number],
-        filename: `Базовый_расчет_${clientName || 'профиль'}_${dateStr || new Date().toLocaleDateString('ru-RU')}.pdf`,
+        filename: `Базовый_расчет_${clientNameForPdf || 'профиль'}_${dateStr || new Date().toLocaleDateString('ru-RU')}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: { 
           scale: 2, 
