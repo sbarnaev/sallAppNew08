@@ -42,9 +42,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
     "notes",
     "chat_history",
     "digits",
-    "images_id", // Пробуем разные варианты названия поля
-    "Images ID",
-    "images",
+    "images_id", // Правильное имя поля в Directus
   ].join(",");
   const urlWithFields = `${url}?fields=${encodeURIComponent(fields)}`;
 
@@ -157,50 +155,43 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
           data = allFieldsData;
           r = allFieldsRes;
         } else {
-          // Пробуем server endpoint (может иметь другие права)
-          console.log("[DEBUG] Trying server endpoint for images");
+          // Пробуем получить images_id напрямую (без /server, правильный путь)
+          console.log("[DEBUG] Trying to fetch images_id field");
           try {
-            // Пробуем разные варианты названия поля
-            const fieldVariants = ["Images ID", "images_id", "images", "Images_ID"];
-            for (const fieldName of fieldVariants) {
-              const serverUrl = `${baseUrl}/server/items/profiles/${id}?fields=${encodeURIComponent(fieldName)}`;
-              const serverRes = await fetch(serverUrl, {
-                headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-                cache: "no-store",
-              });
-              if (serverRes.ok) {
-                const serverData = await serverRes.json().catch(() => ({}));
-                console.log("[DEBUG] Server endpoint response (field:", fieldName, "):", serverData);
-                const serverProfileData = serverData?.data || {};
-                imagesFromMainRequest = serverProfileData[fieldName] || serverProfileData["Images ID"] || serverProfileData["images_id"] || serverProfileData["images"];
-                if (imagesFromMainRequest) {
-                  console.log("[DEBUG] Images received from server endpoint:", imagesFromMainRequest);
-                  break;
-                }
-              } else {
-                const errorText = await serverRes.text().catch(() => '');
-                console.warn("[DEBUG] Server endpoint failed (field:", fieldName, "):", serverRes.status, errorText);
+            // Используем правильный путь и только images_id (правильное имя поля)
+            const imagesUrl = `${baseUrl}/items/profiles/${id}?fields=images_id`;
+            const imagesRes = await fetch(imagesUrl, {
+              headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+              cache: "no-store",
+            });
+            if (imagesRes.ok) {
+              const imagesData = await imagesRes.json().catch(() => ({}));
+              const imagesProfileData = imagesData?.data || {};
+              imagesFromMainRequest = imagesProfileData["images_id"] || imagesProfileData["Images ID"] || imagesProfileData["Images_ID"];
+              if (imagesFromMainRequest) {
+                console.log("[DEBUG] Images received from images_id request:", imagesFromMainRequest);
               }
+            } else {
+              const errorText = await imagesRes.text().catch(() => '');
+              console.warn("[DEBUG] Failed to fetch images_id:", imagesRes.status, errorText);
             }
-          } catch (serverError) {
-            console.warn("[DEBUG] Server endpoint error:", serverError);
+          } catch (imagesError) {
+            console.warn("[DEBUG] Error fetching images_id:", imagesError);
           }
           
-          // Пробуем GraphQL запрос для получения images
+          // Пробуем GraphQL запрос для получения images_id (правильное имя поля)
           if (!imagesFromMainRequest) {
-            console.log("[DEBUG] Trying GraphQL query for images");
+            console.log("[DEBUG] Trying GraphQL query for images_id");
             try {
               const graphqlUrl = `${baseUrl}/graphql`;
-              // Пробуем разные варианты названия поля в GraphQL
-              const fieldVariants = ["images_id", "images", "Images_ID"];
-              for (const fieldName of fieldVariants) {
-                const graphqlQuery = {
-                  query: `query {
-                    profiles_by_id(id: ${id}) {
-                      ${fieldName}
-                    }
-                  }`
-                };
+              // Используем только images_id (правильное имя поля в GraphQL)
+              const graphqlQuery = {
+                query: `query {
+                  profiles_by_id(id: ${id}) {
+                    images_id
+                  }
+                }`
+              };
               const graphqlRes = await fetch(graphqlUrl, {
                 method: 'POST',
                 headers: { 
@@ -211,19 +202,17 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
                 body: JSON.stringify(graphqlQuery),
                 cache: "no-store",
               });
-                if (graphqlRes.ok) {
-                  const graphqlData = await graphqlRes.json().catch(() => ({}));
-                  console.log("[DEBUG] GraphQL response (field:", fieldName, "):", graphqlData);
-                  const graphqlProfileData = graphqlData?.data?.profiles_by_id || {};
-                  imagesFromMainRequest = graphqlProfileData[fieldName] || graphqlProfileData["images_id"] || graphqlProfileData["images"];
-                  if (imagesFromMainRequest) {
-                    console.log("[DEBUG] Images received from GraphQL:", imagesFromMainRequest);
-                    break;
-                  }
-                } else {
-                  const errorText = await graphqlRes.text().catch(() => '');
-                  console.warn("[DEBUG] GraphQL failed (field:", fieldName, "):", graphqlRes.status, errorText);
+              if (graphqlRes.ok) {
+                const graphqlData = await graphqlRes.json().catch(() => ({}));
+                console.log("[DEBUG] GraphQL response:", graphqlData);
+                const graphqlProfileData = graphqlData?.data?.profiles_by_id || {};
+                imagesFromMainRequest = graphqlProfileData["images_id"] || graphqlProfileData["Images ID"] || graphqlProfileData["Images_ID"];
+                if (imagesFromMainRequest) {
+                  console.log("[DEBUG] Images received from GraphQL:", imagesFromMainRequest);
                 }
+              } else {
+                const errorText = await graphqlRes.text().catch(() => '');
+                console.warn("[DEBUG] GraphQL failed:", graphqlRes.status, errorText);
               }
             } catch (graphqlError) {
               console.warn("[DEBUG] GraphQL query failed:", graphqlError);
