@@ -50,13 +50,14 @@ export async function GET(req: Request) {
       },
       requestExample: {
         model: "gpt-5-mini",
-        messages: [
+        reasoning: { effort: "medium" },
+        input: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        response_format: {
-          type: "json_schema",
-          json_schema: {
+        text: {
+          format: {
+            type: "json_schema",
             name: "sal_consult_prep",
             strict: true,
             schema: SAL_BASE_SCHEMA,

@@ -388,13 +388,13 @@ export async function POST(req: Request) {
           const requestBody = {
             model: "gpt-5-mini",
             reasoning: { effort: "medium" },
-            messages: [
+            input: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt },
             ],
-            response_format: {
-              type: "json_schema",
-              json_schema: {
+            text: {
+              format: {
+                type: "json_schema",
                 name: "sal_consult_prep",
                 strict: true,
                 schema: SAL_BASE_SCHEMA,
@@ -406,13 +406,13 @@ export async function POST(req: Request) {
 
           console.log("[CALC-BASE] ===== OPENAI REQUEST =====");
           console.log("[CALC-BASE] Model: gpt-5-mini");
-          console.log("[CALC-BASE] Messages count:", requestBody.messages.length);
+          console.log("[CALC-BASE] Input count:", requestBody.input.length);
           console.log("[CALC-BASE] System message length:", systemPrompt.length);
           console.log("[CALC-BASE] User message length:", userPrompt.length);
           console.log("[CALC-BASE] Has OpenAI key:", !!openaiKey);
           console.log("[CALC-BASE] ===== SENDING REQUEST =====");
 
-          const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          const response = await fetch("https://api.openai.com/v1/responses", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -528,70 +528,69 @@ export async function POST(req: Request) {
                 try {
                   const json = JSON.parse(payload);
                   
-                  // При JSON schema streaming, полный message приходит в конце
-                  if (json?.choices?.[0]?.message?.content) {
+                  // Responses API формат: text приходит в json.text или json.delta.text
+                  if (json?.text) {
+                    accumulatedContent += json.text;
+                  } else if (json?.delta?.text) {
+                    accumulatedContent += json.delta.text;
+                  } else if (json?.output?.[0]?.text) {
+                    accumulatedContent += json.output[0].text;
+                    hasFinalMessage = true;
+                  } else if (json?.choices?.[0]?.message?.content) {
+                    // Fallback для Chat Completions API
                     accumulatedContent = json.choices[0].message.content;
                     hasFinalMessage = true;
-                    console.log("[CALC-BASE] ===== FINAL MESSAGE RECEIVED =====");
-                    console.log("[CALC-BASE] Content length:", accumulatedContent.length);
-                    console.log("[CALC-BASE] Content preview:", accumulatedContent.substring(0, 300) + "...");
+                  } else if (json?.choices?.[0]?.delta?.content) {
+                    // Fallback для Chat Completions API streaming
+                    accumulatedContent += json.choices[0].delta.content;
+                  }
+                  
+                  // Если получили полный ответ, парсим и сохраняем
+                  if (hasFinalMessage || (accumulatedContent && accumulatedContent.trim().startsWith('{'))) {
                     try {
-                      finalParsedData = JSON.parse(accumulatedContent);
-                      console.log("[CALC-BASE] Successfully parsed JSON");
-                      console.log("[CALC-BASE] Parsed data keys:", Object.keys(finalParsedData));
-                      // Сохраняем сразу, когда получили полный JSON
-                      if (finalParsedData && profileId && typeof finalParsedData === 'object') {
-                        console.log("[CALC-BASE] Attempting to save to Directus...");
-                        const saved = await saveToDirectus(profileId, finalParsedData, token!, directusUrl, refreshToken);
-                        if (saved) {
-                          console.log("[CALC-BASE] ✅ Complete data saved to Directus successfully");
-                          lastSaveTime = Date.now();
-                          // Отправляем клиенту сигнал о завершении
-                          controller.enqueue(
-                            encoder.encode(`data: ${JSON.stringify({ type: "complete", profileId })}\n\n`)
-                          );
-                        } else {
-                          console.error("[CALC-BASE] ❌ Failed to save complete data to Directus");
+                      const parsed = JSON.parse(accumulatedContent);
+                      if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+                        finalParsedData = parsed;
+                        console.log("[CALC-BASE] ===== FINAL MESSAGE RECEIVED =====");
+                        console.log("[CALC-BASE] Parsed data keys:", Object.keys(finalParsedData));
+                        
+                        if (profileId) {
+                          const saved = await saveToDirectus(profileId, finalParsedData, token!, directusUrl, refreshToken);
+                          if (saved) {
+                            console.log("[CALC-BASE] ✅ Complete data saved to Directus successfully");
+                            lastSaveTime = Date.now();
+                            controller.enqueue(
+                              encoder.encode(`data: ${JSON.stringify({ type: "complete", profileId })}\n\n`)
+                            );
+                          }
                         }
-                      } else {
-                        console.error("[CALC-BASE] Invalid parsed data:", { 
-                          hasData: !!finalParsedData, 
-                          profileId, 
-                          isObject: typeof finalParsedData === 'object' 
-                        });
                       }
                     } catch (e) {
-                      console.error("[CALC-BASE] ❌ Error parsing final message:", e);
-                      console.error("[CALC-BASE] Content that failed to parse:", accumulatedContent.substring(0, 500));
+                      // Игнорируем ошибки парсинга неполного JSON
                     }
                   }
                   
-                  const delta = json?.choices?.[0]?.delta;
-                  
-                  // При JSON schema streaming, content может приходить частями как JSON строка
-                  if (delta?.content) {
-                    accumulatedContent += delta.content;
-                    
-                    // Отправляем клиенту для визуального отображения прогресса
+                  // Отправляем клиенту для визуального отображения прогресса
+                  if (accumulatedContent.length > 0) {
                     controller.enqueue(
                       encoder.encode(`data: ${JSON.stringify({ type: "progress", length: accumulatedContent.length })}\n\n`)
                     );
+                  }
 
-                    // Периодически пытаемся сохранить промежуточные результаты
-                    const now = Date.now();
-                    if (now - lastSaveTime > SAVE_INTERVAL && accumulatedContent.length > 100) {
-                      try {
-                        const partial = JSON.parse(accumulatedContent);
-                        if (partial && profileId && typeof partial === 'object') {
-                          const saved = await saveToDirectus(profileId, partial, token!, directusUrl, refreshToken);
-                          if (saved) {
-                            console.log("[CALC-BASE] Intermediate data saved to Directus");
-                            lastSaveTime = now;
-                          }
+                  // Периодически пытаемся сохранить промежуточные результаты
+                  const now = Date.now();
+                  if (now - lastSaveTime > SAVE_INTERVAL && accumulatedContent.length > 100) {
+                    try {
+                      const partial = JSON.parse(accumulatedContent);
+                      if (partial && profileId && typeof partial === 'object') {
+                        const saved = await saveToDirectus(profileId, partial, token!, directusUrl, refreshToken);
+                        if (saved) {
+                          console.log("[CALC-BASE] Intermediate data saved to Directus");
+                          lastSaveTime = now;
                         }
-                      } catch (e) {
-                        // Игнорируем ошибки парсинга неполного JSON - это нормально
                       }
+                    } catch (e) {
+                      // Игнорируем ошибки парсинга неполного JSON - это нормально
                     }
                   }
                 } catch (e) {
@@ -665,13 +664,13 @@ export async function POST(req: Request) {
     const requestBody = {
       model: "gpt-5-mini",
       reasoning: { effort: "medium" },
-      messages: [
+      input: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
+      text: {
+        format: {
+          type: "json_schema",
           name: "sal_consult_prep",
           strict: true,
           schema: SAL_BASE_SCHEMA,
@@ -682,11 +681,11 @@ export async function POST(req: Request) {
 
     console.log("[CALC-BASE] ===== OPENAI REQUEST (NON-STREAMING) =====");
     console.log("[CALC-BASE] Model: gpt-5-mini");
-    console.log("[CALC-BASE] Messages count:", requestBody.messages.length);
+    console.log("[CALC-BASE] Input count:", requestBody.input.length);
     console.log("[CALC-BASE] Has OpenAI key:", !!openaiKey);
     console.log("[CALC-BASE] ===== SENDING REQUEST =====");
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -704,7 +703,8 @@ export async function POST(req: Request) {
     }
 
     const data = await response.json().catch(() => ({}));
-    const content = data?.choices?.[0]?.message?.content;
+    // Responses API возвращает данные в другом формате
+    const content = data?.output?.[0]?.text || data?.text || data?.choices?.[0]?.message?.content;
     
     if (!content) {
       return NextResponse.json(

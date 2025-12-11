@@ -143,15 +143,33 @@ export function getProfileCodes(birthday: string): ProfileCodes | null {
 
 /**
  * Форматирует описания кодов для промпта
+ * Если description отсутствует или undefined, использует базовое описание
  */
 export function formatCodesForPrompt(profileCodes: ProfileCodes): string {
   const { codes, interpretations } = profileCodes;
   
-  return `Личность (${codes.personality}): ${interpretations.personality.description}
-Коннектор (${codes.connector}): ${interpretations.connector.description}
-Реализация (${codes.realization}): ${interpretations.realization.description}
-Генератор (${codes.generator}): ${interpretations.generator.description}
-Миссия (${codes.mission}): ${interpretations.mission.description}`;
+  // Базовые описания для каждого кода, если description отсутствует
+  const getDescription = (code: number, type: string): string => {
+    const interpretation = interpretations[type as keyof typeof interpretations];
+    if (interpretation?.description && interpretation.description !== 'undefined' && interpretation.description.trim()) {
+      return interpretation.description;
+    }
+    // Базовое описание по типу кода
+    const baseDescriptions: Record<string, string> = {
+      personality: `Код Личности ${code}: определяет ядро человека, его врожденную природу, способ мышления и характер`,
+      connector: `Код Коннектора ${code}: определяет как человек взаимодействует с миром и как его воспринимают окружающие`,
+      realization: `Код Реализации ${code}: определяет через что человек реализует себя и получает чувство пользы`,
+      generator: `Код Генератора ${code}: определяет что заряжает и истощает человека, что даёт смысл`,
+      mission: `Код Миссии ${code}: определяет какую энергию человек призван нести в мир, испытания и искажения`,
+    };
+    return baseDescriptions[type] || `Код ${type} (${code})`;
+  };
+  
+  return `Личность (${codes.personality}): ${getDescription(codes.personality, 'personality')}
+Коннектор (${codes.connector}): ${getDescription(codes.connector, 'connector')}
+Реализация (${codes.realization}): ${getDescription(codes.realization, 'realization')}
+Генератор (${codes.generator}): ${getDescription(codes.generator, 'generator')}
+Миссия (${codes.mission}): ${getDescription(codes.mission, 'mission')}`;
 }
 
 /**
