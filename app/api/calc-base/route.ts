@@ -400,7 +400,6 @@ export async function POST(req: Request) {
                 schema: SAL_BASE_SCHEMA,
               },
             },
-            temperature: 0.7,
             stream: true,
           };
 
@@ -676,7 +675,6 @@ export async function POST(req: Request) {
           schema: SAL_BASE_SCHEMA,
         },
       },
-      temperature: 0.7,
     };
 
     console.log("[CALC-BASE] ===== OPENAI REQUEST (NON-STREAMING) =====");

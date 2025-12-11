@@ -63,7 +63,6 @@ export async function GET(req: Request) {
             schema: SAL_BASE_SCHEMA,
           },
         },
-        temperature: 0.7,
       },
     });
   } catch (error: any) {
