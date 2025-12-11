@@ -754,22 +754,7 @@ ${codesDescription}`;
         "Content-Type": "application/json",
         Authorization: `Bearer ${openaiKey}`,
       },
-      body: JSON.stringify({
-        model: "gpt-5-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "sal_consult_prep",
-            strict: true,
-            schema: SAL_BASE_SCHEMA,
-          },
-        },
-        temperature: 0.7,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
