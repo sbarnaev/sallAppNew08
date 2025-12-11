@@ -273,24 +273,24 @@ export default function NewCalculationPage() {
           setLoading(false);
           return;
         }
+      } else {
+        // Для целевого и партнерского расчета используем старый API через n8n
+        const res = await fetch("/api/calc", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        
+        const data = await res.json().catch(() => ({}));
+        
+        if (!res.ok) {
+          throw new Error(data?.message || "Calculation failed");
+        }
+        
+        const profileId = data?.profileId || data?.data?.profileId || data?.id;
+        if (profileId) router.push(`/profiles/${profileId}`);
+        else router.push("/profiles");
       }
-
-      // Для целевого и партнерского расчета используем старый API через n8n
-      const res = await fetch("/api/calc", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      
-      const data = await res.json().catch(() => ({}));
-      
-      if (!res.ok) {
-        throw new Error(data?.message || "Calculation failed");
-      }
-      
-      const profileId = data?.profileId || data?.data?.profileId || data?.id;
-      if (profileId) router.push(`/profiles/${profileId}`);
-      else router.push("/profiles");
     } catch (err: any) {
       setError(err.message || String(err));
     } finally {
