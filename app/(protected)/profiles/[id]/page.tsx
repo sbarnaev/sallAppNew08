@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import html2pdf from "html2pdf.js";
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import RichEditor from "@/components/RichEditor";
 import DeleteProfile from "../DeleteProfile";
 import { calculateSALCodes, getCodeShortLabel } from "@/lib/sal-codes";
@@ -501,6 +502,12 @@ export default function ProfileDetail() {
         cleaned = cleaned.replace(/\s+/g, ' ').trim();
         return cleaned;
       };
+
+      const escapeHtml = (s: string): string =>
+        String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
       
       // Создаем HTML с красивым оформлением для мобильного чтения
       const html = `
@@ -654,15 +661,15 @@ export default function ProfileDetail() {
   ${strengths.length > 0 ? `
   <div class="page strengths">
     <div class="header">
-      <div class="title">${clientNameForPdf ? clientNameForPdf.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;') : 'Расчёт профиля'}</div>
-      ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
+      <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
+      ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
     </div>
     <div class="content">
       <h2 class="section-title strengths">⚖️ Сильные стороны</h2>
       <ul>
         ${strengths.map((s: string) => {
           const cleaned = cleanText(s);
-          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;')}</li>` : '';
+          return cleaned ? `<li>${escapeHtml(cleaned)}</li>` : '';
         }).filter(Boolean).join('')}
       </ul>
     </div>
@@ -675,15 +682,15 @@ export default function ProfileDetail() {
   ${weaknesses.length > 0 ? `
   <div class="page weaknesses">
     <div class="header">
-      <div class="title">${clientNameForPdf ? clientNameForPdf.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;') : 'Расчёт профиля'}</div>
-      ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
+      <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
+      ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
     </div>
     <div class="content">
       <h2 class="section-title weaknesses">⚖️ Слабые стороны</h2>
       <ul>
         ${weaknesses.map((w: string) => {
           const cleaned = cleanText(w);
-          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;')}</li>` : '';
+          return cleaned ? `<li>${escapeHtml(cleaned)}</li>` : '';
         }).filter(Boolean).join('')}
       </ul>
     </div>
@@ -696,15 +703,15 @@ export default function ProfileDetail() {
   ${resourceSignals.length > 0 ? `
   <div class="page plus">
     <div class="header">
-      <div class="title">${clientNameForPdf ? clientNameForPdf.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;') : 'Расчёт профиля'}</div>
-      ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
+      <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
+      ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
     </div>
     <div class="content">
       <h2 class="section-title plus">✅ Признаки плюса</h2>
       <ul>
         ${resourceSignals.map((r: string) => {
           const cleaned = cleanText(r);
-          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;')}</li>` : '';
+          return cleaned ? `<li>${escapeHtml(cleaned)}</li>` : '';
         }).filter(Boolean).join('')}
       </ul>
     </div>
@@ -717,15 +724,15 @@ export default function ProfileDetail() {
   ${deficitSignals.length > 0 ? `
   <div class="page minus">
     <div class="header">
-      <div class="title">${clientNameForPdf ? clientNameForPdf.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;') : 'Расчёт профиля'}</div>
-      ${dateStr ? `<div class="subtitle">Дата создания: ${dateStr}</div>` : ''}
+      <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
+      ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
     </div>
     <div class="content">
       <h2 class="section-title minus">❌ Признаки минуса</h2>
       <ul>
         ${deficitSignals.map((d: string) => {
           const cleaned = cleanText(d);
-          return cleaned ? `<li>${cleaned.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;')}</li>` : '';
+          return cleaned ? `<li>${escapeHtml(cleaned)}</li>` : '';
         }).filter(Boolean).join('')}
       </ul>
     </div>
@@ -737,141 +744,92 @@ export default function ProfileDetail() {
 </body>
 </html>`;
       
-      // Создаем временный элемент для генерации PDF
+      // Рендерим каждую .page отдельно через html2canvas и собираем в jsPDF
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
-      
+
       const parserError = doc.querySelector('parsererror');
       if (parserError) {
         console.error('HTML parsing error:', parserError.textContent);
         alert('Ошибка парсинга HTML: ' + parserError.textContent);
         return;
       }
-      
+
       const bodyContent = doc.body;
       const styleElement = doc.querySelector('style');
-      
       if (!bodyContent || bodyContent.children.length === 0) {
         alert('Ошибка: не удалось создать содержимое для PDF');
         return;
       }
-      
-      // Создаем контейнер для PDF - видимый, но вне экрана
+
       const element = document.createElement('div');
       element.id = 'pdf-export-container';
       element.style.position = 'fixed';
       element.style.left = '0';
-      element.style.top = '0';
+      element.style.top = '-10000px';
       element.style.width = '210mm';
-      element.style.minHeight = '297mm';
-      element.style.padding = '0';
-      element.style.margin = '0';
       element.style.backgroundColor = 'white';
-      element.style.zIndex = '999999';
-      element.style.visibility = 'visible';
       element.style.opacity = '1';
-      element.style.transform = 'translateX(-100%)'; // Скрываем за левым краем
-      element.style.display = 'block';
-      
-      // Копируем стили в head документа
+      element.style.visibility = 'visible';
+      element.style.pointerEvents = 'none';
+      element.style.zIndex = '999999';
+
+      // ВАЖНО: стили кладём внутрь контейнера (так html2canvas гарантированно их видит)
       if (styleElement) {
         const style = document.createElement('style');
-        style.id = 'pdf-export-styles';
         style.textContent = styleElement.textContent || '';
-        document.head.appendChild(style);
+        element.appendChild(style);
       }
-      
-      // Копируем содержимое body
+
       const bodyClone = bodyContent.cloneNode(true) as HTMLElement;
       while (bodyClone.firstChild) {
         element.appendChild(bodyClone.firstChild);
       }
-      
+
       document.body.appendChild(element);
-      
-      // Ждем полный рендеринг с проверками
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Проверяем контент
-      const textContent = element.textContent?.trim() || '';
-      const hasContent = element.children.length > 0 && textContent.length > 0;
-      
-      console.log('[PDF Export] Debug info:', {
-        hasContent,
-        childrenCount: element.children.length,
-        textLength: textContent.length,
-        elementHeight: element.scrollHeight,
-        elementWidth: element.scrollWidth,
-        computedStyle: window.getComputedStyle(element).display
-      });
-      
-      if (!hasContent) {
-        const styleEl = document.getElementById('pdf-export-styles');
-        if (styleEl) styleEl.remove();
-        document.body.removeChild(element);
-        alert('Ошибка: контент не отрендерился для PDF. Проверьте консоль для деталей.');
-        console.error('[PDF Export] Content check failed:', {
-          elementHTML: element.innerHTML.substring(0, 500),
-          bodyContentHTML: bodyContent.innerHTML.substring(0, 500)
-        });
-        return;
-      }
-      
-      // Настройки для html2pdf с улучшенными параметрами
-      const filename = `Базовый_расчет_${clientNameForPdf || 'профиль'}_${dateStr || new Date().toLocaleDateString('ru-RU')}.pdf`;
-      
-      const opt = {
-        margin: [0, 0, 0, 0] as [number, number, number, number],
-        filename: filename,
-        image: { type: 'jpeg' as const, quality: 0.95 },
-        html2canvas: { 
-          scale: 2,
-          useCORS: true,
-          logging: true, // Включаем логирование для отладки
-          backgroundColor: '#ffffff',
-          width: 794, // A4 width в пикселях (210mm * 96 DPI / 25.4)
-          height: 1123, // A4 height в пикселях (297mm * 96 DPI / 25.4)
-          windowWidth: 794,
-          windowHeight: 1123,
-          removeContainer: false,
-          letterRendering: true,
-          allowTaint: false,
-          onclone: (clonedDoc: Document) => {
-            // Убеждаемся, что клонированный документ видим
-            const clonedElement = clonedDoc.getElementById('pdf-export-container');
-            if (clonedElement) {
-              (clonedElement as HTMLElement).style.transform = 'translateX(0)';
-              (clonedElement as HTMLElement).style.position = 'relative';
-            }
-          }
-        },
-        jsPDF: { 
-          unit: 'mm' as const, 
-          format: 'a4' as const, 
-          orientation: 'portrait' as const,
-          compress: true
-        },
-        pagebreak: { 
-          mode: ['css', 'legacy'],
-          avoid: ['.page']
-        }
-      };
-      
-      // Генерируем и скачиваем PDF
+
       try {
-        console.log('[PDF Export] Starting PDF generation with options:', opt);
-        await html2pdf().set(opt).from(element).save();
-        console.log('[PDF Export] PDF generated successfully');
+        // @ts-ignore
+        if (document.fonts?.ready) {
+          // @ts-ignore
+          await document.fonts.ready;
+        }
+        await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
+
+        const pages = Array.from(element.querySelectorAll<HTMLElement>('.page'));
+        if (pages.length === 0) {
+          alert('Ошибка: страницы для PDF не найдены');
+          return;
+        }
+
+        const filename = `Базовый_расчет_${(clientNameForPdf || 'профиль').replace(/\\s+/g, '_')}_${dateStr || new Date().toLocaleDateString('ru-RU')}.pdf`;
+
+        const pdf = new jsPDF({
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait',
+          compress: true,
+        });
+
+        for (let i = 0; i < pages.length; i++) {
+          const pageEl = pages[i];
+          const canvas = await html2canvas(pageEl, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+          });
+          const imgData = canvas.toDataURL('image/jpeg', 0.95);
+          if (i > 0) pdf.addPage('a4', 'portrait');
+          pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+        }
+
+        pdf.save(filename);
       } catch (error) {
         console.error('[PDF Export] Error generating PDF:', error);
         alert('Ошибка при генерации PDF: ' + (error instanceof Error ? error.message : String(error)));
       } finally {
-        // Очистка
-        const styleEl = document.getElementById('pdf-export-styles');
-        if (styleEl) styleEl.remove();
-        if (element.parentNode) {
-          document.body.removeChild(element);
-        }
+        if (element.parentNode) document.body.removeChild(element);
       }
     }
 
