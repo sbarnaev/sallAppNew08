@@ -1889,7 +1889,7 @@ export default function ProfileDetail() {
 
     return null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.raw_json, checkedMap, saveChecked]);
+  }, [profile?.raw_json, (profile as any)?.base_profile_json, checkedMap, saveChecked]);
 
   // Функция рендеринга базового расчета
   function renderBaseConsultation(
@@ -1996,8 +1996,11 @@ export default function ProfileDetail() {
 
             {/* Сильные стороны */}
             {(item.strengths || item.strengths_text) && (
-              <section id="strengths" className="rounded-2xl border-2 border-green-300 bg-green-50 p-6 shadow-sm">
-                <h2 className="m-0 text-base font-bold text-gray-900 mb-4">⚖️ Сильные стороны</h2>
+              <section id="strengths" className="rounded-2xl border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">💪</span>
+                  Сильные стороны
+                </h2>
                 <div className="mt-3">
                   {Array.isArray(item.strengths) ? (
                     <CheckList list={item.strengths} section="strengths" />
@@ -2012,8 +2015,11 @@ export default function ProfileDetail() {
 
             {/* Слабые стороны */}
             {(item.weaknesses || item.weaknesses_text) && (
-              <section id="weaknesses" className="rounded-2xl border-2 border-orange-300 bg-orange-50 p-6 shadow-sm">
-                <h2 className="m-0 text-base font-bold text-gray-900 mb-4">⚖️ Слабые стороны</h2>
+              <section id="weaknesses" className="rounded-2xl border-2 border-orange-300 bg-gradient-to-br from-orange-50 to-amber-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">⚡</span>
+                  Слабые стороны
+                </h2>
                 <div className="mt-3">
                   {Array.isArray(item.weaknesses) ? (
                     <CheckList list={item.weaknesses} section="weaknesses" />
@@ -2047,8 +2053,11 @@ export default function ProfileDetail() {
 
             {/* Признаки плюса */}
             {(item.resourceSignals || item.resourceSignals_text) && (
-              <section id="resource-signals" className="rounded-2xl border-2 border-green-300 bg-green-50 p-6 shadow-sm">
-                <h2 className="m-0 text-base font-bold text-gray-900 mb-4">✅ Признаки плюса</h2>
+              <section id="resource-signals" className="rounded-2xl border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">✅</span>
+                  Признаки плюса
+                </h2>
                 <div className="mt-3">
                   {Array.isArray(item.resourceSignals) ? (
                     <CheckList list={item.resourceSignals} section="resourceSignals" />
@@ -2063,8 +2072,11 @@ export default function ProfileDetail() {
 
             {/* Признаки минуса */}
             {(item.deficitSignals || item.deficitSignals_text) && (
-              <section id="deficit-signals" className="rounded-2xl border-2 border-red-300 bg-red-50 p-6 shadow-sm">
-                <h2 className="m-0 text-base font-bold text-gray-900 mb-4">❌ Признаки минуса</h2>
+              <section id="deficit-signals" className="rounded-2xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-rose-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">⚠️</span>
+                  Признаки минуса
+                </h2>
                 <div className="mt-3">
                   {Array.isArray(item.deficitSignals) ? (
                     <CheckList list={item.deficitSignals} section="deficitSignals" />
@@ -2082,25 +2094,34 @@ export default function ProfileDetail() {
               <AccordionSection title="⚠️ Конфликты и проблемы" id="conflicts">
                 <div className="space-y-6">
                   {item.conflicts.map((c: any, i: number) => (
-                    <Entry key={i} title={c.title}>
-                      {c.description && <p className="whitespace-pre-wrap">{c.description}</p>}
+                    <div key={i} className="rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                      <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <span className="text-2xl">⚡</span>
+                        {c.title}
+                      </h3>
+                      {c.description && (
+                        <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg mb-5">{c.description}</p>
+                      )}
                       {Array.isArray(c.manifestations) && c.manifestations.length > 0 && (
-                        <div>
-                          <div className="mb-1 text-sm text-gray-500">Как проявляется</div>
-                          <ul className="list-disc pl-6 space-y-1 text-gray-800">
+                        <div className="mb-5">
+                          <div className="mb-3 text-sm font-semibold text-amber-900 uppercase tracking-wide">Как проявляется:</div>
+                          <ul className="space-y-2 pl-0 list-none">
                             {c.manifestations.map((m: string, j: number) => (
-                              <li key={j}>{m}</li>
+                              <li key={j} className="flex items-start gap-3 text-gray-800 text-base">
+                                <span className="flex-shrink-0 w-2 h-2 rounded-full bg-amber-500 mt-2"></span>
+                                <span className="leading-relaxed">{m}</span>
+                              </li>
                             ))}
                           </ul>
                         </div>
                       )}
                       {c.advice && (
-                        <div>
-                          <div className="mb-1 text-sm text-gray-500">Что делать</div>
-                          <p className="whitespace-pre-wrap">{c.advice}</p>
+                        <div className="mt-5 pt-5 border-t-2 border-amber-200">
+                          <div className="mb-3 text-sm font-semibold text-green-800 uppercase tracking-wide">💡 Что делать:</div>
+                          <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg bg-white rounded-lg p-4 border-l-4 border-green-500">{c.advice}</p>
                         </div>
                       )}
-                    </Entry>
+                    </div>
                   ))}
                 </div>
               </AccordionSection>
@@ -2109,18 +2130,40 @@ export default function ProfileDetail() {
             {/* Практики */}
             {item.practices && (
               <AccordionSection title="💡 Практики" id="practices">
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {Object.entries(item.practices).map(([blockKey, list]: any, i: number) => (
-                    <article key={i} className="rounded-2xl border-2 border-blue-200 bg-white p-4 shadow-sm">
-                      <div className="mb-2 font-semibold text-gray-800">{mapPracticeKey(blockKey)}</div>
+                    <article key={i} className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 md:p-6 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="mb-4 text-lg font-bold text-gray-900 border-b-2 border-blue-300 pb-2">
+                        {mapPracticeKey(blockKey)}
+                      </div>
                       {Array.isArray(list) ? (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           {list.map((pr: any, j: number) => (
-                            <Entry key={j} title={pr.title}>
-                              {pr.p1 && <p className="text-sm whitespace-pre-wrap">{pr.p1}</p>}
-                              {pr.p2 && <p className="text-sm whitespace-pre-wrap">{pr.p2}</p>}
-                              {pr.description && <p className="text-sm whitespace-pre-wrap">{pr.description}</p>}
-                            </Entry>
+                            <div key={j} className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+                              <h4 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <span className="text-lg">✨</span>
+                                {pr.title}
+                              </h4>
+                              <div className="space-y-2">
+                                {pr.p1 && (
+                                  <p className="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap">
+                                    <span className="font-semibold text-blue-700">1. </span>
+                                    {pr.p1}
+                                  </p>
+                                )}
+                                {pr.p2 && (
+                                  <p className="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap">
+                                    <span className="font-semibold text-blue-700">2. </span>
+                                    {pr.p2}
+                                  </p>
+                                )}
+                                {pr.description && (
+                                  <p className="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap mt-2 italic">
+                                    {pr.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
                           ))}
                         </div>
                       ) : (
