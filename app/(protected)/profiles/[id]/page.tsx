@@ -1021,7 +1021,9 @@ export default function ProfileDetail() {
           // 2. Достигнут лимит попыток
           // 3. Получили 401 и refresh не помог (нужен перелогин)
           const isUnauthorized = responseStatus === 401 && !p;
-          const shouldStop = hasRenderableHtml || hasRaw || hasBaseProfileJson || hasDigits || tries >= maxTries || isUnauthorized;
+          // Не останавливаемся только на digits: коды могут быть, но сам расчет ещё не готов.
+          // Пусть поллинг завершится, когда появится html/raw_json/base_profile_json (или по maxTries).
+          const shouldStop = hasRenderableHtml || hasRaw || hasBaseProfileJson || tries >= maxTries || isUnauthorized;
       
       if (shouldStop) {
         if (pollingRef.current) {

@@ -7,6 +7,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request, ctx: { params: { id: string }}) {
+  const DEBUG = process.env.NODE_ENV !== "production";
+  const dlog = (...args: any[]) => { if (DEBUG) console.log(...args); };
+  const dwarn = (...args: any[]) => { if (DEBUG) console.warn(...args); };
+
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ data: null }, { status: 401 });
@@ -26,7 +30,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   }
   
   const url = `${baseUrl}/items/profiles/${id}`;
-  console.log("[DEBUG] Profile request URL:", url);
+  dlog("[DEBUG] Profile request URL:", url);
   // Не включаем images в основной запрос, так как может быть 403
   // Загружаем images отдельно после успешного получения профиля
   // Пробуем включить Images ID в основной запрос
@@ -57,18 +61,18 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
           urlObj.port = '';
           const correctedBase = urlObj.toString();
           finalUrl = finalUrl.replace(baseUrl, correctedBase);
-          console.log("Corrected URL (removed port 443):", finalUrl);
+          dlog("Corrected URL (removed port 443):", finalUrl);
         }
       }
       
-      console.log("[DEBUG] Fetching profile from Directus:", finalUrl);
+      dlog("[DEBUG] Fetching profile from Directus:", finalUrl);
       const r = await fetch(finalUrl, {
         headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
         cache: "no-store",
       });
       const rawData = await r.text();
-      console.log("[DEBUG] Directus raw response status:", r.status, r.statusText);
-      console.log("[DEBUG] Directus raw response (first 500 chars):", rawData.substring(0, 500));
+      dlog("[DEBUG] Directus raw response status:", r.status, r.statusText);
+      dlog("[DEBUG] Directus raw response (first 500 chars):", rawData.substring(0, 500));
       
       // Если статус не 200, логируем полный ответ
       if (!r.ok) {
@@ -80,7 +84,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       try {
         // Если ответ не JSON (например, "404 page not found"), создаем структурированный ответ
         if (r.status === 404 && !rawData.trim().startsWith('{') && !rawData.trim().startsWith('[')) {
-          console.warn("[DEBUG] Directus returned non-JSON 404, treating as profile not found");
+          dwarn("[DEBUG] Directus returned non-JSON 404, treating as profile not found");
           data = { 
             data: null, 
             errors: [{ 
@@ -482,14 +486,14 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       };
       
       // Логируем финальный формат images для отладки
-      console.log("[DEBUG] Final images in response:", {
+    dlog("[DEBUG] Final images in response:", {
         processedImagesCount: processedImages ? processedImages.length : 0,
         hasItemImages: !!itemImages,
         finalImages: (data as any).data.images
       });
       
       // Логируем данные для диагностики
-      console.log("[DEBUG] Profile API response:", {
+      dlog("[DEBUG] Profile API response:", {
         id: item?.id,
         hasHtml: !!(item?.html),
         hasRawJson: !!item?.raw_json,
@@ -504,7 +508,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         fields: Object.keys(item || {})
       });
     } else {
-      console.warn("[DEBUG] Profile API: data.data is null or undefined", {
+      dwarn("[DEBUG] Profile API: data.data is null or undefined", {
         hasData: !!data,
         dataKeys: data ? Object.keys(data) : [],
         responseStatus: r.status,
