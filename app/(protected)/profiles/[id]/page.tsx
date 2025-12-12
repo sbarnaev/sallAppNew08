@@ -1994,42 +1994,47 @@ export default function ProfileDetail() {
               </section>
             )}
 
-            {/* Сильные стороны */}
-            {(item.strengths || item.strengths_text) && (
-              <section id="strengths" className="rounded-2xl border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
-                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
-                  <span className="text-2xl">💪</span>
-                  Сильные стороны
-                </h2>
-                <div className="mt-3">
-                  {Array.isArray(item.strengths) ? (
-                    <CheckList list={item.strengths} section="strengths" />
-                  ) : (
-                    item.strengths_text && (
-                      <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.strengths_text}</pre>
-                    )
-                  )}
-                </div>
-              </section>
-            )}
+            {/* Сильные и слабые стороны - в две колонки */}
+            {((item.strengths || item.strengths_text) || (item.weaknesses || item.weaknesses_text)) && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Сильные стороны */}
+                {(item.strengths || item.strengths_text) && (
+                  <section id="strengths" className="rounded-2xl border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                    <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                      <span className="text-2xl">💪</span>
+                      Сильные стороны
+                    </h2>
+                    <div className="mt-3">
+                      {Array.isArray(item.strengths) ? (
+                        <CheckList list={item.strengths} section="strengths" />
+                      ) : (
+                        item.strengths_text && (
+                          <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.strengths_text}</pre>
+                        )
+                      )}
+                    </div>
+                  </section>
+                )}
 
-            {/* Слабые стороны */}
-            {(item.weaknesses || item.weaknesses_text) && (
-              <section id="weaknesses" className="rounded-2xl border-2 border-orange-300 bg-gradient-to-br from-orange-50 to-amber-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
-                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
-                  <span className="text-2xl">⚡</span>
-                  Слабые стороны
-                </h2>
-                <div className="mt-3">
-                  {Array.isArray(item.weaknesses) ? (
-                    <CheckList list={item.weaknesses} section="weaknesses" />
-                  ) : (
-                    item.weaknesses_text && (
-                      <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.weaknesses_text}</pre>
-                    )
-                  )}
-                </div>
-              </section>
+                {/* Слабые стороны */}
+                {(item.weaknesses || item.weaknesses_text) && (
+                  <section id="weaknesses" className="rounded-2xl border-2 border-orange-300 bg-gradient-to-br from-orange-50 to-amber-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                    <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                      <span className="text-2xl">⚡</span>
+                      Слабые стороны
+                    </h2>
+                    <div className="mt-3">
+                      {Array.isArray(item.weaknesses) ? (
+                        <CheckList list={item.weaknesses} section="weaknesses" />
+                      ) : (
+                        item.weaknesses_text && (
+                          <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.weaknesses_text}</pre>
+                        )
+                      )}
+                    </div>
+                  </section>
+                )}
+              </div>
             )}
 
             {/* Формула счастья */}
@@ -2051,42 +2056,47 @@ export default function ProfileDetail() {
               </section>
             )}
 
-            {/* Признаки плюса */}
-            {(item.resourceSignals || item.resourceSignals_text) && (
-              <section id="resource-signals" className="rounded-2xl border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
-                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
-                  <span className="text-2xl">✅</span>
-                  Признаки плюса
-                </h2>
-                <div className="mt-3">
-                  {Array.isArray(item.resourceSignals) ? (
-                    <CheckList list={item.resourceSignals} section="resourceSignals" />
-                  ) : (
-                    item.resourceSignals_text && (
-                      <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.resourceSignals_text}</pre>
-                    )
-                  )}
-                </div>
-              </section>
-            )}
+            {/* Признаки плюса и минуса - в две колонки */}
+            {((item.resourceSignals || item.resourceSignals_text) || (item.deficitSignals || item.deficitSignals_text)) && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Признаки плюса */}
+                {(item.resourceSignals || item.resourceSignals_text) && (
+                  <section id="resource-signals" className="rounded-2xl border-2 border-green-300 bg-gradient-to-br from-green-50 to-emerald-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                    <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                      <span className="text-2xl">✅</span>
+                      Признаки плюса
+                    </h2>
+                    <div className="mt-3">
+                      {Array.isArray(item.resourceSignals) ? (
+                        <CheckList list={item.resourceSignals} section="resourceSignals" />
+                      ) : (
+                        item.resourceSignals_text && (
+                          <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.resourceSignals_text}</pre>
+                        )
+                      )}
+                    </div>
+                  </section>
+                )}
 
-            {/* Признаки минуса */}
-            {(item.deficitSignals || item.deficitSignals_text) && (
-              <section id="deficit-signals" className="rounded-2xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-rose-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
-                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
-                  <span className="text-2xl">⚠️</span>
-                  Признаки минуса
-                </h2>
-                <div className="mt-3">
-                  {Array.isArray(item.deficitSignals) ? (
-                    <CheckList list={item.deficitSignals} section="deficitSignals" />
-                  ) : (
-                    item.deficitSignals_text && (
-                      <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.deficitSignals_text}</pre>
-                    )
-                  )}
-                </div>
-              </section>
+                {/* Признаки минуса */}
+                {(item.deficitSignals || item.deficitSignals_text) && (
+                  <section id="deficit-signals" className="rounded-2xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-rose-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                    <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                      <span className="text-2xl">⚠️</span>
+                      Признаки минуса
+                    </h2>
+                    <div className="mt-3">
+                      {Array.isArray(item.deficitSignals) ? (
+                        <CheckList list={item.deficitSignals} section="deficitSignals" />
+                      ) : (
+                        item.deficitSignals_text && (
+                          <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.deficitSignals_text}</pre>
+                        )
+                      )}
+                    </div>
+                  </section>
+                )}
+              </div>
             )}
 
             {/* Конфликты и проблемы */}
