@@ -17,19 +17,23 @@ function generatePublicCode(): string {
 }
 
 export async function POST(req: Request) {
-  console.log("[CALC-BASE] ===== POST /api/calc-base called =====");
+  const DEBUG = process.env.NODE_ENV !== "production";
+  const dlog = (...args: any[]) => { if (DEBUG) console.log(...args); };
+  const dwarn = (...args: any[]) => { if (DEBUG) console.warn(...args); };
+
+  dlog("[CALC-BASE] ===== POST /api/calc-base called =====");
   
   let token = cookies().get("directus_access_token")?.value;
   const refreshToken = cookies().get("directus_refresh_token")?.value;
   const directusUrl = getDirectusUrl();
   const n8nUrl = process.env.N8N_CALC_URL;
 
-  console.log("[CALC-BASE] Initial check:", {
+  dlog("[CALC-BASE] Initial check:", {
     hasToken: !!token,
     hasRefreshToken: !!refreshToken,
     hasDirectusUrl: !!directusUrl,
     hasN8nUrl: !!n8nUrl,
-    n8nUrl: n8nUrl || "NOT SET"
+    n8nUrl: n8nUrl ? "configured" : "NOT SET"
   });
 
   if (!token && !refreshToken) {
@@ -41,22 +45,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "No N8N_CALC_URL configured" }, { status: 400 });
   }
   
-  console.log("[CALC-BASE] Starting calculation request", {
+  dlog("[CALC-BASE] Starting calculation request", {
     hasToken: !!token,
     hasRefreshToken: !!refreshToken,
-    n8nUrl: n8nUrl,
-    directusUrl: directusUrl
+    n8nUrl: n8nUrl ? "configured" : "NOT SET",
+    directusUrl: directusUrl ? "configured" : "NOT SET"
   });
 
   // ОБЯЗАТЕЛЬНЫЙ REFRESH перед отправкой в n8n для получения свежего токена
   if (refreshToken) {
-    console.log("[CALC-BASE] Refreshing token before n8n request...");
+    dlog("[CALC-BASE] Refreshing token before n8n request...");
     const freshToken = await refreshAccessToken(refreshToken);
     if (freshToken) {
       token = freshToken;
-      console.log("[CALC-BASE] Token refreshed successfully");
+      dlog("[CALC-BASE] Token refreshed successfully");
     } else {
-      console.warn("[CALC-BASE] Token refresh failed, using existing token");
+      dwarn("[CALC-BASE] Token refresh failed, using existing token");
     }
   }
 
@@ -73,6 +77,9 @@ export async function POST(req: Request) {
 
   const { clientId, name, birthday } = payload || {};
   const publicCode = generatePublicCode();
+  if (!name || !birthday) {
+    return NextResponse.json({ message: "Нужны name и birthday" }, { status: 400 });
+  }
 
   // 0) Получаем gender из данных клиента, если clientId указан
   let clientGender: string | null = null;
@@ -87,7 +94,7 @@ export async function POST(req: Request) {
         clientGender = clientData?.data?.gender || null;
       }
     } catch (error) {
-      console.warn("[CALC-BASE] Failed to fetch client gender:", error);
+      dwarn("[CALC-BASE] Failed to fetch client gender:", error);
     }
   }
 
@@ -123,7 +130,7 @@ export async function POST(req: Request) {
       const createData = await createRes.json().catch(() => ({}));
       if (createRes.ok && createData?.data?.id) {
         profileId = Number(createData.data.id);
-        console.log("[CALC-BASE] Profile created, profileId:", profileId);
+        dlog("[CALC-BASE] Profile created, profileId:", profileId);
       }
     } catch (error) {
       console.error("[CALC-BASE] Failed to create profile:", error);
@@ -172,7 +179,7 @@ export async function POST(req: Request) {
       refreshToken: refreshToken, // refresh token для обновления access token в n8n
     };
 
-    console.log("[CALC-BASE] Payload to n8n:", {
+    dlog("[CALC-BASE] Payload to n8n:", {
       directusUrl: n8nPayload.directusUrl,
       hasToken: !!n8nPayload.token,
       hasRefreshToken: !!n8nPayload.refreshToken,
@@ -183,11 +190,11 @@ export async function POST(req: Request) {
       birthday: n8nPayload.birthday
     });
 
-    console.log("[CALC-BASE] Calling n8n workflow:", {
+    dlog("[CALC-BASE] Calling n8n workflow:", {
       url: n8nUrl,
       type: "base_new",
       profileId,
-      directusUrl: directusUrl,
+      directusUrl: directusUrl ? "configured" : "NOT SET",
       hasDirectusUrl: !!directusUrl,
       hasToken: !!token,
       hasRefreshToken: !!refreshToken
@@ -196,7 +203,7 @@ export async function POST(req: Request) {
     while (attempts < maxAttempts) {
       attempts++;
       try {
-        console.log(`[CALC-BASE] Attempt ${attempts}/${maxAttempts} - Sending request to n8n...`);
+        dlog(`[CALC-BASE] Attempt ${attempts}/${maxAttempts} - Sending request to n8n...`);
         
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 30_000);
@@ -214,7 +221,7 @@ export async function POST(req: Request) {
         clearTimeout(timeout);
         
         const fetchDuration = Date.now() - fetchStartTime;
-        console.log(`[CALC-BASE] n8n request completed in ${fetchDuration}ms, status: ${r.status}`);
+        dlog(`[CALC-BASE] n8n request completed in ${fetchDuration}ms, status: ${r.status}`);
 
         // If successful or client error (4xx), break loop
         // Only retry on server errors (5xx)
@@ -222,9 +229,9 @@ export async function POST(req: Request) {
           break;
         }
 
-        console.warn(`[CALC-BASE] n8n attempt ${attempts} failed with status ${r.status}`);
+        dwarn(`[CALC-BASE] n8n attempt ${attempts} failed with status ${r.status}`);
         const errorText = await r.text().catch(() => "");
-        console.warn(`[CALC-BASE] n8n error response:`, errorText.substring(0, 500));
+        dwarn(`[CALC-BASE] n8n error response:`, errorText.substring(0, 500));
       } catch (e: any) {
         console.error(`[CALC-BASE] n8n attempt ${attempts} failed with error:`, {
           message: e?.message || String(e),

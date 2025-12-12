@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 async function fetchProfileContext(profileId: number, token: string, baseUrl: string) {
-  const url = `${baseUrl}/items/profiles/${profileId}?fields=id,client_id,created_at,html,raw_json,digits,notes`;
+  const url = `${baseUrl}/items/profiles/${profileId}?fields=id,client_id,created_at,html,raw_json,base_profile_json,digits,notes`;
   const r = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }, cache: "no-store" });
   if (!r.ok) return {} as any;
   const j = await r.json().catch(() => ({}));
@@ -16,6 +16,10 @@ async function fetchProfileContext(profileId: number, token: string, baseUrl: st
 }
 
 export async function POST(req: Request) {
+  const DEBUG = process.env.NODE_ENV !== "production";
+  const dlog = (...args: any[]) => { if (DEBUG) console.log(...args); };
+  const dwarn = (...args: any[]) => { if (DEBUG) console.warn(...args); };
+
   const token = cookies().get("directus_access_token")?.value;
   const directusUrl = getDirectusUrl();
   const openaiKey = process.env.OPENAI_API_KEY;
@@ -41,12 +45,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Вопрос пустой" }, { status: 400 });
   }
 
-  console.log("QA request:", {
+  dlog("QA request:", {
     hasOpenAIKey: !!openaiKey,
+    hasN8nUrl: !!n8nUrl,
     wantStream,
     profileId,
     questionLength: question?.length
   });
+
+  // Если настроен n8n — используем его (это стабильнее и соответствует текущему курсу “через n8n”)
+  if (n8nUrl) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25_000);
+    const r = await fetch(n8nUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ profileId, question, history: Array.isArray(history) ? history.slice(-10) : [] }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const data = await r.json().catch(() => ({}));
+    return NextResponse.json(data, { status: r.ok ? 200 : (r.status >= 500 ? 502 : r.status) });
+  }
 
   // If OpenAI key provided, answer via OpenAI. Otherwise fallback to n8n as раньше
   if (openaiKey) {
@@ -78,6 +98,9 @@ export async function POST(req: Request) {
       if (ctx?.raw_json) contextPieces.push(
         typeof ctx.raw_json === "string" ? ctx.raw_json.slice(0, 6000) : JSON.stringify(ctx.raw_json).slice(0, 6000)
       );
+      if (ctx?.base_profile_json) contextPieces.push(
+        typeof ctx.base_profile_json === "string" ? ctx.base_profile_json.slice(0, 6000) : JSON.stringify(ctx.base_profile_json).slice(0, 6000)
+      );
       if (ctx?.notes) contextPieces.push(`Заметки: ${String(ctx.notes).slice(0, 2000)}`);
 
       const contextBlock = contextPieces.length ? `Контекст профиля:\n${contextPieces.join("\n---\n")}` : "";
@@ -92,12 +115,9 @@ export async function POST(req: Request) {
 
       // Streaming branch
       if (wantStream) {
-        console.log("[DEBUG] Starting OpenAI streaming request", {
+        dlog("[QA] Starting OpenAI streaming request", {
           model: "gpt-4o-mini",
           messagesCount: messages.length,
-          hasOpenAIKey: !!openaiKey,
-          openAIKeyLength: openaiKey?.length || 0,
-          openAIKeyPreview: openaiKey ? `${openaiKey.substring(0, 10)}...${openaiKey.substring(openaiKey.length - 4)}` : 'null'
         });
 
         let r: Response;
@@ -109,7 +129,7 @@ export async function POST(req: Request) {
               Authorization: `Bearer ${openaiKey}`,
             },
             body: JSON.stringify({
-              model: "gpt-5-mini",
+              model: "gpt-4o-mini",
               messages,
               temperature: 0.7,
               max_tokens: 1500,
@@ -211,7 +231,7 @@ export async function POST(req: Request) {
                     }
                   } catch (e) {
                     // Игнорируем ошибки парсинга
-                    console.warn("[DEBUG] Failed to parse SSE chunk:", e);
+                    dwarn("[QA] Failed to parse SSE chunk:", e);
                   }
                 }
               }
@@ -229,7 +249,7 @@ export async function POST(req: Request) {
                         controller.enqueue(encoder.encode(`data: ${sseData}\n\n`));
                       }
                     } catch (e) {
-                      console.warn("[DEBUG] Failed to parse remaining buffer:", e);
+                      dwarn("[QA] Failed to parse remaining buffer:", e);
                     }
                   }
                 }
@@ -272,7 +292,7 @@ export async function POST(req: Request) {
           }),
         });
       } catch (fetchError: any) {
-        console.error("[DEBUG] OpenAI fetch error (non-streaming):", fetchError);
+        console.error("[QA] OpenAI fetch error (non-streaming):", fetchError);
         return NextResponse.json({
           message: "Ошибка подключения к OpenAI API",
           error: fetchError?.message || String(fetchError)
@@ -288,7 +308,7 @@ export async function POST(req: Request) {
           errorData = { raw: errorText.substring(0, 200) };
         }
 
-        console.error("[DEBUG] OpenAI API error (non-streaming):", {
+        console.error("[QA] OpenAI API error (non-streaming):", {
           status: r.status,
           error: errorData
         });
@@ -323,22 +343,8 @@ export async function POST(req: Request) {
     }
   }
 
-  // Fallback: n8n
-  if (!process.env.N8N_QA_URL) {
-    return NextResponse.json(
-      { message: "Не настроен N8N_QA_URL и отсутствует OPENAI_API_KEY" },
-      { status: 400 }
-    );
-  }
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25_000);
-  const r = await fetch(process.env.N8N_QA_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ profileId, question, history: Array.isArray(history) ? history.slice(-10) : [] }),
-    signal: controller.signal,
-  });
-  clearTimeout(timeout);
-  const data = await r.json().catch(() => ({}));
-  return NextResponse.json(data);
+  return NextResponse.json(
+    { message: "Не настроен N8N_QA_URL и отсутствует OPENAI_API_KEY" },
+    { status: 400 }
+  );
 }

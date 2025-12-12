@@ -18,19 +18,23 @@ function generatePublicCode(): string {
 }
 
 export async function POST(req: Request) {
-  console.log("[CALC] ===== POST /api/calc called =====");
+  const DEBUG = process.env.NODE_ENV !== "production";
+  const dlog = (...args: any[]) => { if (DEBUG) console.log(...args); };
+  const dwarn = (...args: any[]) => { if (DEBUG) console.warn(...args); };
+
+  dlog("[CALC] ===== POST /api/calc called =====");
   
   let token = cookies().get("directus_access_token")?.value;
   const refreshToken = cookies().get("directus_refresh_token")?.value;
   const directusUrl = getDirectusUrl();
   const n8nUrl = process.env.N8N_CALC_URL;
 
-  console.log("[CALC] Initial check:", {
+  dlog("[CALC] Initial check:", {
     hasToken: !!token,
     hasRefreshToken: !!refreshToken,
     hasDirectusUrl: !!directusUrl,
     hasN8nUrl: !!n8nUrl,
-    n8nUrl: n8nUrl || "NOT SET"
+    n8nUrl: n8nUrl ? "configured" : "NOT SET"
   });
 
   if (!token && !refreshToken) {
@@ -42,22 +46,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "No N8N_CALC_URL configured" }, { status: 400 });
   }
   
-  console.log("[CALC] Starting calculation request", {
+  dlog("[CALC] Starting calculation request", {
     hasToken: !!token,
     hasRefreshToken: !!refreshToken,
-    n8nUrl: n8nUrl,
-    directusUrl: directusUrl
+    n8nUrl: n8nUrl ? "configured" : "NOT SET",
+    directusUrl: directusUrl ? "configured" : "NOT SET"
   });
 
   // ОБЯЗАТЕЛЬНЫЙ REFRESH перед отправкой в n8n для получения свежего токена
   if (refreshToken) {
-    console.log("[CALC] Refreshing token before n8n request...");
+    dlog("[CALC] Refreshing token before n8n request...");
     const freshToken = await refreshAccessToken(refreshToken);
     if (freshToken) {
       token = freshToken;
-      console.log("[CALC] Token refreshed successfully");
+      dlog("[CALC] Token refreshed successfully");
     } else {
-      console.warn("[CALC] Token refresh failed, using existing token");
+      dwarn("[CALC] Token refresh failed, using existing token");
     }
   }
 
@@ -191,7 +195,7 @@ export async function POST(req: Request) {
       refreshToken: refreshToken, // refresh token для обновления access token в n8n
     };
 
-    console.log("[CALC] Payload to n8n:", {
+    dlog("[CALC] Payload to n8n:", {
       directusUrl: n8nPayload.directusUrl,
       hasToken: !!n8nPayload.token,
       hasRefreshToken: !!n8nPayload.refreshToken,
@@ -202,11 +206,11 @@ export async function POST(req: Request) {
       birthday: n8nPayload.birthday
     });
 
-    console.log("[CALC] Calling n8n workflow:", {
+    dlog("[CALC] Calling n8n workflow:", {
       url: n8nUrl,
       type: type || "base",
       profileId,
-      directusUrl: directusUrl,
+      directusUrl: directusUrl ? "configured" : "NOT SET",
       hasDirectusUrl: !!directusUrl,
       hasToken: !!token,
       hasRefreshToken: !!refreshToken
@@ -214,13 +218,13 @@ export async function POST(req: Request) {
 
     // Проверяем, что directusUrl правильный
     if (directusUrl && !directusUrl.includes('sposobniymaster.online')) {
-      console.warn("[CALC] WARNING: Directus URL might be incorrect:", directusUrl);
+      dwarn("[CALC] WARNING: Directus URL might be incorrect:", directusUrl);
     }
 
     while (attempts < maxAttempts) {
       attempts++;
       try {
-        console.log(`[CALC] Attempt ${attempts}/${maxAttempts} - Sending request to n8n...`);
+        dlog(`[CALC] Attempt ${attempts}/${maxAttempts} - Sending request to n8n...`);
         
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 30_000);
@@ -238,7 +242,7 @@ export async function POST(req: Request) {
         clearTimeout(timeout);
         
         const fetchDuration = Date.now() - fetchStartTime;
-        console.log(`[CALC] n8n request completed in ${fetchDuration}ms, status: ${r.status}`);
+        dlog(`[CALC] n8n request completed in ${fetchDuration}ms, status: ${r.status}`);
 
         // If successful or client error (4xx), break loop
         // Only retry on server errors (5xx)
@@ -246,9 +250,9 @@ export async function POST(req: Request) {
           break;
         }
 
-        console.warn(`[CALC] n8n attempt ${attempts} failed with status ${r.status}`);
+        dwarn(`[CALC] n8n attempt ${attempts} failed with status ${r.status}`);
         const errorText = await r.text().catch(() => "");
-        console.warn(`[CALC] n8n error response:`, errorText.substring(0, 500));
+        dwarn(`[CALC] n8n error response:`, errorText.substring(0, 500));
       } catch (e: any) {
         console.error(`[CALC] n8n attempt ${attempts} failed with error:`, {
           message: e?.message || String(e),
@@ -272,7 +276,7 @@ export async function POST(req: Request) {
 
     data = await r.json().catch(() => ({}));
 
-    console.log("n8n response:", {
+    dlog("n8n response:", {
       status: r.status,
       statusText: r.statusText,
       hasData: !!data,
