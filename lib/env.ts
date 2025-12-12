@@ -1,28 +1,30 @@
+import { logger } from "@/lib/logger";
+
 export function getDirectusUrl(): string {
   const raw = process.env.DIRECTUS_URL || process.env.NEXT_PUBLIC_DIRECTUS_URL || "";
   let url = raw.replace(/\/+$/, "");
   
   if (!url) {
-    console.error("DIRECTUS_URL is not set! Check environment variables.");
+    logger.error("DIRECTUS_URL is not set! Check environment variables.");
     return "";
   }
   
   // Проверяем, что URL начинается с http:// или https://
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    console.warn(`DIRECTUS_URL doesn't start with http:// or https://: ${url}. Adding https://`);
+    logger.warn(`DIRECTUS_URL doesn't start with http:// or https://: ${url}. Adding https://`);
     url = `https://${url}`;
   }
   
-  // ВРЕМЕННО: Всегда логируем URL для диагностики SSL ошибки
-  console.log("[DEBUG] Directus URL (from env):", raw);
-  console.log("[DEBUG] Directus URL (processed):", url);
-  console.log("[DEBUG] URL starts with https:", url.startsWith('https://'));
-  console.log("[DEBUG] URL starts with http:", url.startsWith('http://'));
+  // Логи — только в dev, чтобы не шуметь на проде
+  logger.debug("Directus URL (from env):", raw);
+  logger.debug("Directus URL (processed):", url);
+  logger.debug("URL starts with https:", url.startsWith('https://'));
+  logger.debug("URL starts with http:", url.startsWith('http://'));
   
   // Парсим URL для детальной диагностики
   try {
     const urlObj = new URL(url);
-    console.log("[DEBUG] URL parsed:", {
+    logger.debug("URL parsed:", {
       protocol: urlObj.protocol,
       hostname: urlObj.hostname,
       port: urlObj.port || '(default)',
@@ -30,7 +32,7 @@ export function getDirectusUrl(): string {
       full: urlObj.toString()
     });
   } catch (e) {
-    console.error("[DEBUG] Failed to parse URL:", e);
+    logger.error("Failed to parse Directus URL:", e);
   }
   
   return url;
@@ -62,8 +64,8 @@ export function getS3ImageUrl(imageId: number | string): string {
     url = `${s3Endpoint}/${s3Bucket}/${cleanPath}/${imageId}.jpeg`;
   }
   
-  // Логируем для отладки
-  console.log("[DEBUG] S3 Image URL generated:", {
+  // Логи — только в dev
+  logger.debug("S3 Image URL generated:", {
     imageId,
     endpoint: s3Endpoint,
     bucket: s3Bucket,
