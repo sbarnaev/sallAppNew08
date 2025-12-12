@@ -1030,17 +1030,7 @@ export default function ProfileDetail() {
           // Debug logging removed to reduce console noise
         }
       } else {
-        if (pollingRef.current) {
-          console.log("⏳ Still polling:", { 
-            hasRenderableHtml, 
-            hasRaw, 
-            hasDigits, 
-            tries, 
-            profileId: p?.id,
-            maxTries,
-            htmlCandidate: htmlCandidate ? String(htmlCandidate).substring(0, 50) : null
-          });
-        }
+        // Логи поллинга убраны, чтобы не шуметь в консоли (особенно на проде)
       }
     }
 
@@ -2783,12 +2773,10 @@ export default function ProfileDetail() {
                           const placeholder = target.nextElementSibling as HTMLElement;
                           if (placeholder) {
                             placeholder.classList.remove('hidden');
-                            placeholder.innerHTML = `<div class="text-red-400 text-xs text-center p-2">Ошибка 403<br/>Проверьте S3</div>`;
+                            placeholder.innerHTML = `<div class="text-red-400 text-xs text-center p-2">Ошибка загрузки<br/>Проверьте доступ к файлу</div>`;
                           }
                         }}
-                        onLoad={() => {
-                          console.log(`[SUCCESS] Image ${i + 1} loaded successfully:`, imageUrl);
-                        }}
+                        onLoad={() => {}}
                       />
                       <div className="hidden absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-50">
             Изображение {i + 1}
