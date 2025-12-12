@@ -527,56 +527,64 @@ export default function ProfileDetail() {
       padding: 0;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      font-size: 15px;
-      line-height: 1.7;
-      color: #1a1a1a;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #0f172a;
       background: #ffffff;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      text-rendering: geometricPrecision;
+      font-kerning: normal;
     }
     .page {
+      /* Defaults (будем динамически уменьшать, если контент не влазит) */
+      --pdf-title-fs: 18px;
+      --pdf-subtitle-fs: 11px;
+      --pdf-section-fs: 20px;
+      --pdf-li-fs: 12.8px;
+      --pdf-li-lh: 1.45;
+      --pdf-li-gap: 8px;
+      --pdf-li-pad-y: 10px;
+      --pdf-li-pad-x: 12px;
+
       page-break-after: always;
       page-break-inside: avoid;
       width: 210mm;
-      min-height: 273mm;
-      max-height: 273mm;
-      padding: 18mm 15mm;
+      height: 297mm;
+      padding: 12mm 12mm 10mm 12mm;
       display: flex;
       flex-direction: column;
-      background: linear-gradient(to bottom, #f8fafc 0%, #ffffff 50%);
-      overflow: hidden;
+      background: linear-gradient(180deg, #f8fafc 0%, #ffffff 55%, #ffffff 100%);
+      overflow: hidden; /* важно: не даём вылезать за страницу, будем подгонять типографику */
       box-sizing: border-box;
     }
     .page:last-child {
       page-break-after: auto;
     }
     .header {
-      margin-bottom: 20px;
-      padding-bottom: 12px;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
       border-bottom: 2px solid #e2e8f0;
       flex-shrink: 0;
     }
     .title {
-      font-size: 22px;
-      font-weight: 700;
-      color: #1a1a1a;
+      font-size: var(--pdf-title-fs);
+      font-weight: 800;
+      letter-spacing: -0.015em;
       margin-bottom: 4px;
-      letter-spacing: -0.01em;
     }
     .subtitle {
-      font-size: 12px;
+      font-size: var(--pdf-subtitle-fs);
       color: #64748b;
-      font-weight: 500;
+      font-weight: 600;
     }
     .section-title {
-      font-size: 26px;
-      font-weight: 700;
-      color: #1a1a1a;
-      margin: 20px 0 18px 0;
-      padding-bottom: 12px;
-      border-bottom: 2px solid #e0e0e0;
-      letter-spacing: -0.01em;
+      font-size: var(--pdf-section-fs);
+      font-weight: 800;
+      color: #0f172a;
+      margin: 10px 0 10px 0;
+      padding-bottom: 8px;
+      border-bottom: 3px solid #e2e8f0;
+      letter-spacing: -0.015em;
       flex-shrink: 0;
     }
     .section-title.strengths {
@@ -609,30 +617,31 @@ export default function ProfileDetail() {
       margin: 0;
       flex: 1;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      /* Для последующего режима в 2 колонки используем columns */
+      column-count: 1;
+      column-gap: 12px;
     }
     li {
-      margin: 0;
-      padding: 10px 12px 10px 38px;
+      break-inside: avoid;
+      margin: 0 0 var(--pdf-li-gap) 0;
+      padding: var(--pdf-li-pad-y) var(--pdf-li-pad-x) var(--pdf-li-pad-y) calc(var(--pdf-li-pad-x) + 22px);
       position: relative;
-      line-height: 1.6;
-      font-size: 14px;
-      color: #1e293b;
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 6px;
-      border-left: 3px solid #e2e8f0;
-      flex-shrink: 0;
+      line-height: var(--pdf-li-lh);
+      font-size: var(--pdf-li-fs);
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #e2e8f0;
     }
     li::before {
       content: "•";
       position: absolute;
-      left: 16px;
+      left: 14px;
       color: #64748b;
-      font-weight: bold;
+      font-weight: 900;
       font-size: 18px;
-      top: 8px;
+      top: 6px;
     }
     .page.strengths li::before {
       color: #f97316;
@@ -648,13 +657,15 @@ export default function ProfileDetail() {
     }
     .footer {
       margin-top: auto;
-      padding-top: 15px;
+      padding-top: 10px;
       border-top: 1px solid #e2e8f0;
       font-size: 11px;
       color: #94a3b8;
       text-align: center;
       flex-shrink: 0;
     }
+    /* Если совсем не влазит — включим 2 колонки */
+    .page.compact-2col ul { column-count: 2; }
   </style>
 </head>
 <body>
@@ -800,6 +811,58 @@ export default function ProfileDetail() {
         if (pages.length === 0) {
           alert('Ошибка: страницы для PDF не найдены');
           return;
+        }
+
+        // Подгоняем типографику, чтобы ничего не обрезалось
+        const fitPage = async (pageEl: HTMLElement) => {
+          let titleFs = 18;
+          let sectionFs = 20;
+          let liFs = 12.8;
+          let liGap = 8;
+          let liPadY = 10;
+
+          const apply = () => {
+            pageEl.style.setProperty('--pdf-title-fs', `${titleFs}px`);
+            pageEl.style.setProperty('--pdf-section-fs', `${sectionFs}px`);
+            pageEl.style.setProperty('--pdf-li-fs', `${liFs}px`);
+            pageEl.style.setProperty('--pdf-li-gap', `${liGap}px`);
+            pageEl.style.setProperty('--pdf-li-pad-y', `${liPadY}px`);
+          };
+
+          apply();
+          // небольшой цикл уменьшения до тех пор, пока контент не влезет в фиксированную высоту A4
+          for (let step = 0; step < 14; step++) {
+            await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
+            if (pageEl.scrollHeight <= pageEl.clientHeight) return;
+            liFs = Math.max(11.2, liFs - 0.4);
+            liGap = Math.max(6, liGap - 0.5);
+            liPadY = Math.max(8, liPadY - 0.5);
+            sectionFs = Math.max(16, sectionFs - 0.5);
+            titleFs = Math.max(16, titleFs - 0.3);
+            apply();
+          }
+
+          // Фоллбек: 2 колонки (если совсем длинные пункты)
+          await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
+          if (pageEl.scrollHeight > pageEl.clientHeight) {
+            pageEl.classList.add('compact-2col');
+            await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
+          }
+
+          // Последний шанс — ещё чуть уменьшить после 2 колонок
+          for (let step = 0; step < 6; step++) {
+            if (pageEl.scrollHeight <= pageEl.clientHeight) return;
+            liFs = Math.max(10.8, liFs - 0.3);
+            liGap = Math.max(5, liGap - 0.4);
+            liPadY = Math.max(7, liPadY - 0.4);
+            apply();
+            await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
+          }
+        };
+
+        for (const pageEl of pages) {
+          // eslint-disable-next-line no-await-in-loop
+          await fitPage(pageEl);
         }
 
         const filename = `Базовый_расчет_${(clientNameForPdf || 'профиль').replace(/\\s+/g, '_')}_${dateStr || new Date().toLocaleDateString('ru-RU')}.pdf`;
