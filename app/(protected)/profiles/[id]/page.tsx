@@ -2146,35 +2146,40 @@ export default function ProfileDetail() {
             {/* Практики */}
             {item.practices && (
               <AccordionSection title="💡 Практики" id="practices">
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-8">
                   {Object.entries(item.practices).map(([blockKey, list]: any, i: number) => (
-                    <article key={i} className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 md:p-6 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="mb-4 text-lg font-bold text-gray-900 border-b-2 border-blue-300 pb-2">
+                    <article key={i} className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="mb-6 text-xl font-bold text-gray-900 border-b-2 border-blue-400 pb-3 flex items-center gap-2">
+                        <span className="text-2xl">🎯</span>
                         {mapPracticeKey(blockKey)}
                       </div>
                       {Array.isArray(list) ? (
-                        <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {list.map((pr: any, j: number) => (
-                            <div key={j} className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
-                              <h4 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                            <div key={j} className="rounded-xl border-2 border-blue-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+                              <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
                                 <span className="text-lg">✨</span>
                                 {pr.title}
                               </h4>
-                              <div className="space-y-2">
+                              <div className="space-y-3">
                                 {pr.p1 && (
-                                  <p className="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap">
-                                    <span className="font-semibold text-blue-700">1. </span>
-                                    {pr.p1}
-                                  </p>
+                                  <div className="flex gap-2">
+                                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center">1</span>
+                                    <p className="text-sm leading-relaxed text-gray-700 flex-1">
+                                      {pr.p1}
+                                    </p>
+                                  </div>
                                 )}
                                 {pr.p2 && (
-                                  <p className="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap">
-                                    <span className="font-semibold text-blue-700">2. </span>
-                                    {pr.p2}
-                                  </p>
+                                  <div className="flex gap-2">
+                                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center">2</span>
+                                    <p className="text-sm leading-relaxed text-gray-700 flex-1">
+                                      {pr.p2}
+                                    </p>
+                                  </div>
                                 )}
                                 {pr.description && (
-                                  <p className="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap mt-2 italic">
+                                  <p className="text-xs leading-relaxed text-gray-600 italic mt-3 pt-3 border-t border-gray-200">
                                     {pr.description}
                                   </p>
                                 )}
