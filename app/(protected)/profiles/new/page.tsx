@@ -14,7 +14,6 @@ export default function NewCalculationPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [client, setClient] = useState<any | null>(null);
-  const [streamingProgress, setStreamingProgress] = useState<{ length: number; profileId?: number } | null>(null);
   const canStart = Boolean(name && birthday);
   // Поля для целевого расчета
   const [targetCurrent, setTargetCurrent] = useState(""); // что есть сейчас
@@ -57,21 +56,13 @@ export default function NewCalculationPage() {
   }
 
   async function startCalc(type: "base" | "target" | "partner") {
-    console.log("[CLIENT] ===== startCalc CALLED =====");
-    console.log("[CLIENT] Type:", type);
-    console.log("[CLIENT] Name:", name);
-    console.log("[CLIENT] Birthday:", birthday);
-    console.log("[CLIENT] ClientIdParam:", clientIdParam);
-    
     setError(null);
     if (!name || !birthday) {
-      console.error("[CLIENT] Validation failed: missing name or birthday");
       setError("Нет имени или даты рождения. Подождите автозаполнение или используйте форму ниже.");
       return;
     }
     if (type === "partner") {
       if (!partnerName || !partnerBirthday || !partnerGoal) {
-        console.error("[CLIENT] Validation failed: missing partner data");
         setError("Для партнерского расчета заполните все поля: имя и дата рождения второго человека, цель расчета.");
         return;
       }
@@ -110,204 +101,17 @@ export default function NewCalculationPage() {
 
       // Для базового расчета используем n8n через /api/calc-base
       if (type === "base") {
-        console.log("[CLIENT] ===== Starting BASE calculation =====");
-        console.log("[CLIENT] Payload:", JSON.stringify(payload, null, 2));
-        console.log("[CLIENT] URL: /api/calc-base");
-        
-        try {
-          const res = await fetch("/api/calc-base", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-
-          console.log("[CLIENT] ===== Response received =====");
-          console.log("[CLIENT] Response status:", res.status);
-          console.log("[CLIENT] Response OK:", res.ok);
-          console.log("[CLIENT] Response statusText:", res.statusText);
-          console.log("[CLIENT] Content-Type:", res.headers.get("content-type"));
-
-          if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            console.error("[CLIENT] ===== Error response =====");
-            console.error("[CLIENT] Error data:", errorData);
-            throw new Error(errorData?.message || "Calculation failed");
-          }
-          
-          console.log("[CLIENT] ===== Response OK, starting to read stream =====");
-          console.log("[CLIENT] Response body:", res.body);
-          console.log("[CLIENT] Response body type:", typeof res.body);
-
-          // Обрабатываем стриминг с визуальным отображением прогресса
-          const reader = res.body?.getReader();
-          const decoder = new TextDecoder();
-          
-          console.log("[CLIENT] Reader:", reader);
-          console.log("[CLIENT] Decoder:", decoder);
-          
-          if (!reader) {
-            console.error("[CLIENT] ❌ No reader available!");
-            throw new Error("No response body");
-          }
-
-          console.log("[CLIENT] ✅ Reader obtained, starting to read...");
-
-          let profileId: number | null = null;
-          let buffer = "";
-          let chunkCount = 0;
-          let lastDataTime = Date.now();
-          const REDIRECT_TIMEOUT = 30000; // 30 секунд после получения profileId
-          const MAX_WAIT_TIME = 60000; // Максимум 60 секунд ожидания
-
-          while (true) {
-            // Проверяем таймаут - если после получения profileId прошло больше 30 секунд без данных, редиректим
-            if (profileId && Date.now() - lastDataTime > REDIRECT_TIMEOUT) {
-              console.log("[CLIENT] ⏱️ Timeout after receiving profileId, redirecting...");
-              setStreamingProgress(null);
-              router.push(`/profiles/${profileId}`);
-              return;
-            }
-            
-            // Максимальное время ожидания
-            if (Date.now() - lastDataTime > MAX_WAIT_TIME) {
-              console.log("[CLIENT] ⏱️ Max wait time exceeded, redirecting...");
-              setStreamingProgress(null);
-              if (profileId) {
-                router.push(`/profiles/${profileId}`);
-              } else {
-                router.push("/profiles");
-              }
-              return;
-            }
-            
-            console.log(`[CLIENT] Reading chunk ${chunkCount}...`);
-            const { done, value } = await reader.read();
-            
-            console.log(`[CLIENT] Chunk ${chunkCount} read:`, { 
-              done, 
-              hasValue: !!value, 
-              valueLength: value?.length 
-            });
-            
-            if (done) {
-              console.log("[CLIENT] Stream done, breaking loop");
-              break;
-            }
-
-            if (value) {
-              chunkCount++;
-              const decoded = decoder.decode(value, { stream: true });
-              console.log(`[CLIENT] Chunk ${chunkCount} decoded:`, {
-                length: decoded.length,
-                preview: decoded.substring(0, 100)
-              });
-              
-              buffer += decoded;
-              const lines = buffer.split("\n");
-              buffer = lines.pop() || "";
-
-              console.log(`[CLIENT] Processing ${lines.length} lines from buffer`);
-
-              for (const line of lines) {
-                if (!line.trim() || !line.startsWith("data:")) {
-                  console.log(`[CLIENT] Skipping line (empty or not data:):`, line.substring(0, 50));
-                  continue;
-                }
-                
-                const payload = line.slice(5).trim();
-                console.log(`[CLIENT] Processing data line:`, payload.substring(0, 100));
-                
-                if (payload === "[DONE]") {
-                  console.log("[CLIENT] ✅ Received [DONE], redirecting...");
-                  // Данные уже сохранены в Directus, редиректим на профиль
-                  setStreamingProgress(null);
-                  if (profileId) {
-                    router.push(`/profiles/${profileId}`);
-                  } else {
-                    router.push("/profiles");
-                  }
-                  return;
-                }
-
-                try {
-                  const data = JSON.parse(payload);
-                  console.log("[CLIENT] ✅ Parsed data chunk:", { 
-                    hasProfileId: !!data.profileId, 
-                    type: data.type, 
-                    hasError: !!data.error,
-                    length: data.length,
-                    fullData: data
-                  });
-                  
-                  if (data.profileId) {
-                    profileId = data.profileId;
-                    lastDataTime = Date.now();
-                    console.log("[CLIENT] ✅ Profile ID received:", profileId);
-                    setStreamingProgress(prev => ({ ...prev, profileId }));
-                    
-                    // После получения profileId, даем 5 секунд на начало генерации, затем редиректим
-                    // Генерация может идти долго, но профиль уже создан
-                    setTimeout(() => {
-                      if (profileId) {
-                        console.log("[CLIENT] ⏱️ Redirecting after profileId received (generation continues in background)");
-                        setStreamingProgress(null);
-                        router.push(`/profiles/${profileId}`);
-                      }
-                    }, 5000);
-                  }
-                  // Обновляем прогресс стриминга
-                  if (data.type === "progress") {
-                    lastDataTime = Date.now();
-                    console.log("[CLIENT] Progress update:", data.length);
-                    setStreamingProgress(prev => ({ 
-                      length: data.length || 0, 
-                      profileId: prev?.profileId || profileId || undefined 
-                    }));
-                  }
-                  if (data.type === "complete") {
-                    lastDataTime = Date.now();
-                    console.log("[CLIENT] ✅ Generation complete!");
-                    setStreamingProgress(prev => ({ 
-                      length: 10000, // Показываем завершение
-                      profileId: data.profileId || prev?.profileId || profileId || undefined 
-                    }));
-                  }
-                  // Обрабатываем ошибки
-                  if (data.error) {
-                    console.error("[CLIENT] ❌ Error in stream:", data.error);
-                    setStreamingProgress(null);
-                    throw new Error(data.error);
-                  }
-                } catch (e) {
-                  // Игнорируем ошибки парсинга отдельных чанков
-                  console.warn("[CLIENT] ⚠️ Failed to parse chunk:", e, "Payload:", payload.substring(0, 100));
-                }
-              }
-            } else {
-              console.warn(`[CLIENT] ⚠️ Chunk ${chunkCount} has no value`);
-            }
-          }
-          
-          console.log("[CLIENT] ===== Stream reading finished =====");
-          console.log("[CLIENT] Total chunks read:", chunkCount);
-          console.log("[CLIENT] Final buffer:", buffer.substring(0, 200));
-          console.log("[CLIENT] Final profileId:", profileId);
-
-          // Если дошли до конца без [DONE], все равно редиректим
-          // Данные должны были сохраниться в процессе стриминга
-          setStreamingProgress(null);
-          if (profileId) {
-            router.push(`/profiles/${profileId}`);
-          } else {
-            router.push("/profiles");
-          }
-          return;
-        } catch (err: any) {
-          setStreamingProgress(null);
-          setError(err.message || String(err));
-          setLoading(false);
-          return;
+        const res = await fetch("/api/calc-base", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data?.message || "Calculation failed");
         }
+        const profileId = data?.profileId || data?.data?.profileId || data?.id || data?.data?.id;
+        router.push(profileId ? `/profiles/${profileId}` : "/profiles");
       } else {
         // Для целевого и партнерского расчета используем старый API через n8n
         const res = await fetch("/api/calc", {
@@ -329,69 +133,6 @@ export default function NewCalculationPage() {
     } catch (err: any) {
       setError(err.message || String(err));
     } finally {
-      setLoading(false);
-    }
-  }
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    console.log("[CLIENT] ===== onSubmit CALLED =====");
-    console.log("[CLIENT] Event:", e);
-    console.log("[CLIENT] Name:", name);
-    console.log("[CLIENT] Birthday:", birthday);
-    console.log("[CLIENT] ClientId:", clientId);
-    
-    setError(null);
-    setLoading(true);
-    
-    try {
-      const payload = {
-        name,
-        birthday, // YYYY-MM-DD
-        clientId: clientId ? Number(clientId) : undefined,
-      };
-      
-      // Используем n8n через /api/calc-base для базового расчета
-      console.log("[CLIENT] ===== Starting base calculation =====");
-      console.log("[CLIENT] Payload:", JSON.stringify(payload, null, 2));
-      console.log("[CLIENT] URL: /api/calc-base");
-      
-      const res = await fetch("/api/calc-base", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      
-      console.log("[CLIENT] ===== Response received =====");
-      console.log("[CLIENT] Response status:", res.status);
-      console.log("[CLIENT] Response OK:", res.ok);
-      console.log("[CLIENT] Response statusText:", res.statusText);
-      console.log("[CLIENT] Content-Type:", res.headers.get("content-type"));
-      console.log("[CLIENT] Headers:", Object.fromEntries(res.headers.entries()));
-      
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        console.error("[CLIENT] ===== Error response =====");
-        console.error("[CLIENT] Error data:", errorData);
-        throw new Error(errorData?.message || "Calculation failed");
-      }
-      
-      // Обычный JSON ответ от n8n
-      const data = await res.json().catch(() => ({}));
-      console.log("[CLIENT] ===== Response data =====");
-      console.log("[CLIENT] Data:", data);
-      
-      const profileId = data?.profileId || data?.data?.profileId || data?.id || data?.data?.id;
-      if (profileId) {
-        console.log("[CLIENT] ✅ Profile ID received:", profileId);
-        router.push(`/profiles/${profileId}`);
-      } else {
-        console.warn("[CLIENT] ⚠️ No profileId in response, redirecting to profiles list");
-        router.push("/profiles");
-      }
-    } catch (err: any) {
-      setError(err.message || String(err));
-      setStreamingProgress(null);
       setLoading(false);
     }
   }
@@ -435,38 +176,6 @@ export default function NewCalculationPage() {
             <div className="text-sm text-amber-800">
               <div className="font-medium mb-1">Автозаполнение данных</div>
               <div>Автозаполняем имя и дату рождения... Если не подтянулось, проверьте данные клиента и повторите попытку.</div>
-            </div>
-          </div>
-        )}
-
-        {streamingProgress && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 p-6 shadow-lg">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="flex-shrink-0">
-                <svg className="w-8 h-8 animate-spin text-blue-600" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                </svg>
-              </div>
-              <div className="flex-grow">
-                <div className="font-semibold text-gray-900 mb-1">Генерация профиля...</div>
-                <div className="text-sm text-gray-600">
-                  {streamingProgress.profileId 
-                    ? `Профиль #${streamingProgress.profileId} создан, данные сохраняются...`
-                    : "Создание профиля и расчет кодов..."}
-                </div>
-              </div>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2.5 rounded-full transition-all duration-300"
-                style={{ 
-                  width: `${Math.min(95, (streamingProgress.length / 1000) * 10)}%` 
-                }}
-              />
-            </div>
-            <div className="text-xs text-gray-500 mt-2 text-center">
-              Данные автоматически сохраняются в процессе генерации
             </div>
           </div>
         )}
