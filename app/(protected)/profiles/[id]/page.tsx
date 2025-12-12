@@ -1476,12 +1476,18 @@ export default function ProfileDetail() {
       
       tries += 1;
           
+          // Проверяем наличие base_profile_json
+          const hasBaseProfileJson = !!((p as any)?.base_profile_json && (
+            (typeof (p as any).base_profile_json === 'string' && (p as any).base_profile_json.trim().length > 50) ||
+            (typeof (p as any).base_profile_json === 'object' && Object.keys((p as any).base_profile_json).length > 0)
+          ));
+          
           // Останавливаем поллинг если:
-          // 1. Есть данные для отображения
+          // 1. Есть данные для отображения (raw_json или base_profile_json)
           // 2. Достигнут лимит попыток
           // 3. Получили 401 и refresh не помог (нужен перелогин)
           const isUnauthorized = responseStatus === 401 && !p;
-          const shouldStop = hasRenderableHtml || hasRaw || hasDigits || tries >= maxTries || isUnauthorized;
+          const shouldStop = hasRenderableHtml || hasRaw || hasBaseProfileJson || hasDigits || tries >= maxTries || isUnauthorized;
       
       if (shouldStop) {
         if (pollingRef.current) {
