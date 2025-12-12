@@ -38,6 +38,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
     "created_at",
     "html",
     "raw_json",
+    "base_profile_json", // Новое поле для нового формата базового расчета
     "ui_state",
     "notes",
     "chat_history",
