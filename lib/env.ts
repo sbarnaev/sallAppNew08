@@ -5,7 +5,8 @@ export function getDirectusUrl(): string {
   let url = raw.replace(/\/+$/, "");
   
   if (!url) {
-    logger.error("DIRECTUS_URL is not set! Check environment variables.");
+    // Не шумим на production build: предупреждение только в dev.
+    logger.warn("DIRECTUS_URL is not set! Check environment variables.");
     return "";
   }
   

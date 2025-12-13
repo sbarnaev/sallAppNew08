@@ -119,7 +119,7 @@ export async function GET(req: NextRequest) {
       role: codeData.role || "client"
     }, { status: 200 });
   } catch (error) {
-    console.error("Error checking code:", error);
+    logger.error("Error checking code:", error);
     return NextResponse.json({ valid: false, message: "Ошибка сервера" }, { status: 500 });
   }
 }

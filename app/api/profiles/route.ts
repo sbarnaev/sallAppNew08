@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -70,7 +71,7 @@ export async function GET(req: NextRequest) {
             }
           })
           .catch((error) => {
-            console.error("Error searching clients by name:", error);
+            logger.error("Error searching clients by name:", error);
           })
       );
       
@@ -96,7 +97,7 @@ export async function GET(req: NextRequest) {
                 }
               })
               .catch((error) => {
-                console.error("Error searching clients by date:", error);
+                logger.error("Error searching clients by date:", error);
               })
           );
         }
@@ -123,7 +124,7 @@ export async function GET(req: NextRequest) {
                 }
               })
               .catch((error) => {
-                console.error("Error searching clients by year:", error);
+                logger.error("Error searching clients by year:", error);
               })
           );
         }
@@ -133,7 +134,7 @@ export async function GET(req: NextRequest) {
       await Promise.all(searchPromises);
       clientIds = Array.from(foundIds);
     } catch (error) {
-      console.error("Error searching clients:", error);
+      logger.error("Error searching clients:", error);
     }
     
     // Если клиенты не найдены, возвращаем пустой результат
@@ -168,12 +169,12 @@ export async function GET(req: NextRequest) {
 
   // Проверяем, что URL валидный
   if (!baseUrl || !baseUrl.startsWith('http')) {
-    console.error("Invalid Directus URL:", baseUrl);
+    logger.error("Invalid Directus URL:", baseUrl);
     return NextResponse.json({ data: [], meta: { filter_count: 0 }, message: "Invalid DIRECTUS_URL" }, { status: 500 });
   }
 
   const url = `${baseUrl}/items/profiles?${sp.toString()}`;
-  console.log("Profiles list URL:", url);
+  logger.debug("Profiles list URL:", url);
 
   async function fetchList(accessToken: string) {
     try {
@@ -184,7 +185,7 @@ export async function GET(req: NextRequest) {
       const data = await r.json().catch(() => ({ data: [], errors: [] }));
       return { r, data } as const;
     } catch (error) {
-      console.error("Error fetching profiles from Directus:", error);
+      logger.error("Error fetching profiles from Directus:", error);
       return { 
         r: new Response(null, { status: 500 }), 
         data: { data: [], meta: { filter_count: 0 }, errors: [{ message: String(error) }] } 
@@ -222,7 +223,7 @@ export async function GET(req: NextRequest) {
         }
       }
     } catch (refreshError) {
-      console.error("Error refreshing token:", refreshError);
+      logger.error("Error refreshing token:", refreshError);
     }
   }
 
@@ -243,7 +244,7 @@ export async function GET(req: NextRequest) {
   
   // Если ошибка сети или сервера, возвращаем пустой массив
   if (!r.ok && (!data || !data.data)) {
-    console.error("Directus error response:", data);
+    logger.error("Directus error response:", data);
     return NextResponse.json({ data: [], meta: { filter_count: 0 } }, { status: 200 });
   }
   
@@ -268,7 +269,7 @@ export async function POST(req: NextRequest) {
 
   // Проверяем, что URL валидный
   if (!baseUrl || !baseUrl.startsWith('http')) {
-    console.error("Invalid Directus URL:", baseUrl);
+    logger.error("Invalid Directus URL:", baseUrl);
     return NextResponse.json({ message: "Invalid DIRECTUS_URL" }, { status: 500 });
   }
 
@@ -287,7 +288,7 @@ export async function POST(req: NextRequest) {
     const data = await r.json().catch(() => ({}));
     return NextResponse.json(data, { status: r.status });
   } catch (error) {
-    console.error("Error creating profile in Directus:", error);
+    logger.error("Error creating profile in Directus:", error);
     return NextResponse.json({ message: "Error connecting to Directus", error: String(error) }, { status: 502 });
   }
 }

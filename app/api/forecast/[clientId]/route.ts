@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 // Функции для расчета кодов из даты рождения
 function digitSum1to9(n: number): number {
@@ -216,7 +217,7 @@ export async function GET(_req: Request, ctx: { params: { clientId: string } }) 
       generated_at: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error("Error calculating forecast:", error);
+    logger.error("Error calculating forecast:", error);
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }
 }
