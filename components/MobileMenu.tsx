@@ -35,14 +35,14 @@ export function MobileMenu() {
                 className="w-11 h-11 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                 aria-label="Новый клиент"
               >
-                <span className="text-xl leading-none">+</span>
+                <span className="text-[18px] leading-none">👤</span>
               </Link>
               <Link
                 href="/profiles/new"
                 className="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                 aria-label="Новый расчёт"
               >
-                <span className="text-xl leading-none">+</span>
+                <span className="text-[18px] leading-none">🧾</span>
               </Link>
             </div>
           </div>

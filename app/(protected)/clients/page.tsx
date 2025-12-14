@@ -65,7 +65,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
       {/* Заголовок с статистикой */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
         <div className="space-y-2">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">Клиенты</h1>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight">Клиенты</h1>
           <p className="text-base md:text-lg text-gray-600 font-medium">Всего клиентов: <span className="text-gray-900 font-bold">{total}</span></p>
         </div>
         <div className="flex gap-3">
@@ -80,7 +80,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
       </div>
 
       {/* Поиск */}
-      <div className="card bg-gradient-to-br from-white via-gray-50/50 to-white p-8">
+      <div className="card bg-gradient-to-br from-white via-gray-50/50 to-white p-6 sm:p-8">
         <form className="flex flex-col sm:flex-row gap-4" action="/clients" method="get">
           <div className="flex-1 relative">
             <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

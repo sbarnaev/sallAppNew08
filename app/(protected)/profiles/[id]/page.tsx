@@ -501,7 +501,7 @@ export default function ProfileDetail() {
         cleaned = cleaned.replace(/\s+/g, ' ').trim();
         return cleaned;
       };
-
+      
       const escapeHtml = (s: string): string =>
         String(s)
           .replace(/&/g, "&amp;")
@@ -515,7 +515,7 @@ export default function ProfileDetail() {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
+        <style>
     @page {
       size: A4;
       margin: 12mm;
@@ -673,7 +673,7 @@ export default function ProfileDetail() {
     <div class="header">
       <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
       ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
-    </div>
+      </div>
     <div class="content">
       <h2 class="section-title strengths">⚖️ Сильные стороны</h2>
       <ul>
@@ -718,20 +718,20 @@ export default function ProfileDetail() {
     </div>
     <div class="content">
       <h2 class="section-title plus">✅ Признаки плюса</h2>
-      <ul>
+        <ul>
         ${resourceSignals.map((r: string) => {
-          const cleaned = cleanText(r);
+            const cleaned = cleanText(r);
           return cleaned ? `<li>${escapeHtml(cleaned)}</li>` : '';
-        }).filter(Boolean).join('')}
-      </ul>
+          }).filter(Boolean).join('')}
+        </ul>
     </div>
     <div class="footer">
       САЛ ПРОФИ
     </div>
-  </div>
-  ` : ''}
+      </div>
+      ` : ''}
   
-  ${deficitSignals.length > 0 ? `
+      ${deficitSignals.length > 0 ? `
   <div class="page minus">
     <div class="header">
       <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
@@ -741,10 +741,10 @@ export default function ProfileDetail() {
       <h2 class="section-title minus">❌ Признаки минуса</h2>
       <ul>
         ${deficitSignals.map((d: string) => {
-          const cleaned = cleanText(d);
+            const cleaned = cleanText(d);
           return cleaned ? `<li>${escapeHtml(cleaned)}</li>` : '';
-        }).filter(Boolean).join('')}
-      </ul>
+          }).filter(Boolean).join('')}
+        </ul>
     </div>
     <div class="footer">
       САЛ ПРОФИ
@@ -757,21 +757,21 @@ export default function ProfileDetail() {
       // Рендерим каждую .page отдельно через html2canvas и собираем в jsPDF
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
-
+      
       const parserError = doc.querySelector('parsererror');
       if (parserError) {
         console.error('HTML parsing error:', parserError.textContent);
         alert('Ошибка парсинга HTML: ' + parserError.textContent);
         return;
       }
-
+      
       const bodyContent = doc.body;
       const styleElement = doc.querySelector('style');
       if (!bodyContent || bodyContent.children.length === 0) {
         alert('Ошибка: не удалось создать содержимое для PDF');
         return;
       }
-
+      
       const element = document.createElement('div');
       element.id = 'pdf-export-container';
       element.style.position = 'fixed';
@@ -783,21 +783,21 @@ export default function ProfileDetail() {
       element.style.visibility = 'visible';
       element.style.pointerEvents = 'none';
       element.style.zIndex = '999999';
-
+      
       // ВАЖНО: стили кладём внутрь контейнера (так html2canvas гарантированно их видит)
       if (styleElement) {
         const style = document.createElement('style');
         style.textContent = styleElement.textContent || '';
         element.appendChild(style);
       }
-
+      
       const bodyClone = bodyContent.cloneNode(true) as HTMLElement;
       while (bodyClone.firstChild) {
         element.appendChild(bodyClone.firstChild);
       }
-
+      
       document.body.appendChild(element);
-
+      
       try {
         // @ts-ignore
         if (document.fonts?.ready) {
@@ -809,9 +809,9 @@ export default function ProfileDetail() {
         const pages = Array.from(element.querySelectorAll<HTMLElement>('.page'));
         if (pages.length === 0) {
           alert('Ошибка: страницы для PDF не найдены');
-          return;
-        }
-
+        return;
+      }
+      
         // Подгоняем типографику, чтобы ничего не обрезалось
         const fitPage = async (pageEl: HTMLElement) => {
           let titleFs = 18;
@@ -876,9 +876,9 @@ export default function ProfileDetail() {
         for (let i = 0; i < pages.length; i++) {
           const pageEl = pages[i];
           const canvas = await html2canvas(pageEl, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#ffffff',
+          scale: 2, 
+          useCORS: true,
+          backgroundColor: '#ffffff',
             logging: false,
           });
           const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -893,7 +893,7 @@ export default function ProfileDetail() {
       } finally {
         if (element.parentNode) document.body.removeChild(element);
       }
-    }
+  }
 
   function AccordionSection({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {
     // Всегда открыто, без кнопки, чтобы ничего не закрывалось само
@@ -1536,15 +1536,15 @@ export default function ProfileDetail() {
                       <span className="text-2xl">💪</span>
                       Сильные стороны
                     </h2>
-                    <div className="mt-3">
-                      {Array.isArray(item.strengths) ? (
-                        <CheckList list={item.strengths} section="strengths" />
-                      ) : (
-                        item.strengths_text && (
-                          <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.strengths_text}</pre>
-                        )
-                      )}
-                    </div>
+                  <div className="mt-3">
+                    {Array.isArray(item.strengths) ? (
+                      <CheckList list={item.strengths} section="strengths" />
+                    ) : (
+                      item.strengths_text && (
+                        <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.strengths_text}</pre>
+                      )
+                    )}
+                  </div>
                   </section>
                 )}
 
@@ -1555,16 +1555,16 @@ export default function ProfileDetail() {
                       <span className="text-2xl">⚡</span>
                       Слабые стороны
                     </h2>
-                    <div className="mt-3">
-                      {Array.isArray(item.weaknesses) ? (
-                        <CheckList list={item.weaknesses} section="weaknesses" />
-                      ) : (
-                        item.weaknesses_text && (
-                          <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.weaknesses_text}</pre>
-                        )
-                      )}
-                    </div>
-                  </section>
+                  <div className="mt-3">
+                    {Array.isArray(item.weaknesses) ? (
+                      <CheckList list={item.weaknesses} section="weaknesses" />
+                    ) : (
+                      item.weaknesses_text && (
+                        <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.weaknesses_text}</pre>
+                      )
+                    )}
+                </div>
+              </section>
                 )}
               </div>
             )}
@@ -1625,8 +1625,8 @@ export default function ProfileDetail() {
                           <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">{item.deficitSignals_text}</pre>
                         )
                       )}
-                    </div>
-                  </section>
+                </div>
+                </section>
                 )}
               </div>
             )}
@@ -2565,7 +2565,7 @@ export default function ProfileDetail() {
                                   "Расчет";
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-7 sm:space-y-8 max-w-4xl mx-auto">
       {/* Общая шапка */}
       <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -2917,7 +2917,7 @@ export default function ProfileDetail() {
                     <span>{item.label}</span>
                   </button>
         ))}
-              </div>
+      </div>
             </div>
           </div>
         );

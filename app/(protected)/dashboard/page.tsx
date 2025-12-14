@@ -84,7 +84,7 @@ export default async function DashboardPage() {
       {/* Заголовок */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
         <div className="space-y-2">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent leading-tight">
             Панель управления
           </h1>
           <p className="text-gray-600 text-base md:text-lg font-medium">
@@ -109,11 +109,11 @@ export default async function DashboardPage() {
 
       {/* Статистика */}
       <div className="grid md:grid-cols-3 gap-6">
-        <Link href="/clients" className="card hover:shadow-soft-lg hover:scale-[1.01] transition-all duration-300 p-8 bg-gradient-to-br from-white via-green-50/30 to-white border border-green-100/60 group">
+        <Link href="/clients" className="card hover:shadow-soft-lg hover:scale-[1.01] transition-all duration-300 p-6 sm:p-8 bg-gradient-to-br from-white via-green-50/30 to-white border border-green-100/60 group">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <div className="text-sm text-gray-500 mb-2 font-semibold uppercase tracking-wider">Клиенты</div>
-              <div className="text-5xl font-bold text-gray-900 group-hover:text-green-700 transition-colors leading-none">{stats.clients}</div>
+              <div className="text-4xl sm:text-5xl font-bold text-gray-900 group-hover:text-green-700 transition-colors leading-none">{stats.clients}</div>
             </div>
             <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-3xl flex items-center justify-center shadow-lg shadow-green-500/20 group-hover:shadow-xl group-hover:shadow-green-500/30 group-hover:scale-110 transition-all duration-300">
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,11 +123,11 @@ export default async function DashboardPage() {
           </div>
         </Link>
 
-        <Link href="/profiles" className="card hover:shadow-soft-lg hover:scale-[1.01] transition-all duration-300 p-8 bg-gradient-to-br from-white via-brand-50/30 to-white border border-brand-100/60 group">
+        <Link href="/profiles" className="card hover:shadow-soft-lg hover:scale-[1.01] transition-all duration-300 p-6 sm:p-8 bg-gradient-to-br from-white via-brand-50/30 to-white border border-brand-100/60 group">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <div className="text-sm text-gray-500 mb-2 font-semibold uppercase tracking-wider">Расчёты</div>
-              <div className="text-5xl font-bold text-gray-900 group-hover:text-brand-700 transition-colors leading-none">{stats.profiles}</div>
+              <div className="text-4xl sm:text-5xl font-bold text-gray-900 group-hover:text-brand-700 transition-colors leading-none">{stats.profiles}</div>
             </div>
             <div className="w-16 h-16 bg-gradient-to-br from-brand-500 to-brand-600 rounded-3xl flex items-center justify-center shadow-lg shadow-brand-500/20 group-hover:shadow-xl group-hover:shadow-brand-500/30 group-hover:scale-110 transition-all duration-300">
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,11 +137,11 @@ export default async function DashboardPage() {
           </div>
         </Link>
 
-        <Link href="/consultations" className="card hover:shadow-soft-lg hover:scale-[1.01] transition-all duration-300 p-8 bg-gradient-to-br from-white via-blue-50/30 to-white border border-blue-100/60 group">
+        <Link href="/consultations" className="card hover:shadow-soft-lg hover:scale-[1.01] transition-all duration-300 p-6 sm:p-8 bg-gradient-to-br from-white via-blue-50/30 to-white border border-blue-100/60 group">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <div className="text-sm text-gray-500 mb-2 font-semibold uppercase tracking-wider">Консультации</div>
-              <div className="text-5xl font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-none">{stats.consultations}</div>
+              <div className="text-4xl sm:text-5xl font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-none">{stats.consultations}</div>
             </div>
             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:shadow-xl group-hover:shadow-blue-500/30 group-hover:scale-110 transition-all duration-300">
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,7 +153,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Быстрые действия */}
-      <div className="card p-8 bg-gradient-to-br from-white via-gray-50/50 to-white">
+      <div className="card p-6 sm:p-8 bg-gradient-to-br from-white via-gray-50/50 to-white">
         <h2 className="text-2xl font-bold mb-6 text-gray-900">Быстрые действия</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link href="/clients/new" className="flex items-center gap-4 p-5 rounded-2xl border border-gray-200/80 hover:border-green-300 hover:bg-gradient-to-br hover:from-green-50/80 hover:to-white transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group">
@@ -184,7 +184,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Недавние расчёты */}
-      <div className="card p-8 bg-gradient-to-br from-white via-gray-50/50 to-white">
+      <div className="card p-6 sm:p-8 bg-gradient-to-br from-white via-gray-50/50 to-white">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Недавние расчёты</h2>
           <Link href="/profiles" className="text-sm font-bold text-brand-600 hover:text-brand-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-brand-50">Все →</Link>

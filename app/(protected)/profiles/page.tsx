@@ -117,11 +117,11 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
   return (
     <div className="space-y-8 md:space-y-10">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">Расчёты</h1>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight">Расчёты</h1>
         <ClientSearchButton />
       </div>
 
-      <div className="card bg-gradient-to-br from-white via-gray-50/50 to-white p-8">
+      <div className="card bg-gradient-to-br from-white via-gray-50/50 to-white p-6 sm:p-8">
         <form className="flex flex-col sm:flex-row gap-4" action="/profiles" method="get">
           <div className="flex-1">
             <label className="block text-sm mb-2 font-bold text-gray-700">Поиск по имени или дате рождения</label>
