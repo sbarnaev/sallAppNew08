@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 import { refreshAccessToken } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,18 +18,14 @@ function generatePublicCode(): string {
 }
 
 export async function POST(req: Request) {
-  const DEBUG = process.env.NODE_ENV !== "production";
-  const dlog = (...args: any[]) => { if (DEBUG) console.log(...args); };
-  const dwarn = (...args: any[]) => { if (DEBUG) console.warn(...args); };
-
-  dlog("[CALC-BASE] ===== POST /api/calc-base called =====");
+  logger.debug("[CALC-BASE] POST /api/calc-base");
   
   let token = cookies().get("directus_access_token")?.value;
   const refreshToken = cookies().get("directus_refresh_token")?.value;
   const directusUrl = getDirectusUrl();
   const n8nUrl = process.env.N8N_CALC_URL;
 
-  dlog("[CALC-BASE] Initial check:", {
+  logger.debug("[CALC-BASE] Initial check:", {
     hasToken: !!token,
     hasRefreshToken: !!refreshToken,
     hasDirectusUrl: !!directusUrl,
@@ -37,15 +34,15 @@ export async function POST(req: Request) {
   });
 
   if (!token && !refreshToken) {
-    console.error("[CALC-BASE] No tokens found, returning 401");
+    logger.error("[CALC-BASE] No tokens found, returning 401");
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
   if (!n8nUrl) {
-    console.error("[CALC-BASE] N8N_CALC_URL is not configured");
+    logger.error("[CALC-BASE] N8N_CALC_URL is not configured");
     return NextResponse.json({ message: "No N8N_CALC_URL configured" }, { status: 400 });
   }
   
-  dlog("[CALC-BASE] Starting calculation request", {
+  logger.debug("[CALC-BASE] Starting calculation request", {
     hasToken: !!token,
     hasRefreshToken: !!refreshToken,
     n8nUrl: n8nUrl ? "configured" : "NOT SET",
@@ -54,13 +51,13 @@ export async function POST(req: Request) {
 
   // ОБЯЗАТЕЛЬНЫЙ REFRESH перед отправкой в n8n для получения свежего токена
   if (refreshToken) {
-    dlog("[CALC-BASE] Refreshing token before n8n request...");
+    logger.debug("[CALC-BASE] Refreshing token before n8n request...");
     const freshToken = await refreshAccessToken(refreshToken);
     if (freshToken) {
       token = freshToken;
-      dlog("[CALC-BASE] Token refreshed successfully");
+      logger.debug("[CALC-BASE] Token refreshed successfully");
     } else {
-      dwarn("[CALC-BASE] Token refresh failed, using existing token");
+      logger.warn("[CALC-BASE] Token refresh failed, using existing token");
     }
   }
 
@@ -94,7 +91,7 @@ export async function POST(req: Request) {
         clientGender = clientData?.data?.gender || null;
       }
     } catch (error) {
-      dwarn("[CALC-BASE] Failed to fetch client gender:", error);
+      logger.warn("[CALC-BASE] Failed to fetch client gender:", error);
     }
   }
 
@@ -130,10 +127,10 @@ export async function POST(req: Request) {
       const createData = await createRes.json().catch(() => ({}));
       if (createRes.ok && createData?.data?.id) {
         profileId = Number(createData.data.id);
-        dlog("[CALC-BASE] Profile created, profileId:", profileId);
+        logger.debug("[CALC-BASE] Profile created, profileId:", profileId);
       }
     } catch (error) {
-      console.error("[CALC-BASE] Failed to create profile:", error);
+      logger.error("[CALC-BASE] Failed to create profile:", error);
     }
   }
 
@@ -179,7 +176,7 @@ export async function POST(req: Request) {
       refreshToken: refreshToken, // refresh token для обновления access token в n8n
     };
 
-    dlog("[CALC-BASE] Payload to n8n:", {
+    logger.debug("[CALC-BASE] Payload to n8n:", {
       directusUrl: n8nPayload.directusUrl,
       hasToken: !!n8nPayload.token,
       hasRefreshToken: !!n8nPayload.refreshToken,
@@ -190,7 +187,7 @@ export async function POST(req: Request) {
       birthday: n8nPayload.birthday
     });
 
-    dlog("[CALC-BASE] Calling n8n workflow:", {
+    logger.debug("[CALC-BASE] Calling n8n workflow:", {
       url: n8nUrl,
       type: "base_new",
       profileId,
@@ -203,7 +200,7 @@ export async function POST(req: Request) {
     while (attempts < maxAttempts) {
       attempts++;
       try {
-        dlog(`[CALC-BASE] Attempt ${attempts}/${maxAttempts} - Sending request to n8n...`);
+        logger.debug(`[CALC-BASE] Attempt ${attempts}/${maxAttempts} - Sending request to n8n...`);
         
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 30_000);
@@ -221,7 +218,7 @@ export async function POST(req: Request) {
         clearTimeout(timeout);
         
         const fetchDuration = Date.now() - fetchStartTime;
-        dlog(`[CALC-BASE] n8n request completed in ${fetchDuration}ms, status: ${r.status}`);
+        logger.debug(`[CALC-BASE] n8n request completed in ${fetchDuration}ms, status: ${r.status}`);
 
         // If successful or client error (4xx), break loop
         // Only retry on server errors (5xx)
@@ -229,17 +226,17 @@ export async function POST(req: Request) {
           break;
         }
 
-        dwarn(`[CALC-BASE] n8n attempt ${attempts} failed with status ${r.status}`);
+        logger.warn(`[CALC-BASE] n8n attempt ${attempts} failed with status ${r.status}`);
         const errorText = await r.text().catch(() => "");
-        dwarn(`[CALC-BASE] n8n error response:`, errorText.substring(0, 500));
+        logger.warn(`[CALC-BASE] n8n error response:`, errorText.substring(0, 500));
       } catch (e: any) {
-        console.error(`[CALC-BASE] n8n attempt ${attempts} failed with error:`, {
+        logger.error(`[CALC-BASE] n8n attempt ${attempts} failed with error:`, {
           message: e?.message || String(e),
           name: e?.name,
           stack: e?.stack?.substring(0, 500)
         });
         if (attempts === maxAttempts) {
-          console.error("[CALC-BASE] All attempts failed, throwing error");
+          logger.error("[CALC-BASE] All attempts failed, throwing error");
           throw e;
         }
       }
@@ -255,14 +252,14 @@ export async function POST(req: Request) {
 
     data = await r.json().catch(() => ({}));
 
-    console.log("[CALC-BASE] n8n response:", {
+    logger.debug("[CALC-BASE] n8n response:", {
       status: r.status,
       statusText: r.statusText,
       hasData: !!data,
       error: data?.error || data?.message
     });
   } catch (error: any) {
-    console.error("[CALC-BASE] Error calling n8n:", {
+    logger.error("[CALC-BASE] Error calling n8n:", {
       message: error?.message || String(error),
       name: error?.name,
       stack: error?.stack?.substring(0, 500),
@@ -290,7 +287,7 @@ export async function POST(req: Request) {
     }
 
     // Логируем полную ошибку для диагностики
-    console.error("[CALC-BASE] n8n calculation error:", {
+    logger.error("[CALC-BASE] n8n calculation error:", {
       status: r.status,
       statusText: r.statusText,
       data: data,

@@ -7,9 +7,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request, ctx: { params: { id: string }}) {
-  const DEBUG = process.env.NODE_ENV !== "production";
-  const dlog = (...args: any[]) => { if (DEBUG) console.log(...args); };
-  const dwarn = (...args: any[]) => { if (DEBUG) console.warn(...args); };
+  const dlog = (...args: any[]) => logger.debug(...args);
+  const dwarn = (...args: any[]) => logger.warn(...args);
 
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
@@ -17,7 +16,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   
   // Проверяем, что URL валидный
   if (!baseUrl.startsWith('http')) {
-    console.error("Invalid Directus URL:", baseUrl);
+    logger.error("Invalid Directus URL:", baseUrl);
     return NextResponse.json({ data: null, message: "Invalid DIRECTUS_URL" }, { status: 500 });
   }
   
@@ -25,7 +24,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   
   // Проверяем, что ID валидный
   if (!id || isNaN(Number(id)) || Number(id) <= 0) {
-    logger.error("[DEBUG] Invalid profile ID:", id);
+    logger.error("[API profiles/[id]] Invalid profile ID:", id);
     return NextResponse.json({ data: null, errors: [{ message: "Invalid profile ID" }] }, { status: 400 });
   }
   
@@ -76,8 +75,8 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       
       // Если статус не 200, логируем полный ответ
       if (!r.ok) {
-        console.error("[DEBUG] Directus error - full response:", rawData);
-        console.error("[DEBUG] Directus error - URL was:", finalUrl);
+        logger.error("[Directus] error - full response:", rawData);
+        logger.error("[Directus] error - URL was:", finalUrl);
       }
       
       let data;
@@ -96,7 +95,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
           data = JSON.parse(rawData);
         }
       } catch (parseError) {
-        console.error("[DEBUG] Failed to parse Directus response:", {
+        logger.error("[Directus] Failed to parse response:", {
           error: parseError,
           rawData: rawData.substring(0, 200),
           status: r.status,
@@ -114,7 +113,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       
       return { r, data } as const;
     } catch (error: any) {
-      console.error("Error fetching profile from Directus:", {
+      logger.error("Error fetching profile from Directus:", {
         message: error?.message,
         code: error?.code,
         url: urlWithFields,
@@ -137,11 +136,11 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
     // Пробуем разные варианты названия поля
     imagesFromMainRequest = profileData["Images ID"] || profileData["images_id"] || profileData["images"] || profileData["Images_ID"];
     if (imagesFromMainRequest) {
-      console.log("[DEBUG] Images received in main request:", imagesFromMainRequest);
+      dlog("[DEBUG] Images received in main request:", imagesFromMainRequest);
     }
   } else if (r.status === 403) {
     // Если получили 403, возможно из-за поля images, пробуем запрос без fields
-    console.log("[DEBUG] Got 403, trying request without fields restriction");
+    dlog("[DEBUG] Got 403, trying request without fields restriction");
     try {
       const allFieldsUrl = `${baseUrl}/items/profiles/${id}`;
       const allFieldsRes = await fetch(allFieldsUrl, {
@@ -151,17 +150,17 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       if (allFieldsRes.ok) {
         const allFieldsData = await allFieldsRes.json().catch(() => ({}));
         const allFieldsProfileData = allFieldsData?.data || {};
-        console.log("[DEBUG] All fields response keys:", Object.keys(allFieldsProfileData));
+        dlog("[DEBUG] All fields response keys:", Object.keys(allFieldsProfileData));
         // Пробуем разные варианты названия поля
         imagesFromMainRequest = allFieldsProfileData["Images ID"] || allFieldsProfileData["images_id"] || allFieldsProfileData["images"] || allFieldsProfileData["Images_ID"];
         if (imagesFromMainRequest) {
-          console.log("[DEBUG] Images received from all-fields request:", imagesFromMainRequest);
+          dlog("[DEBUG] Images received from all-fields request:", imagesFromMainRequest);
           // Обновляем data, чтобы использовать его дальше
           data = allFieldsData;
           r = allFieldsRes;
         } else {
           // Пробуем получить images_id напрямую (без /server, правильный путь)
-          console.log("[DEBUG] Trying to fetch images_id field");
+          dlog("[DEBUG] Trying to fetch images_id field");
           try {
             // Используем правильный путь и только images_id (правильное имя поля)
             const imagesUrl = `${baseUrl}/items/profiles/${id}?fields=images_id`;
@@ -174,19 +173,19 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
               const imagesProfileData = imagesData?.data || {};
               imagesFromMainRequest = imagesProfileData["images_id"] || imagesProfileData["Images ID"] || imagesProfileData["Images_ID"];
               if (imagesFromMainRequest) {
-                console.log("[DEBUG] Images received from images_id request:", imagesFromMainRequest);
+                dlog("[DEBUG] Images received from images_id request:", imagesFromMainRequest);
               }
             } else {
               const errorText = await imagesRes.text().catch(() => '');
-              console.warn("[DEBUG] Failed to fetch images_id:", imagesRes.status, errorText);
+              dwarn("[DEBUG] Failed to fetch images_id:", imagesRes.status, errorText);
             }
           } catch (imagesError) {
-            console.warn("[DEBUG] Error fetching images_id:", imagesError);
+            dwarn("[DEBUG] Error fetching images_id:", imagesError);
           }
           
           // Пробуем GraphQL запрос для получения images_id (правильное имя поля)
           if (!imagesFromMainRequest) {
-            console.log("[DEBUG] Trying GraphQL query for images_id");
+            dlog("[DEBUG] Trying GraphQL query for images_id");
             try {
               const graphqlUrl = `${baseUrl}/graphql`;
               // Используем только images_id (правильное имя поля в GraphQL)
@@ -209,27 +208,27 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
               });
               if (graphqlRes.ok) {
                 const graphqlData = await graphqlRes.json().catch(() => ({}));
-                console.log("[DEBUG] GraphQL response:", graphqlData);
+                dlog("[DEBUG] GraphQL response:", graphqlData);
                 const graphqlProfileData = graphqlData?.data?.profiles_by_id || {};
                 imagesFromMainRequest = graphqlProfileData["images_id"] || graphqlProfileData["Images ID"] || graphqlProfileData["Images_ID"];
                 if (imagesFromMainRequest) {
-                  console.log("[DEBUG] Images received from GraphQL:", imagesFromMainRequest);
+                  dlog("[DEBUG] Images received from GraphQL:", imagesFromMainRequest);
                 }
               } else {
                 const errorText = await graphqlRes.text().catch(() => '');
-                console.warn("[DEBUG] GraphQL failed:", graphqlRes.status, errorText);
+                dwarn("[DEBUG] GraphQL failed:", graphqlRes.status, errorText);
               }
             } catch (graphqlError) {
-              console.warn("[DEBUG] GraphQL query failed:", graphqlError);
+              dwarn("[DEBUG] GraphQL query failed:", graphqlError);
             }
           }
         }
       } else {
         const errorText = await allFieldsRes.text().catch(() => '');
-        console.warn("[DEBUG] All-fields request failed:", allFieldsRes.status, errorText);
+        dwarn("[DEBUG] All-fields request failed:", allFieldsRes.status, errorText);
       }
     } catch (error) {
-      console.warn("[DEBUG] Error trying all-fields request:", error);
+      dwarn("[DEBUG] Error trying all-fields request:", error);
     }
   }
   
@@ -242,7 +241,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       if (typeof imagesObj === 'string') {
         imagesObj = JSON.parse(imagesObj);
       }
-      console.log("[DEBUG] Parsed images object:", imagesObj);
+      dlog("[DEBUG] Parsed images object:", imagesObj);
       
       // Формируем массив изображений с прямыми ссылками на S3
       const sortedKeys = Object.keys(imagesObj).sort((a, b) => parseInt(a) - parseInt(b));
@@ -259,7 +258,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         return null;
       }).filter((img) => img != null);
       
-      console.log("[DEBUG] Processed images from S3:", {
+      dlog("[DEBUG] Processed images from S3:", {
         count: processedImages.length,
         images: processedImages.map((img: any) => ({
           id: img.id,
@@ -268,15 +267,15 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         }))
       });
     } catch (imagesError) {
-      console.warn("[DEBUG] Error processing images:", imagesError);
+      dwarn("[DEBUG] Error processing images:", imagesError);
     }
   } else {
-    console.warn("[DEBUG] No images field found in profile data.");
+    dwarn("[DEBUG] No images field found in profile data.");
   }
   
   // Если получили 403 из-за поля images (старая логика, на случай если images был в fields)
   if (r.status === 403 && (data as any)?.errors?.[0]?.message?.includes('images')) {
-    console.log("[DEBUG] Got 403 for images field, retrying without images field");
+    dlog("[DEBUG] Got 403 for images field, retrying without images field");
     const fieldsWithoutImages = [
       "id",
       "client_id",
@@ -306,7 +305,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       if (retryRes.ok && retryParsed?.data) {
         r = retryRes;
         data = retryParsed;
-        console.log("[DEBUG] Successfully fetched profile without images field");
+        dlog("[DEBUG] Successfully fetched profile without images field");
         
         // Теперь попробуем загрузить Images ID отдельно
         try {
@@ -326,21 +325,21 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
                 (retryParsed as any).data["Images ID"] = imagesValue;
                 (retryParsed as any).data["images_id"] = imagesValue;
                 (retryParsed as any).data["images"] = imagesValue;
-                console.log("[DEBUG] Successfully loaded Images ID field separately (as:", fieldName, ")");
+                dlog("[DEBUG] Successfully loaded Images ID field separately (as:", fieldName, ")");
                 break;
               }
             }
           }
         } catch (imagesError) {
-          console.warn("[DEBUG] Could not load Images ID separately:", imagesError);
+          dwarn("[DEBUG] Could not load Images ID separately:", imagesError);
         }
       }
     } catch (retryError) {
-      console.error("[DEBUG] Error retrying without images:", retryError);
+      logger.error("[DEBUG] Error retrying without images:", retryError);
     }
   }
   
-  console.log("[DEBUG] After fetchProfile:", {
+  dlog("[DEBUG] After fetchProfile:", {
     status: r.status,
     statusText: r.statusText,
     hasData: !!data,
@@ -357,7 +356,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
     const protocol = headersList.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
     const origin = `${protocol}://${host}`;
     
-    console.log("[DEBUG] Token expired, attempting to refresh", {
+    dlog("[DEBUG] Token expired, attempting to refresh", {
       origin,
       host,
       protocol,
@@ -371,7 +370,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       const allCookies = cookies().getAll();
       const cookieHeader = allCookies.map(c => `${c.name}=${c.value}`).join('; ');
       
-      console.log("[DEBUG] Making refresh request with cookies:", {
+      dlog("[DEBUG] Making refresh request with cookies:", {
         hasCookies: allCookies.length > 0,
         cookieNames: allCookies.map(c => c.name),
         origin
@@ -387,26 +386,26 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         signal: AbortSignal.timeout(10000), // 10 секунд
       });
       
-      console.log("[DEBUG] Refresh response status:", refreshRes.status, refreshRes.statusText);
+      dlog("[DEBUG] Refresh response status:", refreshRes.status, refreshRes.statusText);
       
       if (refreshRes.ok) {
         const refreshData = await refreshRes.json().catch(() => ({}));
-        console.log("[DEBUG] Refresh response data keys:", Object.keys(refreshData));
+        dlog("[DEBUG] Refresh response data keys:", Object.keys(refreshData));
         // Используем токен из ответа, а не из cookies
         const newToken = refreshData?.access_token || cookies().get("directus_access_token")?.value;
         const newRefreshToken = refreshData?.refresh_token; // Сохраняем новый refresh token
         
         if (newToken) {
-          console.log("[DEBUG] Token refreshed successfully, retrying profile fetch");
+          dlog("[DEBUG] Token refreshed successfully, retrying profile fetch");
           // Обновляем cookies с новыми токенами (если они есть в ответе)
           if (newRefreshToken) {
-            console.log("[DEBUG] New refresh token received, updating cookies");
+            dlog("[DEBUG] New refresh token received, updating cookies");
             // Cookies обновятся в ответе от /api/refresh, но для текущего запроса используем новый access token
           }
           ({ r, data } = await fetchProfile(newToken));
-          console.log("[DEBUG] After refresh retry - status:", r.status, "hasData:", !!data?.data);
+          dlog("[DEBUG] After refresh retry - status:", r.status, "hasData:", !!data?.data);
         } else {
-          console.warn("[DEBUG] Token refresh returned no access_token", refreshData);
+          dwarn("[DEBUG] Token refresh returned no access_token", refreshData);
         }
       } else {
         const refreshErrorText = await refreshRes.text().catch(() => '');
@@ -416,7 +415,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         } catch {
           refreshErrorData = { raw: refreshErrorText.substring(0, 200) };
         }
-        console.error("[DEBUG] Token refresh failed:", {
+        logger.error("[DEBUG] Token refresh failed:", {
           status: refreshRes.status,
           statusText: refreshRes.statusText,
           error: refreshErrorData,
@@ -424,7 +423,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         });
       }
     } catch (refreshError: any) {
-      console.error("[DEBUG] Error refreshing token:", {
+      logger.error("[DEBUG] Error refreshing token:", {
         message: refreshError?.message,
         code: refreshError?.code,
         cause: refreshError?.cause,
@@ -467,12 +466,12 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
             return null;
           }).filter((img) => img != null);
           
-          console.log("[DEBUG] Loaded images from S3 (fallback):", {
+          dlog("[DEBUG] Loaded images from S3 (fallback):", {
             loadedCount: processedImages.length,
             images: processedImages
           });
         } catch (parseError) {
-          console.error("[DEBUG] Error parsing images:", parseError);
+          logger.error("[DEBUG] Error parsing images:", parseError);
         }
       }
       
@@ -516,12 +515,12 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
       });
     }
   } catch (normalizeError) {
-    console.error("[DEBUG] Error normalizing profile data:", normalizeError);
+    logger.error("[DEBUG] Error normalizing profile data:", normalizeError);
   }
   
   // Если ошибка сети или профиль не найден, возвращаем правильный статус
   if (!r.ok && !data?.data) {
-    console.error("[DEBUG] Directus error response:", {
+    logger.error("[DEBUG] Directus error response:", {
       status: r.status,
       statusText: r.statusText,
       data: data,
@@ -573,7 +572,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
   }
   
   // Логируем финальный ответ
-  console.log("[DEBUG] Returning profile data:", {
+  dlog("[DEBUG] Returning profile data:", {
     hasData: !!data?.data,
     dataId: (data as any)?.data?.id,
     status: r.ok ? 200 : r.status
@@ -715,7 +714,7 @@ export async function PATCH(req: Request, ctx: { params: { id: string }}) {
 
   // Проверяем, что URL валидный
   if (!baseUrl.startsWith('http')) {
-    console.error("Invalid Directus URL:", baseUrl);
+    logger.error("Invalid Directus URL:", baseUrl);
     return NextResponse.json({ message: "Invalid DIRECTUS_URL" }, { status: 500 });
   }
 
@@ -737,7 +736,7 @@ export async function PATCH(req: Request, ctx: { params: { id: string }}) {
     const data = await r.json().catch(()=>({}));
     return NextResponse.json(data, { status: r.status });
   } catch (error) {
-    console.error("Error updating profile in Directus:", error);
+    logger.error("Error updating profile in Directus:", error);
     return NextResponse.json({ message: "Error connecting to Directus", error: String(error) }, { status: 502 });
   }
 }

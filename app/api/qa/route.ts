@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
@@ -16,9 +17,8 @@ async function fetchProfileContext(profileId: number, token: string, baseUrl: st
 }
 
 export async function POST(req: Request) {
-  const DEBUG = process.env.NODE_ENV !== "production";
-  const dlog = (...args: any[]) => { if (DEBUG) console.log(...args); };
-  const dwarn = (...args: any[]) => { if (DEBUG) console.warn(...args); };
+  const dlog = (...args: any[]) => logger.debug(...args);
+  const dwarn = (...args: any[]) => logger.warn(...args);
 
   const token = cookies().get("directus_access_token")?.value;
   const directusUrl = getDirectusUrl();
@@ -140,7 +140,7 @@ export async function POST(req: Request) {
             }),
           });
         } catch (fetchError: any) {
-          console.error("[DEBUG] OpenAI fetch error:", {
+          logger.error("[QA] OpenAI fetch error:", {
             message: fetchError?.message,
             code: fetchError?.code,
             cause: fetchError?.cause
@@ -161,7 +161,7 @@ export async function POST(req: Request) {
             errorData = { raw: errorText.substring(0, 200) };
           }
 
-          console.error("[DEBUG] OpenAI API error:", {
+          logger.error("[QA] OpenAI API error:", {
             status: r.status,
             statusText: r.statusText,
             error: errorData,
@@ -255,7 +255,7 @@ export async function POST(req: Request) {
                 }
               }
             } catch (error) {
-              console.error("Stream error:", error);
+              logger.error("[QA] Stream error:", error);
               controller.enqueue(encoder.encode(`data: Ошибка стриминга: ${String(error)}\n\n`));
             } finally {
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
@@ -292,7 +292,7 @@ export async function POST(req: Request) {
           }),
         });
       } catch (fetchError: any) {
-        console.error("[QA] OpenAI fetch error (non-streaming):", fetchError);
+        logger.error("[QA] OpenAI fetch error (non-streaming):", fetchError);
         return NextResponse.json({
           message: "Ошибка подключения к OpenAI API",
           error: fetchError?.message || String(fetchError)
@@ -308,7 +308,7 @@ export async function POST(req: Request) {
           errorData = { raw: errorText.substring(0, 200) };
         }
 
-        console.error("[QA] OpenAI API error (non-streaming):", {
+        logger.error("[QA] OpenAI API error (non-streaming):", {
           status: r.status,
           error: errorData
         });
@@ -332,7 +332,7 @@ export async function POST(req: Request) {
       const answer = data?.choices?.[0]?.message?.content || data?.answer || data?.content || null;
       return NextResponse.json({ answer: answer || "" });
     } catch (e: any) {
-      console.error("[DEBUG] OpenAI request exception:", {
+      logger.error("[QA] OpenAI request exception:", {
         message: e?.message,
         stack: e?.stack?.substring(0, 500)
       });
