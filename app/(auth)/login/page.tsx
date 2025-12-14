@@ -43,24 +43,24 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 sm:p-6">
       <div className="w-full max-w-md animate-fade-in">
-        <div className="card shadow-2xl border-0 space-y-8 p-10 bg-gradient-to-br from-white via-gray-50/50 to-white">
+        <div className="card shadow-2xl border-0 space-y-7 bg-gradient-to-br from-white via-gray-50/50 to-white">
           <div className="text-center space-y-3">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl mb-6 shadow-lg shadow-blue-500/20">
+            <div className="inline-flex items-center justify-center w-18 h-18 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl mb-5 sm:mb-6 shadow-lg shadow-blue-500/20">
               <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 leading-tight">САЛ ПРОФИ</h1>
-            <p className="text-gray-600 text-lg font-medium">Войдите в систему</p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">САЛ ПРОФИ</h1>
+            <p className="text-gray-600 text-base sm:text-lg font-medium">Войдите в систему</p>
           </div>
 
           <form onSubmit={onSubmit} className="space-y-6">
             <div className="space-y-2">
               <label className="block text-sm font-bold text-gray-700">Email</label>
               <input
-                className="w-full rounded-2xl border border-gray-300/80 p-4 focus:border-blue-500 focus:ring-2 focus:ring-blue-200/50 transition-all duration-300 bg-white hover:border-gray-400 text-base"
+                className="w-full focus:border-blue-500 focus:ring-blue-200/50"
                 type="email"
                 value={email}
                 onChange={(e)=>setEmail(e.target.value)}
@@ -71,7 +71,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <label className="block text-sm font-bold text-gray-700">Пароль</label>
               <input
-                className="w-full rounded-2xl border border-gray-300/80 p-4 focus:border-blue-500 focus:ring-2 focus:ring-blue-200/50 transition-all duration-300 bg-white hover:border-gray-400 text-base"
+                className="w-full focus:border-blue-500 focus:ring-blue-200/50"
                 type="password"
                 value={password}
                 onChange={(e)=>setPassword(e.target.value)}
@@ -86,7 +86,7 @@ export default function LoginPage() {
             )}
             <button 
               type="submit"
-              className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 font-bold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98] text-base"
+              className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 font-bold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98] text-[15px] sm:text-base"
             >
               Войти
             </button>

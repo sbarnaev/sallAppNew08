@@ -71,10 +71,31 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+@layer base {
+  /* Нормальный фокус (особенно на мобиле) */
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(74, 97, 255, 0.20);
+  }
+
+  /* Базовые поля ввода (классы всё равно могут переопределить) */
+  input, select, textarea {
+    @apply rounded-2xl border border-gray-300/80 bg-white px-4 py-3 text-[16px] text-gray-900;
+    @apply placeholder:text-gray-400;
+    @apply focus:border-brand-500 focus:ring-2 focus:ring-brand-200/60;
+    @apply transition-all duration-200 ease-out;
+  }
+
+  label {
+    @apply text-sm font-semibold text-gray-700;
+  }
+}
+
 /* Премиальные карточки */
 .card {
-  @apply bg-white rounded-3xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] p-8;
-  @apply border border-gray-100/80;
+  @apply bg-white rounded-2xl sm:rounded-3xl;
+  @apply shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100/80;
+  @apply p-6 sm:p-8;
   @apply transition-all duration-300 ease-out;
   @apply backdrop-blur-sm;
 }
@@ -128,14 +149,6 @@ h3, h4, h5, h6 {
     min-height: 44px;
     padding-left: 16px;
     padding-right: 16px;
-    font-size: 16px;
   }
-  input, select, textarea {
-    min-height: 44px;
-    padding: 10px 12px;
-    font-size: 16px;
-  }
-  .card {
-    border-radius: 14px;
-  }
+  input, select, textarea { min-height: 44px; }
 }

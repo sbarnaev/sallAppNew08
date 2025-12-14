@@ -8,38 +8,70 @@ export function MobileMenu() {
 
   return (
     <>
-      {/* Кнопка открытия меню (только на мобильных) */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-[60] w-12 h-12 bg-white border border-gray-300 rounded-xl shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
-        aria-label="Открыть меню"
-      >
-        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
+      {/* Мобильный top-bar (всегда виден на мобиле) */}
+      <header className="md:hidden fixed top-0 inset-x-0 z-[60]">
+        <div className="pt-[env(safe-area-inset-top)] bg-white/85 backdrop-blur-xl border-b border-gray-200/70">
+          <div className="h-16 px-4 flex items-center gap-3">
+            <button
+              onClick={() => setIsOpen(true)}
+              className="w-11 h-11 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+              aria-label="Открыть меню"
+            >
+              <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            <Link href="/dashboard" className="min-w-0 flex-1" onClick={() => setIsOpen(false)}>
+              <div className="truncate text-base font-bold bg-gradient-to-r from-brand-700 via-gray-900 to-brand-700 bg-clip-text text-transparent">
+                САЛ ПРОФИ
+              </div>
+              <div className="truncate text-xs text-gray-500">Панель • клиенты • расчёты</div>
+            </Link>
+
+            <div className="flex items-center gap-2">
+              <Link
+                href="/clients/new"
+                className="w-11 h-11 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                aria-label="Новый клиент"
+              >
+                <span className="text-xl leading-none">+</span>
+              </Link>
+              <Link
+                href="/profiles/new"
+                className="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                aria-label="Новый расчёт"
+              >
+                <span className="text-xl leading-none">+</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
 
       {/* Overlay (только на мобильных) */}
       {isOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="md:hidden fixed inset-0 bg-black/40 backdrop-blur-[1px] z-40"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Мобильное меню */}
       <aside
-        className={`md:hidden fixed top-0 left-0 h-full w-64 bg-white border-r shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
+        className={`md:hidden fixed top-0 left-0 h-full w-[78vw] max-w-[340px] bg-white border-r border-gray-200/80 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex flex-col h-full p-4">
+        <div className="flex flex-col h-full p-4 pt-[calc(16px+env(safe-area-inset-top))]">
           {/* Заголовок с кнопкой закрытия */}
           <div className="flex items-center justify-between mb-6">
-            <div className="font-semibold text-lg">САЛ ПРОФИ</div>
+            <div className="font-bold text-lg bg-gradient-to-r from-brand-700 to-gray-900 bg-clip-text text-transparent">
+              САЛ ПРОФИ
+            </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded-2xl hover:bg-gray-100 transition-colors"
               aria-label="Закрыть меню"
             >
               <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,26 +85,26 @@ export function MobileMenu() {
             <Link
               href="/dashboard"
               onClick={() => setIsOpen(false)}
-              className="flex items-center px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors"
+              className="flex items-center px-4 py-3.5 rounded-2xl hover:bg-gradient-to-r hover:from-brand-50 hover:to-transparent transition-all"
             >
               <span className="inline-block w-6 text-center shrink-0">📊</span>
-              <span className="ml-3">Панель</span>
+              <span className="ml-3 font-semibold text-gray-800">Панель</span>
             </Link>
             <Link
               href="/clients"
               onClick={() => setIsOpen(false)}
-              className="flex items-center px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors"
+              className="flex items-center px-4 py-3.5 rounded-2xl hover:bg-gradient-to-r hover:from-green-50 hover:to-transparent transition-all"
             >
               <span className="inline-block w-6 text-center shrink-0">👥</span>
-              <span className="ml-3">Клиенты</span>
+              <span className="ml-3 font-semibold text-gray-800">Клиенты</span>
             </Link>
             <Link
               href="/profiles"
               onClick={() => setIsOpen(false)}
-              className="flex items-center px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors"
+              className="flex items-center px-4 py-3.5 rounded-2xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent transition-all"
             >
               <span className="inline-block w-6 text-center shrink-0">📈</span>
-              <span className="ml-3">Расчёты</span>
+              <span className="ml-3 font-semibold text-gray-800">Расчёты</span>
             </Link>
           </nav>
 
@@ -80,10 +112,10 @@ export function MobileMenu() {
           <form action="/api/logout" method="post" className="mt-auto">
             <button
               type="submit"
-              className="flex items-center w-full px-4 py-3 rounded-xl hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center w-full px-4 py-3.5 rounded-2xl hover:bg-gradient-to-r hover:from-red-50 hover:to-transparent text-gray-600 hover:text-red-700 transition-all"
             >
               <span className="inline-block w-6 text-center shrink-0">🚪</span>
-              <span className="ml-3">Выйти</span>
+              <span className="ml-3 font-semibold">Выйти</span>
             </button>
           </form>
         </div>

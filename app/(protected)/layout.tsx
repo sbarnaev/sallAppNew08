@@ -39,7 +39,9 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       </aside>
       
       {/* Основной контент */}
-      <main className="flex-1 p-6 md:p-8 lg:p-10 pt-20 md:pt-8 max-w-[1920px] mx-auto w-full">{children}</main>
+      <main className="flex-1 w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 pt-24 md:pt-8 pb-12">
+        {children}
+      </main>
     </div>
   );
 }
