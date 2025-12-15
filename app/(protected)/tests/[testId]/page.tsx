@@ -135,6 +135,17 @@ export default function TakeTestPage() {
             <div className="text-gray-700 leading-relaxed">
               {result.interpretation?.split(": ")[1]}
             </div>
+
+            {/* Дополнительное предупреждение для критических результатов */}
+            {result.level === "critical" && (test.id === "depression" || test.id === "anxiety") && (
+              <div className="p-4 bg-red-50 border-2 border-red-300 rounded-2xl">
+                <p className="text-sm font-semibold text-red-800 mb-2">⚠️ Рекомендуется срочная консультация специалиста</p>
+                <p className="text-xs text-red-700">
+                  При наличии суицидальных мыслей или намерений немедленно обратитесь за помощью: 
+                  <strong> Телефон доверия: 8-800-2000-122</strong> (круглосуточно, бесплатно)
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-4 justify-center mt-8">
@@ -186,6 +197,25 @@ export default function TakeTestPage() {
           ← Назад
         </Link>
       </div>
+
+      {/* Важное предупреждение для клинических тестов */}
+      {(test.id === "depression" || test.id === "anxiety") && (
+        <div className="card p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-xl shrink-0">
+              ⚠️
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-gray-900 mb-2">Важная информация</h3>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Этот опросник является <strong>скрининговым инструментом</strong> и не заменяет профессиональную диагностику. 
+                Результаты предназначены для предварительной оценки и не являются медицинским диагнозом. 
+                При высоких баллах или наличии суицидальных мыслей необходимо обратиться к специалисту (психолог, психотерапевт, психиатр).
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Прогресс */}
       <div className="card p-6">

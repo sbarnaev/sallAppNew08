@@ -69,17 +69,41 @@ export default function TestsPage({ searchParams }: { searchParams: Record<strin
       </div>
 
       {/* Информация */}
-      <div className="card p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-2xl shrink-0">
-            ℹ️
+      <div className="space-y-4">
+        <div className="card p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-2xl shrink-0">
+              ℹ️
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-gray-900 mb-2">О тестировании</h3>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Тесты можно проходить с привязкой к клиенту или без неё. Результаты сохраняются в истории клиента, 
+                что позволяет отслеживать динамику изменений. Все тесты основаны на проверенных психологических методиках.
+              </p>
+            </div>
           </div>
-          <div className="flex-1">
-            <h3 className="font-bold text-gray-900 mb-2">О тестировании</h3>
-            <p className="text-sm text-gray-700 leading-relaxed">
-              Тесты можно проходить с привязкой к клиенту или без неё. Результаты сохраняются в истории клиента, 
-              что позволяет отслеживать динамику изменений. Все тесты основаны на проверенных психологических методиках.
-            </p>
+        </div>
+
+        <div className="card p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-2xl shrink-0">
+              ⚠️
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-gray-900 mb-2">Важное предупреждение</h3>
+              <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                <strong>Все представленные опросники являются скрининговыми инструментами</strong> и не заменяют профессиональную диагностику. 
+                Результаты предназначены для предварительной оценки и отслеживания динамики.
+              </p>
+              <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                <strong>Клинические тесты (PHQ-9, GAD-7):</strong> При высоких баллах рекомендуется консультация специалиста (психолог, психотерапевт, психиатр).
+              </p>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                <strong>При наличии суицидальных мыслей:</strong> Немедленно обратитесь за помощью. 
+                Телефон доверия: <strong>8-800-2000-122</strong> (круглосуточно, бесплатно).
+              </p>
+            </div>
           </div>
         </div>
       </div>
