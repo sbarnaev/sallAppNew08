@@ -106,10 +106,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Устанавливаем дату окончания подписки: текущая дата + 7 дней
+    const subscriptionExpiresAt = new Date();
+    subscriptionExpiresAt.setDate(subscriptionExpiresAt.getDate() + 7);
+
     const userPayload: any = {
       email,
       password,
       status: "active",
+      subscription_expires_at: subscriptionExpiresAt.toISOString(),
     };
 
     if (firstName) userPayload.first_name = firstName;

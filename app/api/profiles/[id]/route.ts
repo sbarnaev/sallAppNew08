@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl, getS3ImageUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { checkSubscriptionInAPI } from "@/lib/subscription-check";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,6 +10,12 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request, ctx: { params: { id: string }}) {
   const dlog = (...args: any[]) => logger.debug(...args);
   const dwarn = (...args: any[]) => logger.warn(...args);
+
+  // Проверяем подписку
+  const subscriptionCheck = await checkSubscriptionInAPI();
+  if (subscriptionCheck) {
+    return subscriptionCheck;
+  }
 
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { MobileMenu } from "@/components/MobileMenu";
-import { requireAuth } from "@/lib/guards";
+import { requireAuthAndSubscription } from "@/lib/guards";
+import { SubscriptionStatus } from "@/components/SubscriptionStatus";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   // Автоматически проверяет и обновляет токен при необходимости
-  await requireAuth();
+  // И проверяет доступ по подписке
+  await requireAuthAndSubscription();
 
   return (
     <div className="min-h-screen flex">
@@ -44,6 +46,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       
       {/* Основной контент */}
       <main className="flex-1 w-full max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 pt-24 md:pt-8 pb-12">
+        <SubscriptionStatus />
         {children}
       </main>
     </div>

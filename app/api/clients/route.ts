@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { refreshAccessToken } from "@/lib/auth";
+import { checkSubscriptionInAPI } from "@/lib/subscription-check";
 
 // Функция для получения текущего пользователя
 async function getCurrentUser(token: string, baseUrl: string) {
@@ -28,6 +29,12 @@ async function getCurrentUser(token: string, baseUrl: string) {
 }
 
 export async function GET(req: NextRequest) {
+  // Проверяем подписку
+  const subscriptionCheck = await checkSubscriptionInAPI();
+  if (subscriptionCheck) {
+    return subscriptionCheck;
+  }
+
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
 
@@ -294,6 +301,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // Проверяем подписку
+  const subscriptionCheck = await checkSubscriptionInAPI();
+  if (subscriptionCheck) {
+    return subscriptionCheck;
+  }
+
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
 
