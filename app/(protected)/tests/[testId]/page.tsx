@@ -132,17 +132,22 @@ export default function TakeTestPage() {
               {result.interpretation}
             </div>
 
-            <div className="text-gray-700 leading-relaxed">
-              {result.interpretation?.split(": ")[1]}
-            </div>
+            {/* Детальная расшифровка результата */}
+            {result.detailedInterpretation && (
+              <div className="card p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200">
+                <h3 className="font-bold text-gray-900 mb-3 text-lg">Расшифровка результата</h3>
+                <div className="text-gray-700 leading-relaxed whitespace-pre-line">
+                  {result.detailedInterpretation}
+                </div>
+              </div>
+            )}
 
             {/* Дополнительное предупреждение для критических результатов */}
             {result.level === "critical" && (test.id === "depression" || test.id === "anxiety") && (
               <div className="p-4 bg-red-50 border-2 border-red-300 rounded-2xl">
                 <p className="text-sm font-semibold text-red-800 mb-2">⚠️ Рекомендуется срочная консультация специалиста</p>
                 <p className="text-xs text-red-700">
-                  При наличии суицидальных мыслей или намерений немедленно обратитесь за помощью: 
-                  <strong> Телефон доверия: 8-800-2000-122</strong> (круглосуточно, бесплатно)
+                  При наличии суицидальных мыслей или намерений немедленно обратитесь за помощью к специалисту (психиатр, психотерапевт) или в службу экстренной помощи.
                 </p>
               </div>
             )}
