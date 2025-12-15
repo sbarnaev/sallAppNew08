@@ -7,6 +7,8 @@ interface SubscriptionInfo {
   expiresAt: string | null;
   hasAccess: boolean;
   daysRemaining: number | null;
+  hoursRemaining?: number | null;
+  minutesRemaining?: number | null;
 }
 
 export function SubscriptionStatus() {
@@ -17,10 +19,36 @@ export function SubscriptionStatus() {
     async function loadSubscription() {
       try {
         const res = await fetch("/api/me", { cache: "no-store" });
+        
+        // Если получили 403 - доступ истёк, перенаправляем
+        if (res.status === 403) {
+          window.location.href = "/subscription-expired";
+          return;
+        }
+        
         const data = await res.json().catch(() => ({ data: null }));
         
         if (data?.data?.subscription) {
-          setSubscription(data.data.subscription);
+          const sub = data.data.subscription;
+          
+          // Вычисляем точное время до окончания
+          if (sub.expiresAt) {
+            const expiresDate = new Date(sub.expiresAt);
+            const now = new Date();
+            const diff = expiresDate.getTime() - now.getTime();
+            
+            if (diff > 0) {
+              const hours = Math.floor(diff / (1000 * 60 * 60));
+              const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+              sub.hoursRemaining = hours;
+              sub.minutesRemaining = minutes;
+            } else {
+              sub.hoursRemaining = 0;
+              sub.minutesRemaining = 0;
+            }
+          }
+          
+          setSubscription(sub);
         }
       } catch (error) {
         console.error("Error loading subscription:", error);
@@ -30,6 +58,13 @@ export function SubscriptionStatus() {
     }
 
     loadSubscription();
+    
+    // Проверяем доступ каждые 5 минут
+    const interval = setInterval(() => {
+      loadSubscription();
+    }, 5 * 60 * 1000); // 5 минут
+    
+    return () => clearInterval(interval);
   }, []);
 
   if (loading || !subscription) {
@@ -82,8 +117,13 @@ export function SubscriptionStatus() {
                 Доступ истекает через {subscription.daysRemaining} {subscription.daysRemaining === 1 ? "день" : subscription.daysRemaining < 5 ? "дня" : "дней"}
               </div>
               <div className="text-sm text-amber-700">
-                До {new Date(subscription.expiresAt).toLocaleDateString("ru-RU")}
+                До {new Date(subscription.expiresAt).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })} в {new Date(subscription.expiresAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
               </div>
+              {subscription.hoursRemaining !== undefined && subscription.hoursRemaining !== null && (
+                <div className="text-xs text-amber-600 mt-1">
+                  Осталось: {subscription.hoursRemaining} ч {subscription.minutesRemaining ?? 0} мин
+                </div>
+              )}
             </div>
           </div>
           <a
@@ -107,14 +147,19 @@ export function SubscriptionStatus() {
           <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center text-xl">
             ✓
           </div>
-          <div>
-            <div className="font-bold text-green-800">
-              Доступ активен
+            <div>
+              <div className="font-bold text-green-800">
+                Доступ активен
+              </div>
+              <div className="text-sm text-green-700">
+                Осталось {subscription.daysRemaining} {subscription.daysRemaining === 1 ? "день" : subscription.daysRemaining < 5 ? "дня" : "дней"} до {new Date(subscription.expiresAt).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
+              </div>
+              {subscription.hoursRemaining !== undefined && subscription.hoursRemaining !== null && subscription.hoursRemaining < 24 && (
+                <div className="text-xs text-green-600 mt-1">
+                  До окончания: {subscription.hoursRemaining} ч {subscription.minutesRemaining ?? 0} мин
+                </div>
+              )}
             </div>
-            <div className="text-sm text-green-700">
-              Осталось {subscription.daysRemaining} {subscription.daysRemaining === 1 ? "день" : subscription.daysRemaining < 5 ? "дня" : "дней"} до {new Date(subscription.expiresAt).toLocaleDateString("ru-RU")}
-            </div>
-          </div>
         </div>
         <a
           href="https://t.me/roman_acc"

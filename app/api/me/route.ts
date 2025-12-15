@@ -21,6 +21,25 @@ export async function GET() {
           ? Math.ceil((expiresDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
           : 0;
         
+        // Если доступ истёк, возвращаем 403
+        if (!hasAccess) {
+          return NextResponse.json(
+            { 
+              message: "Доступ к системе истёк. Пожалуйста, продлите подписку.",
+              code: "SUBSCRIPTION_EXPIRED",
+              data: {
+                ...data.data,
+                subscription: {
+                  expiresAt,
+                  hasAccess: false,
+                  daysRemaining: 0
+                }
+              }
+            },
+            { status: 403 }
+          );
+        }
+        
         data.data.subscription = {
           expiresAt,
           hasAccess,

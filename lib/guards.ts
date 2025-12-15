@@ -124,19 +124,39 @@ async function refreshAccessToken(refreshToken: string, baseUrl: string | null):
  * Проверяет доступ пользователя по подписке
  * @returns объект с информацией о доступе или null если пользователь не найден
  */
-export async function checkSubscriptionAccess(): Promise<{ hasAccess: boolean; expiresAt: string | null; daysRemaining: number | null } | null> {
+export async function checkSubscriptionAccess(): Promise<{ hasAccess: boolean; expiresAt: string | null; daysRemaining: number | null; expiresAtDate: Date | null } | null> {
   try {
-    const response = await fetchDirectusWithAuth("users/me?fields=id,subscription_expires_at");
-    const data = await response.json().catch(() => null);
+    const token = await getValidToken();
+    if (!token) {
+      return null;
+    }
     
-    if (!response.ok || !data?.data) {
+    const baseUrl = getDirectusUrl();
+    if (!baseUrl) {
+      return null;
+    }
+    
+    const response = await fetch(`${baseUrl}/users/me?fields=id,subscription_expires_at`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+      cache: "no-store",
+    });
+    
+    if (!response.ok) {
+      return null;
+    }
+    
+    const data = await response.json().catch(() => null);
+    if (!data?.data) {
       return null;
     }
     
     const expiresAt = data.data.subscription_expires_at;
     if (!expiresAt) {
       // Если поле не установлено, считаем что доступ есть (для существующих пользователей)
-      return { hasAccess: true, expiresAt: null, daysRemaining: null };
+      return { hasAccess: true, expiresAt: null, daysRemaining: null, expiresAtDate: null };
     }
     
     const expiresDate = new Date(expiresAt);
@@ -146,7 +166,7 @@ export async function checkSubscriptionAccess(): Promise<{ hasAccess: boolean; e
       ? Math.ceil((expiresDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
       : 0;
     
-    return { hasAccess, expiresAt, daysRemaining };
+    return { hasAccess, expiresAt, daysRemaining, expiresAtDate: expiresDate };
   } catch {
     return null;
   }
