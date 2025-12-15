@@ -43,9 +43,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 sm:p-6">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-md animate-fade-in">
-        <div className="card shadow-2xl border-0 space-y-7 bg-gradient-to-br from-white via-gray-50/50 to-white">
+        <div className="surface-muted shadow-2xl border-0 space-y-7">
           <div className="text-center space-y-3">
             <div className="inline-flex items-center justify-center w-18 h-18 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl mb-5 sm:mb-6 shadow-lg shadow-blue-500/20">
               <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,7 +60,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <label className="block text-sm font-bold text-gray-700">Email</label>
               <input
-                className="w-full focus:border-blue-500 focus:ring-blue-200/50"
+                className="w-full"
                 type="email"
                 value={email}
                 onChange={(e)=>setEmail(e.target.value)}
@@ -71,7 +71,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <label className="block text-sm font-bold text-gray-700">Пароль</label>
               <input
-                className="w-full focus:border-blue-500 focus:ring-blue-200/50"
+                className="w-full"
                 type="password"
                 value={password}
                 onChange={(e)=>setPassword(e.target.value)}
@@ -86,7 +86,7 @@ export default function LoginPage() {
             )}
             <button 
               type="submit"
-              className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 font-bold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98] text-[15px] sm:text-base"
+              className="btn btn-primary btn-lg w-full"
             >
               Войти
             </button>

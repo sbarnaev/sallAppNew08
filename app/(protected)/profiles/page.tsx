@@ -117,35 +117,35 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
   return (
     <div className="space-y-8 md:space-y-10">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight">Расчёты</h1>
+        <h1 className="page-title">Расчёты</h1>
         <ClientSearchButton />
       </div>
 
-      <div className="card bg-gradient-to-br from-white via-gray-50/50 to-white p-6 sm:p-8">
+      <div className="surface-muted">
         <form className="flex flex-col sm:flex-row gap-4" action="/profiles" method="get">
-          <div className="flex-1">
+        <div className="flex-1">
             <label className="block text-sm mb-2 font-bold text-gray-700">Поиск по имени или дате рождения</label>
             <div className="relative">
               <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <input 
-                name="search" 
-                defaultValue={(searchParams.search as string) || ""} 
-                className="w-full pl-12 pr-5 py-4 rounded-2xl border border-gray-300/80 focus:border-brand-500 focus:ring-2 focus:ring-brand-200/50 text-base transition-all duration-300 bg-white hover:border-gray-400" 
-                placeholder="Имя, фамилия или дата..." 
-              />
-            </div>
+          <input 
+            name="search" 
+            defaultValue={(searchParams.search as string) || ""} 
+                className="w-full pl-12 pr-5 py-4" 
+            placeholder="Имя, фамилия или дата..." 
+          />
+        </div>
           </div>
           <div className="flex gap-3 sm:flex-col sm:justify-end">
-            <button type="submit" className="flex-1 sm:flex-none rounded-2xl bg-gradient-to-r from-gray-900 to-gray-800 text-white px-6 py-4 h-[52px] text-sm md:text-base whitespace-nowrap hover:from-gray-800 hover:to-gray-700 shadow-lg shadow-gray-900/20 hover:shadow-xl hover:shadow-gray-900/30 transition-all duration-300 hover:scale-105 active:scale-[0.98] font-bold">Искать</button>
-            {(searchParams.search as string) && (
-              <Link href="/profiles" className="flex-1 sm:flex-none rounded-2xl border border-gray-300/80 px-6 py-4 h-[52px] flex items-center justify-center hover:bg-gray-50 hover:border-gray-400 text-sm md:text-base whitespace-nowrap transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] font-bold">
-                Сбросить
-              </Link>
-            )}
-          </div>
-        </form>
+            <button type="submit" className="btn btn-neutral flex-1 sm:flex-none">Искать</button>
+          {(searchParams.search as string) && (
+              <Link href="/profiles" className="btn btn-secondary flex-1 sm:flex-none">
+              Сбросить
+            </Link>
+          )}
+        </div>
+      </form>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

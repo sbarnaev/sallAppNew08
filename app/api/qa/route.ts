@@ -343,8 +343,8 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json(
-    { message: "Не настроен N8N_QA_URL и отсутствует OPENAI_API_KEY" },
-    { status: 400 }
-  );
+    return NextResponse.json(
+      { message: "Не настроен N8N_QA_URL и отсутствует OPENAI_API_KEY" },
+      { status: 400 }
+    );
 }

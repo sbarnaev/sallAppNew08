@@ -1,21 +1,38 @@
 import { ButtonHTMLAttributes } from "react";
 import { clsx } from "clsx";
 
-export function Button(props: ButtonHTMLAttributes<HTMLButtonElement>) {
-  const { className, ...rest } = props;
+type ButtonVariant = "primary" | "secondary" | "neutral" | "success" | "danger" | "ghost";
+type ButtonSize = "sm" | "md" | "lg";
+
+type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  fullWidth?: boolean;
+};
+
+export function Button(props: Props) {
+  const { className, variant = "primary", size = "md", fullWidth, ...rest } = props;
+  const variantClass =
+    variant === "primary"
+      ? "btn-primary"
+      : variant === "secondary"
+        ? "btn-secondary"
+        : variant === "neutral"
+          ? "btn-neutral"
+          : variant === "success"
+            ? "btn-success"
+            : variant === "danger"
+              ? "btn-danger"
+              : "btn-ghost";
+  const sizeClass = size === "sm" ? "btn-sm" : size === "lg" ? "btn-lg" : undefined;
   return (
     <button
       {...rest}
       className={clsx(
-        "rounded-2xl bg-gradient-to-r from-brand-600 to-brand-700 text-white",
-        "px-6 py-3 font-semibold text-sm",
-        "shadow-lg shadow-brand-500/20",
-        "hover:from-brand-700 hover:to-brand-800",
-        "hover:shadow-xl hover:shadow-brand-500/30",
-        "active:scale-[0.98]",
-        "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
-        "transition-all duration-300 ease-out",
-        "border-0",
+        "btn",
+        variantClass,
+        sizeClass,
+        fullWidth && "w-full",
         className
       )}
     />

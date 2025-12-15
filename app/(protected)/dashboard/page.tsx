@@ -84,23 +84,19 @@ export default async function DashboardPage() {
       {/* Заголовок */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
         <div className="space-y-2">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent leading-tight">
-            Панель управления
-          </h1>
-          <p className="text-gray-600 text-base md:text-lg font-medium">
-            Добро пожаловать в систему САЛ ПРОФИ
-          </p>
+          <h1 className="page-title">Панель управления</h1>
+          <p className="page-subtitle">Добро пожаловать в систему САЛ ПРОФИ</p>
         </div>
         <div className="flex gap-3">
           <Link 
             href="/clients/new" 
-            className="rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3.5 hover:from-green-600 hover:to-green-700 border-0 shadow-lg shadow-green-500/20 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300 hover:scale-105 text-sm font-bold whitespace-nowrap active:scale-[0.98]"
+            className="btn btn-success"
           >
             + Клиент
           </Link>
           <Link 
             href="/profiles/new" 
-            className="rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3.5 hover:from-blue-600 hover:to-blue-700 border-0 shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 hover:scale-105 text-sm font-bold whitespace-nowrap active:scale-[0.98]"
+            className="btn btn-primary"
           >
             + Расчёт
           </Link>

@@ -59,16 +59,16 @@ export async function GET(req: NextRequest) {
       
       searchPromises.push(
         fetch(`${baseUrl}/items/clients?${nameSearchParams.toString()}`, {
-          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-          cache: "no-store",
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        cache: "no-store",
         })
           .then(async (nameRes) => {
-            if (nameRes.ok) {
-              const nameData = await nameRes.json().catch(() => ({ data: [] }));
-              (nameData?.data || []).forEach((c: any) => {
-                if (c.id) foundIds.add(c.id);
-              });
-            }
+      if (nameRes.ok) {
+        const nameData = await nameRes.json().catch(() => ({ data: [] }));
+        (nameData?.data || []).forEach((c: any) => {
+          if (c.id) foundIds.add(c.id);
+        });
+      }
           })
           .catch((error) => {
             logger.error("Error searching clients by name:", error);
@@ -85,16 +85,16 @@ export async function GET(req: NextRequest) {
           
           searchPromises.push(
             fetch(`${baseUrl}/items/clients?${dateSearchParams.toString()}`, {
-              headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-              cache: "no-store",
+            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+            cache: "no-store",
             })
               .then(async (dateRes) => {
-                if (dateRes.ok) {
-                  const dateData = await dateRes.json().catch(() => ({ data: [] }));
-                  (dateData?.data || []).forEach((c: any) => {
-                    if (c.id) foundIds.add(c.id);
-                  });
-                }
+          if (dateRes.ok) {
+            const dateData = await dateRes.json().catch(() => ({ data: [] }));
+            (dateData?.data || []).forEach((c: any) => {
+              if (c.id) foundIds.add(c.id);
+            });
+          }
               })
               .catch((error) => {
                 logger.error("Error searching clients by date:", error);
@@ -112,16 +112,16 @@ export async function GET(req: NextRequest) {
           
           searchPromises.push(
             fetch(`${baseUrl}/items/clients?${yearSearchParams.toString()}`, {
-              headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-              cache: "no-store",
+            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+            cache: "no-store",
             })
               .then(async (yearRes) => {
-                if (yearRes.ok) {
-                  const yearData = await yearRes.json().catch(() => ({ data: [] }));
-                  (yearData?.data || []).forEach((c: any) => {
-                    if (c.id) foundIds.add(c.id);
-                  });
-                }
+          if (yearRes.ok) {
+            const yearData = await yearRes.json().catch(() => ({ data: [] }));
+            (yearData?.data || []).forEach((c: any) => {
+              if (c.id) foundIds.add(c.id);
+            });
+          }
               })
               .catch((error) => {
                 logger.error("Error searching clients by year:", error);

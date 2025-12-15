@@ -128,25 +128,28 @@ export default function NewConsultationPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Новая консультация</h1>
-        <Link href="/consultations" className="text-gray-600 hover:text-gray-900">← Назад</Link>
+    <div className="space-y-8 md:space-y-10 max-w-2xl mx-auto">
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-2">
+          <h1 className="page-title text-3xl sm:text-4xl md:text-4xl">Новая консультация</h1>
+          <p className="page-subtitle">Заполните детали и привяжите профили (если нужно)</p>
+        </div>
+        <Link href="/consultations" className="btn btn-ghost btn-sm">← Назад</Link>
       </div>
 
       {error && (
-        <div className="card bg-red-50 border-red-200 text-red-800">
+        <div className="surface bg-red-50 border-red-200 text-red-800">
           {error}
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="card space-y-6">
-        <div>
-          <label className="block text-sm font-medium mb-2">Тип консультации *</label>
+      <form onSubmit={onSubmit} className="surface space-y-6">
+        <div className="space-y-2">
+          <label>Тип консультации *</label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value)}
-            className="w-full rounded-xl border p-3"
+            className="w-full"
             required
           >
             <option value="base">Базовая</option>
@@ -156,15 +159,15 @@ export default function NewConsultationPage() {
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">Клиент *</label>
+        <div className="space-y-2">
+          <label>Клиент *</label>
           <select
             value={clientId}
             onChange={(e) => {
               setClientId(e.target.value);
               setProfileId(""); // Сбрасываем профиль при смене клиента
             }}
-            className="w-full rounded-xl border p-3"
+            className="w-full"
             required
           >
             <option value="">Выберите клиента</option>
@@ -177,12 +180,12 @@ export default function NewConsultationPage() {
         </div>
 
         {clientId && (
-          <div>
-            <label className="block text-sm font-medium mb-2">Профиль клиента (опционально)</label>
+          <div className="space-y-2">
+            <label>Профиль клиента (опционально)</label>
             <select
               value={profileId}
               onChange={(e) => setProfileId(e.target.value)}
-              className="w-full rounded-xl border p-3"
+              className="w-full"
             >
               <option value="">Без профиля</option>
               {profiles.map((p) => (
@@ -196,15 +199,15 @@ export default function NewConsultationPage() {
 
         {type === "partner" && (
           <>
-            <div>
-              <label className="block text-sm font-medium mb-2">Партнёр (второй клиент) *</label>
+            <div className="space-y-2">
+              <label>Партнёр (второй клиент) *</label>
               <select
                 value={partnerClientId}
                 onChange={(e) => {
                   setPartnerClientId(e.target.value);
                   setPartnerProfileId(""); // Сбрасываем профиль партнёра
                 }}
-                className="w-full rounded-xl border p-3"
+                className="w-full"
                 required
               >
                 <option value="">Выберите партнёра</option>
@@ -217,12 +220,12 @@ export default function NewConsultationPage() {
             </div>
 
             {partnerClientId && (
-              <div>
-                <label className="block text-sm font-medium mb-2">Профиль партнёра (опционально)</label>
+              <div className="space-y-2">
+                <label>Профиль партнёра (опционально)</label>
                 <select
                   value={partnerProfileId}
                   onChange={(e) => setPartnerProfileId(e.target.value)}
-                  className="w-full rounded-xl border p-3"
+                  className="w-full"
                 >
                   <option value="">Без профиля</option>
                   {partnerProfiles.map((p) => (
@@ -236,13 +239,13 @@ export default function NewConsultationPage() {
           </>
         )}
 
-        <div>
-          <label className="block text-sm font-medium mb-2">Дата и время</label>
+        <div className="space-y-2">
+          <label>Дата и время</label>
           <input
             type="datetime-local"
             value={scheduledAt}
             onChange={(e) => setScheduledAt(e.target.value)}
-            className="w-full rounded-xl border p-3"
+            className="w-full"
           />
         </div>
 
@@ -253,7 +256,7 @@ export default function NewConsultationPage() {
               type="number"
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
-              className="w-full rounded-xl border p-3"
+              className="w-full"
               min="15"
               step="15"
             />
@@ -264,7 +267,7 @@ export default function NewConsultationPage() {
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full rounded-xl border p-3"
+              className="w-full"
             >
               <option value="scheduled">Запланирована</option>
               <option value="completed">Завершена</option>
@@ -280,7 +283,7 @@ export default function NewConsultationPage() {
               type="number"
               value={baseCost}
               onChange={(e) => setBaseCost(e.target.value)}
-              className="w-full rounded-xl border p-3"
+              className="w-full"
               step="0.01"
               min="0"
             />
@@ -292,7 +295,7 @@ export default function NewConsultationPage() {
               type="number"
               value={actualCost}
               onChange={(e) => setActualCost(e.target.value)}
-              className="w-full rounded-xl border p-3"
+              className="w-full"
               step="0.01"
               min="0"
             />
@@ -303,13 +306,13 @@ export default function NewConsultationPage() {
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 rounded-xl bg-brand-600 text-white px-4 py-3 hover:bg-brand-700 disabled:opacity-60"
+            className="btn btn-primary flex-1"
           >
             {loading ? "Создание..." : "Создать консультацию"}
           </button>
           <Link
             href="/consultations"
-            className="px-4 py-3 rounded-xl border hover:bg-gray-50"
+            className="btn btn-secondary"
           >
             Отмена
           </Link>

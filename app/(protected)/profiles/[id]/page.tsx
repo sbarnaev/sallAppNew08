@@ -482,8 +482,8 @@ export default function ProfileDetail() {
         alert('Нет данных для экспорта. Убедитесь, что базовый расчет завершен.');
         console.error('PDF Export: No data found');
         return;
-      }
-      
+        }
+        
       console.log('PDF Export: Data found', {
         strengths: strengths.length,
         weaknesses: weaknesses.length,
@@ -544,6 +544,8 @@ export default function ProfileDetail() {
       --pdf-li-gap: 8px;
       --pdf-li-pad-y: 10px;
       --pdf-li-pad-x: 12px;
+      --accent: #4a61ff;
+      --accent-soft: rgba(74, 97, 255, 0.14);
 
       page-break-after: always;
       page-break-inside: avoid;
@@ -552,19 +554,64 @@ export default function ProfileDetail() {
       padding: 12mm 12mm 10mm 12mm;
       display: flex;
       flex-direction: column;
-      background: linear-gradient(180deg, #f8fafc 0%, #ffffff 55%, #ffffff 100%);
+      background:
+        radial-gradient(900px circle at 18% -10%, rgba(74, 97, 255, 0.10), transparent 55%),
+        radial-gradient(750px circle at 82% 0%, rgba(16, 185, 129, 0.08), transparent 55%),
+        linear-gradient(180deg, #ffffff 0%, #ffffff 60%, #f8fafc 100%);
       overflow: hidden; /* важно: не даём вылезать за страницу, будем подгонять типографику */
       box-sizing: border-box;
+      position: relative;
+    }
+    .page::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, var(--accent), #2034b4 55%, rgba(32, 52, 180, 0.35));
+      opacity: 0.9;
     }
     .page:last-child {
       page-break-after: auto;
     }
+    .page.strengths { --accent: #f97316; --accent-soft: rgba(249, 115, 22, 0.14); }
+    .page.weaknesses { --accent: #ea580c; --accent-soft: rgba(234, 88, 12, 0.14); }
+    .page.plus { --accent: #059669; --accent-soft: rgba(5, 150, 105, 0.14); }
+    .page.minus { --accent: #dc2626; --accent-soft: rgba(220, 38, 38, 0.14); }
+
     .header {
       margin-bottom: 10px;
       padding-bottom: 10px;
-      border-bottom: 2px solid #e2e8f0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.55);
+      flex-shrink: 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+    .brand-mark {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #4a61ff, #2034b4);
+      box-shadow: 0 0 0 4px rgba(74, 97, 255, 0.14);
       flex-shrink: 0;
     }
+    .brand-name {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #334155;
+    }
+    .header-left { min-width: 0; }
     .title {
       font-size: var(--pdf-title-fs);
       font-weight: 800;
@@ -578,29 +625,25 @@ export default function ProfileDetail() {
     }
     .section-title {
       font-size: var(--pdf-section-fs);
-      font-weight: 800;
+      font-weight: 850;
       color: #0f172a;
       margin: 10px 0 10px 0;
       padding-bottom: 8px;
-      border-bottom: 3px solid #e2e8f0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.55);
       letter-spacing: -0.015em;
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-    .section-title.strengths {
-      color: #f97316;
-      border-bottom-color: #f97316;
-    }
-    .section-title.weaknesses {
-      color: #ea580c;
-      border-bottom-color: #ea580c;
-    }
-    .section-title.plus {
-      color: #059669;
-      border-bottom-color: #059669;
-    }
-    .section-title.minus {
-      color: #dc2626;
-      border-bottom-color: #dc2626;
+    .section-title::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 4px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-soft);
+      flex-shrink: 0;
     }
     .content {
       flex: 1;
@@ -629,38 +672,31 @@ export default function ProfileDetail() {
       font-size: var(--pdf-li-fs);
       color: #0f172a;
       background: rgba(255, 255, 255, 0.92);
-      border-radius: 10px;
-      border: 1px solid #e2e8f0;
-      border-left: 4px solid #e2e8f0;
+      border-radius: 12px;
+      border: 1px solid rgba(226, 232, 240, 0.95);
+      border-left: 4px solid var(--accent);
+      box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
     }
     li::before {
-      content: "•";
+      content: "";
       position: absolute;
       left: 14px;
-      color: #64748b;
-      font-weight: 900;
-      font-size: 18px;
-      top: 6px;
-    }
-    .page.strengths li::before {
-      color: #f97316;
-    }
-    .page.weaknesses li::before {
-      color: #ea580c;
-    }
-    .page.plus li::before {
-      color: #059669;
-    }
-    .page.minus li::before {
-      color: #dc2626;
+      top: 12px;
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-soft);
     }
     .footer {
       margin-top: auto;
       padding-top: 10px;
-      border-top: 1px solid #e2e8f0;
+      border-top: 1px solid rgba(226, 232, 240, 0.95);
       font-size: 11px;
       color: #94a3b8;
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       flex-shrink: 0;
     }
     /* Если совсем не влазит — включим 2 колонки */
@@ -671,11 +707,17 @@ export default function ProfileDetail() {
   ${strengths.length > 0 ? `
   <div class="page strengths">
     <div class="header">
-      <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
-      ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
+      <div class="header-left">
+        <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
+        ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
       </div>
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span class="brand-name">САЛ ПРОФИ</span>
+      </div>
+    </div>
     <div class="content">
-      <h2 class="section-title strengths">⚖️ Сильные стороны</h2>
+      <h2 class="section-title">Сильные стороны</h2>
       <ul>
         ${strengths.map((s: string) => {
           const cleaned = cleanText(s);
@@ -684,7 +726,8 @@ export default function ProfileDetail() {
       </ul>
     </div>
     <div class="footer">
-      САЛ ПРОФИ
+      <span>САЛ ПРОФИ</span>
+      <span>Базовый расчёт</span>
     </div>
   </div>
   ` : ''}
@@ -692,11 +735,17 @@ export default function ProfileDetail() {
   ${weaknesses.length > 0 ? `
   <div class="page weaknesses">
     <div class="header">
-      <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
-      ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
+      <div class="header-left">
+        <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
+        ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
+      </div>
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span class="brand-name">САЛ ПРОФИ</span>
+      </div>
     </div>
     <div class="content">
-      <h2 class="section-title weaknesses">⚖️ Слабые стороны</h2>
+      <h2 class="section-title">Слабые стороны</h2>
       <ul>
         ${weaknesses.map((w: string) => {
           const cleaned = cleanText(w);
@@ -705,7 +754,8 @@ export default function ProfileDetail() {
       </ul>
     </div>
     <div class="footer">
-      САЛ ПРОФИ
+      <span>САЛ ПРОФИ</span>
+      <span>Базовый расчёт</span>
     </div>
   </div>
   ` : ''}
@@ -713,11 +763,17 @@ export default function ProfileDetail() {
   ${resourceSignals.length > 0 ? `
   <div class="page plus">
     <div class="header">
-      <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
-      ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
+      <div class="header-left">
+        <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
+        ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
+      </div>
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span class="brand-name">САЛ ПРОФИ</span>
+      </div>
     </div>
     <div class="content">
-      <h2 class="section-title plus">✅ Признаки плюса</h2>
+      <h2 class="section-title">Признаки плюса</h2>
         <ul>
         ${resourceSignals.map((r: string) => {
             const cleaned = cleanText(r);
@@ -726,7 +782,8 @@ export default function ProfileDetail() {
         </ul>
     </div>
     <div class="footer">
-      САЛ ПРОФИ
+      <span>САЛ ПРОФИ</span>
+      <span>Базовый расчёт</span>
     </div>
       </div>
       ` : ''}
@@ -734,12 +791,18 @@ export default function ProfileDetail() {
       ${deficitSignals.length > 0 ? `
   <div class="page minus">
     <div class="header">
-      <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
-      ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
+      <div class="header-left">
+        <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
+        ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
+      </div>
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span class="brand-name">САЛ ПРОФИ</span>
+      </div>
     </div>
     <div class="content">
-      <h2 class="section-title minus">❌ Признаки минуса</h2>
-      <ul>
+      <h2 class="section-title">Признаки минуса</h2>
+        <ul>
         ${deficitSignals.map((d: string) => {
             const cleaned = cleanText(d);
           return cleaned ? `<li>${escapeHtml(cleaned)}</li>` : '';
@@ -747,7 +810,8 @@ export default function ProfileDetail() {
         </ul>
     </div>
     <div class="footer">
-      САЛ ПРОФИ
+      <span>САЛ ПРОФИ</span>
+      <span>Базовый расчёт</span>
     </div>
   </div>
   ` : ''}
@@ -892,7 +956,7 @@ export default function ProfileDetail() {
         alert('Ошибка при генерации PDF: ' + (error instanceof Error ? error.message : String(error)));
       } finally {
         if (element.parentNode) document.body.removeChild(element);
-      }
+        }
   }
 
   function AccordionSection({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {

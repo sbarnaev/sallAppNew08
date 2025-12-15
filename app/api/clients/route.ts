@@ -132,15 +132,15 @@ export async function GET(req: NextRequest) {
         cache: "no-store",
       })
         .then(async (nameRes) => {
-          if (nameRes.ok) {
-            const nameData = await nameRes.json().catch(() => ({ data: [] }));
-            (nameData?.data || []).forEach((c: any) => {
-              if (c.id) allClientIds.add(c.id);
-            });
-          }
+      if (nameRes.ok) {
+        const nameData = await nameRes.json().catch(() => ({ data: [] }));
+        (nameData?.data || []).forEach((c: any) => {
+          if (c.id) allClientIds.add(c.id);
+        });
+      }
         })
         .catch((error) => {
-          logger.error("Error searching clients by name:", error);
+      logger.error("Error searching clients by name:", error);
         })
     );
 
@@ -166,15 +166,15 @@ export async function GET(req: NextRequest) {
             cache: "no-store",
           })
             .then(async (dateRes) => {
-              if (dateRes.ok) {
-                const dateData = await dateRes.json().catch(() => ({ data: [] }));
-                (dateData?.data || []).forEach((c: any) => {
-                  if (c.id) allClientIds.add(c.id);
-                });
-              }
+          if (dateRes.ok) {
+            const dateData = await dateRes.json().catch(() => ({ data: [] }));
+            (dateData?.data || []).forEach((c: any) => {
+              if (c.id) allClientIds.add(c.id);
+            });
+          }
             })
             .catch((error) => {
-              logger.error("Error searching clients by date:", error);
+          logger.error("Error searching clients by date:", error);
             })
         );
       }
@@ -202,15 +202,15 @@ export async function GET(req: NextRequest) {
           cache: "no-store",
         })
           .then(async (yearRes) => {
-            if (yearRes.ok) {
-              const yearData = await yearRes.json().catch(() => ({ data: [] }));
-              (yearData?.data || []).forEach((c: any) => {
-                if (c.id) allClientIds.add(c.id);
-              });
-            }
+        if (yearRes.ok) {
+          const yearData = await yearRes.json().catch(() => ({ data: [] }));
+          (yearData?.data || []).forEach((c: any) => {
+            if (c.id) allClientIds.add(c.id);
+          });
+        }
           })
           .catch((error) => {
-            logger.error("Error searching clients by year:", error);
+        logger.error("Error searching clients by year:", error);
           })
       );
     }

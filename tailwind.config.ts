@@ -5,6 +5,22 @@ export default {
   theme: {
     extend: {
       container: { center: true, padding: "1rem" },
+      fontFamily: {
+        sans: [
+          "var(--font-sans)",
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          '"SF Pro Text"',
+          '"Segoe UI"',
+          "Roboto",
+          '"Helvetica Neue"',
+          "Arial",
+          '"Apple Color Emoji"',
+          '"Segoe UI Emoji"',
+        ],
+      },
       colors: {
         brand: {
           50: "#f5f7ff",

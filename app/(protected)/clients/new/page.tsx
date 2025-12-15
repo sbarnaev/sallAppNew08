@@ -82,27 +82,27 @@ export default function NewClientPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Новый клиент</h1>
-        <button
-          onClick={() => router.back()}
-          className="text-sm text-gray-600 hover:text-gray-900"
-        >
+    <div className="space-y-8 md:space-y-10 max-w-3xl mx-auto">
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-2">
+          <h1 className="page-title text-3xl sm:text-4xl md:text-4xl">Новый клиент</h1>
+          <p className="page-subtitle">Заполните ключевые данные и контакты</p>
+        </div>
+        <button onClick={() => router.back()} className="btn btn-ghost btn-sm">
           ← Назад
         </button>
       </div>
 
-      <form onSubmit={onSubmit} className="card max-w-2xl space-y-6">
+      <form onSubmit={onSubmit} className="surface max-w-2xl space-y-6">
         {/* Основная информация */}
         <div className="space-y-4">
-          <h2 className="text-lg font-medium text-gray-900">Основная информация</h2>
+          <h2 className="text-lg font-bold text-gray-900">Основная информация</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Имя *</label>
+              <label>Имя *</label>
               <input
-                className="w-full rounded-xl border border-gray-300 p-4 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                className="w-full"
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
@@ -112,9 +112,9 @@ export default function NewClientPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Фамилия *</label>
+              <label>Фамилия *</label>
               <input
-                className="w-full rounded-xl border border-gray-300 p-4 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                className="w-full"
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
@@ -126,10 +126,10 @@ export default function NewClientPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Дата рождения *</label>
+              <label>Дата рождения *</label>
               <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
                 <input
-                  className="w-full rounded-xl border border-gray-300 p-4 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                  className="w-full"
                   type="text"
                   inputMode="numeric"
                   placeholder="дд.мм.гггг"
@@ -144,7 +144,7 @@ export default function NewClientPage() {
                   required
                 />
                 <input
-                  className="rounded-xl border border-gray-300 p-4 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white"
+                  className="bg-white"
                   type="date"
                   value={(birthDate.match(/^(\d{2})\.(\d{2})\.(\d{4})$/) ? `${birthDate.slice(6, 10)}-${birthDate.slice(3, 5)}-${birthDate.slice(0, 2)}` : "")}
                   onChange={(e) => {
@@ -161,9 +161,9 @@ export default function NewClientPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Пол *</label>
+              <label>Пол *</label>
               <select
-                className="w-full rounded-xl border border-gray-300 p-4 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white appearance-none [background-image:linear-gradient(45deg,transparent 50%,#9CA3AF 50%),linear-gradient(135deg,#9CA3AF 50%,transparent 50%),linear-gradient(to_right,#d1d5db,#d1d5db)]; [background-position:calc(100%-20px) calc(1em+2px),calc(100%-15px) calc(1em+2px),calc(100%-2.5rem) 0.5em]; [background-size:5px_5px,5px_5px,1px_1.5em]; [background-repeat:no-repeat]"
+                className="w-full bg-white"
                 value={gender}
                 onChange={(e) => setGender(e.target.value as "male" | "female" | "")}
                 required
@@ -178,13 +178,13 @@ export default function NewClientPage() {
 
         {/* Контактная информация */}
         <div className="space-y-4">
-          <h2 className="text-lg font-medium text-gray-900">Контактная информация</h2>
+          <h2 className="text-lg font-bold text-gray-900">Контактная информация</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Номер телефона</label>
+              <label>Номер телефона</label>
               <input
-                className="w-full rounded-xl border border-gray-300 p-4 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                className="w-full"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -193,9 +193,9 @@ export default function NewClientPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <label>Email</label>
               <input
-                className="w-full rounded-xl border border-gray-300 p-4 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                className="w-full"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -207,13 +207,13 @@ export default function NewClientPage() {
 
         {/* Дополнительная информация */}
         <div className="space-y-4">
-          <h2 className="text-lg font-medium text-gray-900">Дополнительная информация</h2>
+          <h2 className="text-lg font-bold text-gray-900">Дополнительная информация</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Откуда пришел</label>
+              <label>Откуда пришел</label>
               <select
-                className="w-full rounded-xl border border-gray-300 p-4 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white appearance-none [background-image:linear-gradient(45deg,transparent 50%,#9CA3AF 50%),linear-gradient(135deg,#9CA3AF 50%,transparent 50%),linear-gradient(to_right,#d1d5db,#d1d5db)]; [background-position:calc(100%-20px) calc(1em+2px),calc(100%-15px) calc(1em+2px),calc(100%-2.5rem) 0.5em]; [background-size:5px_5px,5px_5px,1px_1.5em]; [background-repeat:no-repeat]"
+                className="w-full bg-white"
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
               >
@@ -230,9 +230,9 @@ export default function NewClientPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Способ общения</label>
+              <label>Способ общения</label>
               <select
-                className="w-full rounded-xl border border-gray-300 p-4 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white appearance-none [background-image:linear-gradient(45deg,transparent 50%,#9CA3AF 50%),linear-gradient(135deg,#9CA3AF 50%,transparent 50%),linear-gradient(to_right,#d1d5db,#d1d5db)]; [background-position:calc(100%-20px) calc(1em+2px),calc(100%-15px) calc(1em+2px),calc(100%-2.5rem) 0.5em]; [background-size:5px_5px,5px_5px,1px_1.5em]; [background-repeat:no-repeat]"
+                className="w-full bg-white"
                 value={communicationMethod}
                 onChange={(e) => setCommunicationMethod(e.target.value)}
               >
@@ -252,9 +252,9 @@ export default function NewClientPage() {
 
         {/* Заметки */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">Заметки</label>
+          <label>Заметки</label>
           <textarea
-            className="w-full rounded-xl border border-gray-300 p-4 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 h-28"
+            className="w-full h-28"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Любая дополнительная информация по клиенту"
@@ -264,8 +264,8 @@ export default function NewClientPage() {
 
 
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-            <p className="text-red-600 text-sm">{error}</p>
+          <div className="p-4 bg-red-50 border border-red-200/70 rounded-2xl">
+            <p className="text-red-700 text-sm font-semibold">{error}</p>
           </div>
         )}
 
@@ -273,14 +273,14 @@ export default function NewClientPage() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex-1 rounded-2xl border border-gray-300 text-gray-700 py-3 font-medium hover:bg-gray-50 transition"
+            className="btn btn-secondary flex-1"
           >
             Отмена
           </button>
           <button
             type="submit"
             disabled={loading || !firstName.trim() || !lastName.trim() || !birthDate.trim() || !gender}
-            className="flex-1 rounded-2xl bg-brand-600 text-white py-3 font-medium hover:bg-brand-700 transition disabled:opacity-50"
+            className="btn btn-success flex-1"
           >
             {loading ? "Создание..." : "Создать клиента"}
           </button>

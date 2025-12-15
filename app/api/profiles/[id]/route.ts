@@ -165,17 +165,17 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
             // Используем правильный путь и только images_id (правильное имя поля)
             const imagesUrl = `${baseUrl}/items/profiles/${id}?fields=images_id`;
             const imagesRes = await fetch(imagesUrl, {
-              headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-              cache: "no-store",
-            });
+                headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+                cache: "no-store",
+              });
             if (imagesRes.ok) {
               const imagesData = await imagesRes.json().catch(() => ({}));
               const imagesProfileData = imagesData?.data || {};
               imagesFromMainRequest = imagesProfileData["images_id"] || imagesProfileData["Images ID"] || imagesProfileData["Images_ID"];
-              if (imagesFromMainRequest) {
+                if (imagesFromMainRequest) {
                 dlog("[DEBUG] Images received from images_id request:", imagesFromMainRequest);
-              }
-            } else {
+                }
+              } else {
               const errorText = await imagesRes.text().catch(() => '');
               dwarn("[DEBUG] Failed to fetch images_id:", imagesRes.status, errorText);
             }
@@ -189,13 +189,13 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
             try {
               const graphqlUrl = `${baseUrl}/graphql`;
               // Используем только images_id (правильное имя поля в GraphQL)
-              const graphqlQuery = {
-                query: `query {
-                  profiles_by_id(id: ${id}) {
+                const graphqlQuery = {
+                  query: `query {
+                    profiles_by_id(id: ${id}) {
                     images_id
-                  }
-                }`
-              };
+                    }
+                  }`
+                };
               const graphqlRes = await fetch(graphqlUrl, {
                 method: 'POST',
                 headers: { 
@@ -206,16 +206,16 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
                 body: JSON.stringify(graphqlQuery),
                 cache: "no-store",
               });
-              if (graphqlRes.ok) {
-                const graphqlData = await graphqlRes.json().catch(() => ({}));
+                if (graphqlRes.ok) {
+                  const graphqlData = await graphqlRes.json().catch(() => ({}));
                 dlog("[DEBUG] GraphQL response:", graphqlData);
-                const graphqlProfileData = graphqlData?.data?.profiles_by_id || {};
+                  const graphqlProfileData = graphqlData?.data?.profiles_by_id || {};
                 imagesFromMainRequest = graphqlProfileData["images_id"] || graphqlProfileData["Images ID"] || graphqlProfileData["Images_ID"];
-                if (imagesFromMainRequest) {
+                  if (imagesFromMainRequest) {
                   dlog("[DEBUG] Images received from GraphQL:", imagesFromMainRequest);
-                }
-              } else {
-                const errorText = await graphqlRes.text().catch(() => '');
+                  }
+                } else {
+                  const errorText = await graphqlRes.text().catch(() => '');
                 dwarn("[DEBUG] GraphQL failed:", graphqlRes.status, errorText);
               }
             } catch (graphqlError) {
