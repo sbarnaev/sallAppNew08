@@ -13,7 +13,7 @@ export async function GET(_req: Request, ctx: { params: { id: string }}) {
     return NextResponse.json({ data: null, message: "Invalid client ID" }, { status: 400 });
   }
 
-  const url = `${baseUrl}/items/clients/${id}?fields=id,name,birth_date,email,phone,source,communication_method,notes,created_at,owner_user`;
+  const url = `${baseUrl}/items/clients/${id}?fields=id,name,birth_date,email,phone,source,communication_method,notes,testirovanie,created_at,owner_user`;
   
   try {
     const r = await fetch(url, {
@@ -44,6 +44,7 @@ export async function PATCH(req: Request, ctx: { params: { id: string }}) {
   if (body.source !== undefined) allowed.source = body.source?.trim() || null;
   if (body.communication_method !== undefined) allowed.communication_method = body.communication_method?.trim() || null;
   if (body.notes !== undefined) allowed.notes = typeof body.notes === 'string' ? body.notes.trim() : body.notes;
+  if (body.testirovanie !== undefined) allowed.testirovanie = body.testirovanie; // JSON объект
 
   const r = await fetch(`${baseUrl}/items/clients/${id}`, {
     method: "PATCH",

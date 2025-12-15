@@ -106,6 +106,14 @@ export function MobileMenu() {
               <span className="inline-block w-6 text-center shrink-0">📈</span>
               <span className="ml-3 font-semibold text-gray-800">Расчёты</span>
             </Link>
+            <Link
+              href="/tests"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center px-4 py-3.5 rounded-2xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent transition-all"
+            >
+              <span className="inline-block w-6 text-center shrink-0">🧪</span>
+              <span className="ml-3 font-semibold text-gray-800">Тесты</span>
+            </Link>
           </nav>
 
           {/* Кнопка выхода */}

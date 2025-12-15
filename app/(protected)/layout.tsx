@@ -28,6 +28,10 @@ export default async function ProtectedLayout({ children }: { children: React.Re
               <span className="inline-block w-6 text-center shrink-0 text-xl">📈</span>
               <span className="nav-item-label">Расчёты</span>
             </Link>
+            <Link className="nav-item hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent" href="/tests">
+              <span className="inline-block w-6 text-center shrink-0 text-xl">🧪</span>
+              <span className="nav-item-label">Тесты</span>
+            </Link>
           </div>
           <form action="/api/logout" method="post" className="mt-auto">
             <button type="submit" className="nav-item w-full text-sm text-gray-600 hover:text-red-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-transparent">
