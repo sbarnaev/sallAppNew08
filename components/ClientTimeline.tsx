@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 interface TimelineEvent {
   id: string;
-  type: "profile" | "consultation" | "note";
+  type: "profile" | "consultation" | "note" | "test";
   title: string;
   date: string;
   description?: string;
@@ -37,6 +37,12 @@ export function ClientTimeline({ clientId }: Props) {
           cache: "no-store"
         });
         const consultationsData = await consultationsRes.json().catch(() => ({ data: [] }));
+
+        // Загружаем данные клиента для получения тестов
+        const clientRes = await fetch(`/api/clients/${clientId}`, {
+          cache: "no-store"
+        });
+        const clientData = await clientRes.json().catch(() => ({ data: {} }));
 
         // Загружаем все профили для получения заметок
         const allProfiles = profilesData?.data || [];
@@ -103,6 +109,55 @@ export function ClientTimeline({ clientId }: Props) {
           }
         }
 
+        // Добавляем результаты тестирования
+        const testirovanieRaw = clientData?.data?.testirovanie;
+        if (testirovanieRaw) {
+          let testData: any = {};
+          if (typeof testirovanieRaw === "string") {
+            try {
+              testData = JSON.parse(testirovanieRaw);
+            } catch (e) {
+              console.warn("Failed to parse testirovanie:", e);
+            }
+          } else if (typeof testirovanieRaw === "object") {
+            testData = testirovanieRaw;
+          }
+
+          const testNames: Record<string, string> = {
+            procrastination: "Тест на прокрастинацию",
+            depression: "Тест на депрессию (PHQ-9)",
+            anxiety: "Тест на тревожность (GAD-7)",
+            stress: "Тест на стресс",
+            "self-esteem": "Тест на самооценку",
+            burnout: "Тест на выгорание (MBI)",
+            "self-efficacy": "Тест на самоэффективность",
+            "emotional-intelligence": "Тест на эмоциональный интеллект"
+          };
+
+          Object.entries(testData).forEach(([testId, results]: [string, any]) => {
+            if (Array.isArray(results)) {
+              results.forEach((result: any, idx: number) => {
+                const levelLabels: Record<string, string> = {
+                  low: "Низкий",
+                  medium: "Средний",
+                  high: "Высокий",
+                  critical: "Критический"
+                };
+                timelineEvents.push({
+                  id: `test-${testId}-${idx}`,
+                  type: "test",
+                  title: testNames[testId] || `Тест: ${testId}`,
+                  date: result.date,
+                  description: `Результат: ${result.score} баллов (${levelLabels[result.level] || result.level})`,
+                  link: `/clients/${clientId}`,
+                  icon: "🧪",
+                  color: "purple"
+                });
+              });
+            }
+          });
+        }
+
         // Сортируем по дате (новые сверху)
         timelineEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -147,7 +202,8 @@ export function ClientTimeline({ clientId }: Props) {
   const colorClasses: Record<string, string> = {
     blue: "bg-blue-100 border-blue-300 text-blue-700",
     green: "bg-green-100 border-green-300 text-green-700",
-    purple: "bg-purple-100 border-purple-300 text-purple-700"
+    purple: "bg-purple-100 border-purple-300 text-purple-700",
+    orange: "bg-orange-100 border-orange-300 text-orange-700"
   };
 
   return (

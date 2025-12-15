@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TESTS } from "@/lib/test-types";
+import { TestClientSelector } from "@/components/TestClientSelector";
 
 export default function TestsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
   const tests = Object.values(TESTS);
@@ -18,6 +19,9 @@ export default function TestsPage({ searchParams }: { searchParams: Record<strin
           </p>
         </div>
       </div>
+
+      {/* Выбор клиента */}
+      <TestClientSelector currentClientId={clientId} />
 
       {/* Список тестов */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

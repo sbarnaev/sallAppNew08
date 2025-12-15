@@ -13,38 +13,86 @@ const DEFAULT_TEMPLATES: Template[] = [
   {
     id: "first-meeting",
     name: "Первая встреча",
-    category: "Общие",
-    content: "<p><strong>Первая встреча</strong></p><p>Дата: </p><p>Основные темы обсуждения:</p><ul><li></li></ul><p>Выводы:</p><p></p>"
+    category: "Консультации",
+    content: "<p><strong>Первая встреча</strong></p><p>Дата: </p><p><strong>Основные темы обсуждения:</strong></p><ul><li></li><li></li><li></li></ul><p><strong>Запрос клиента:</strong></p><p></p><p><strong>Выводы и наблюдения:</strong></p><p></p><p><strong>Следующие шаги:</strong></p><ul><li></li></ul>"
+  },
+  {
+    id: "regular-consultation",
+    name: "Обычная консультация",
+    category: "Консультации",
+    content: "<p><strong>Консультация</strong></p><p>Дата: </p><p><strong>Что обсуждали:</strong></p><ul><li></li><li></li></ul><p><strong>Прогресс клиента:</strong></p><p></p><p><strong>Задачи на следующую встречу:</strong></p><ul><li></li></ul>"
   },
   {
     id: "feedback",
     name: "Фидбек после консультации",
-    category: "Общие",
-    content: "<p><strong>Фидбек</strong></p><p>Дата: </p><p>Реакция клиента:</p><p></p><p>Что сработало:</p><ul><li></li></ul><p>Что требует доработки:</p><ul><li></li></ul>"
+    category: "Консультации",
+    content: "<p><strong>Фидбек после консультации</strong></p><p>Дата: </p><p><strong>Реакция клиента:</strong></p><p></p><p><strong>Что сработало:</strong></p><ul><li></li><li></li></ul><p><strong>Что требует доработки:</strong></p><ul><li></li></ul><p><strong>Рекомендации:</strong></p><p></p>"
   },
   {
     id: "homework",
     name: "Домашнее задание",
     category: "Задачи",
-    content: "<p><strong>Домашнее задание</strong></p><p>Дата выдачи: </p><p>Задание:</p><ul><li></li></ul><p>Срок выполнения: </p><p>Комментарии:</p><p></p>"
+    content: "<p><strong>Домашнее задание</strong></p><p>Дата выдачи: </p><p><strong>Задание:</strong></p><ul><li></li><li></li><li></li></ul><p><strong>Срок выполнения:</strong> </p><p><strong>Комментарии и инструкции:</strong></p><p></p>"
+  },
+  {
+    id: "homework-check",
+    name: "Проверка домашнего задания",
+    category: "Задачи",
+    content: "<p><strong>Проверка домашнего задания</strong></p><p>Дата: </p><p><strong>Что выполнено:</strong></p><ul><li></li></ul><p><strong>Что не выполнено:</strong></p><ul><li></li></ul><p><strong>Трудности:</strong></p><p></p><p><strong>Обратная связь:</strong></p><p></p>"
   },
   {
     id: "goal-discussion",
     name: "Обсуждение цели",
     category: "Цели",
-    content: "<p><strong>Обсуждение цели</strong></p><p>Цель клиента:</p><p></p><p>Текущее состояние:</p><p></p><p>План действий:</p><ol><li></li></ol>"
+    content: "<p><strong>Обсуждение цели</strong></p><p>Дата: </p><p><strong>Цель клиента:</strong></p><p></p><p><strong>Текущее состояние:</strong></p><p></p><p><strong>План действий:</strong></p><ol><li></li><li></li><li></li></ol><p><strong>Ожидаемый результат:</strong></p><p></p>"
   },
   {
     id: "progress",
     name: "Отслеживание прогресса",
     category: "Цели",
-    content: "<p><strong>Прогресс</strong></p><p>Дата: </p><p>Достигнуто:</p><ul><li></li></ul><p>Трудности:</p><ul><li></li></ul><p>Следующие шаги:</p><ul><li></li></ul>"
+    content: "<p><strong>Отслеживание прогресса</strong></p><p>Дата: </p><p><strong>Достигнуто:</strong></p><ul><li></li><li></li></ul><p><strong>Трудности и препятствия:</strong></p><ul><li></li></ul><p><strong>Следующие шаги:</strong></p><ul><li></li><li></li></ul>"
+  },
+  {
+    id: "goal-achieved",
+    name: "Достижение цели",
+    category: "Цели",
+    content: "<p><strong>Достижение цели</strong></p><p>Дата: </p><p><strong>Достигнутая цель:</strong></p><p></p><p><strong>Как это было достигнуто:</strong></p><ul><li></li><li></li></ul><p><strong>Результаты и изменения:</strong></p><p></p><p><strong>Новые цели:</strong></p><ul><li></li></ul>"
+  },
+  {
+    id: "crisis",
+    name: "Кризисная ситуация",
+    category: "Особые случаи",
+    content: "<p><strong>Кризисная ситуация</strong></p><p>Дата: </p><p><strong>Описание ситуации:</strong></p><p></p><p><strong>Реакция клиента:</strong></p><p></p><p><strong>Принятые меры:</strong></p><ul><li></li><li></li></ul><p><strong>Рекомендации:</strong></p><p></p>"
+  },
+  {
+    id: "resistance",
+    name: "Сопротивление клиента",
+    category: "Особые случаи",
+    content: "<p><strong>Сопротивление клиента</strong></p><p>Дата: </p><p><strong>Проявления сопротивления:</strong></p><ul><li></li><li></li></ul><p><strong>Возможные причины:</strong></p><p></p><p><strong>Стратегия работы:</strong></p><p></p>"
+  },
+  {
+    id: "breakthrough",
+    name: "Прорыв/Инсайт",
+    category: "Особые случаи",
+    content: "<p><strong>Прорыв/Инсайт</strong></p><p>Дата: </p><p><strong>Что произошло:</strong></p><p></p><p><strong>Инсайт клиента:</strong></p><p></p><p><strong>Как это изменило ситуацию:</strong></p><p></p><p><strong>Следующие шаги:</strong></p><ul><li></li></ul>"
+  },
+  {
+    id: "test-results",
+    name: "Результаты тестирования",
+    category: "Тестирование",
+    content: "<p><strong>Результаты тестирования</strong></p><p>Дата: </p><p><strong>Пройденные тесты:</strong></p><ul><li></li></ul><p><strong>Основные результаты:</strong></p><p></p><p><strong>Интерпретация:</strong></p><p></p><p><strong>Рекомендации:</strong></p><ul><li></li></ul>"
   },
   {
     id: "reminder",
-    name: "Напоминание",
+    name: "Важное напоминание",
     category: "Общие",
-    content: "<p><strong>Напоминание</strong></p><p>Дата: </p><p>Важно помнить:</p><p></p>"
+    content: "<p><strong>Важное напоминание</strong></p><p>Дата: </p><p><strong>Важно помнить:</strong></p><p></p><p><strong>Контекст:</strong></p><p></p>"
+  },
+  {
+    id: "quick-note",
+    name: "Быстрая заметка",
+    category: "Общие",
+    content: "<p><strong>Быстрая заметка</strong></p><p>Дата: </p><p></p>"
   }
 ];
 
