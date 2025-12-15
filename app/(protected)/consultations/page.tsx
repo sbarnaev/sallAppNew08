@@ -55,34 +55,34 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
           <div className="space-y-2">
             <label>ID клиента</label>
             <input name="clientId" defaultValue={(searchParams.clientId as string) || ""} className="w-full" placeholder="123" />
-          </div>
+        </div>
           <div className="space-y-2">
             <label>Тип</label>
             <select name="type" defaultValue={(searchParams.type as string) || ""} className="w-full">
-              <option value="">Все типы</option>
-              <option value="base">Базовая</option>
-              <option value="extended">Расширенная</option>
-              <option value="target">Целевая</option>
-              <option value="partner">Парная</option>
-            </select>
-          </div>
+            <option value="">Все типы</option>
+            <option value="base">Базовая</option>
+            <option value="extended">Расширенная</option>
+            <option value="target">Целевая</option>
+            <option value="partner">Парная</option>
+          </select>
+        </div>
           <div className="space-y-2">
             <label>Статус</label>
             <input name="status" defaultValue={(searchParams.status as string) || ""} className="w-full" placeholder="scheduled" />
-          </div>
+        </div>
           <div className="space-y-2">
             <label>С</label>
             <input type="datetime-local" name="dateFrom" defaultValue={(searchParams.dateFrom as string) || ""} className="w-full" />
-          </div>
+        </div>
           <div className="space-y-2">
             <label>По</label>
             <input type="datetime-local" name="dateTo" defaultValue={(searchParams.dateTo as string) || ""} className="w-full" />
-          </div>
+        </div>
           <div className="md:col-span-5 flex gap-3">
             <button className="btn btn-neutral" type="submit">Фильтровать</button>
             <Link href="/consultations" className="btn btn-secondary">Сбросить</Link>
-          </div>
-        </form>
+        </div>
+      </form>
       </div>
 
       <div className="grid gap-4">
@@ -98,8 +98,8 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
               </div>
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="badge badge-gray">
-                  Клиент #{c.client_id}
-                  {c.partner_client_id && ` + Партнёр #${c.partner_client_id}`}
+                Клиент #{c.client_id}
+                {c.partner_client_id && ` + Партнёр #${c.partner_client_id}`}
                 </span>
                 <span className={c.type === "partner" ? "badge badge-green" : "badge badge-blue"}>
                   {c.type === "partner" ? "Парная" : c.type || "—"}

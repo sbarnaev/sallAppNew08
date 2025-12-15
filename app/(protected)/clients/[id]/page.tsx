@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { internalApiFetch } from "@/lib/fetchers";
 import DeleteClient from "./DeleteClient";
+import { ClientTimeline } from "@/components/ClientTimeline";
 import { calculateSALCodes, getCodeShortLabel } from "@/lib/sal-codes";
 
 async function getClient(id: string) {
@@ -259,6 +260,9 @@ export default async function ClientDetailPage({ params, searchParams }: { param
             </div>
           </div>
           
+
+          {/* История взаимодействий */}
+          <ClientTimeline clientId={Number(params.id)} />
 
           {/* Расчёты клиента */}
           <div className="card">

@@ -8,6 +8,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import RichEditor from "@/components/RichEditor";
 import DeleteProfile from "../DeleteProfile";
+import { NotesTemplates } from "@/components/NotesTemplates";
 import { calculateSALCodes, getCodeShortLabel } from "@/lib/sal-codes";
 
 // Интересные факты для отображения во время генерации (200 фактов)
@@ -708,14 +709,14 @@ export default function ProfileDetail() {
   <div class="page strengths">
     <div class="header">
       <div class="header-left">
-        <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
-        ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
+      <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
+      ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
       </div>
       <div class="brand">
         <span class="brand-mark"></span>
         <span class="brand-name">САЛ ПРОФИ</span>
       </div>
-    </div>
+      </div>
     <div class="content">
       <h2 class="section-title">Сильные стороны</h2>
       <ul>
@@ -736,8 +737,8 @@ export default function ProfileDetail() {
   <div class="page weaknesses">
     <div class="header">
       <div class="header-left">
-        <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
-        ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
+      <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
+      ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
       </div>
       <div class="brand">
         <span class="brand-mark"></span>
@@ -764,8 +765,8 @@ export default function ProfileDetail() {
   <div class="page plus">
     <div class="header">
       <div class="header-left">
-        <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
-        ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
+      <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
+      ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
       </div>
       <div class="brand">
         <span class="brand-mark"></span>
@@ -792,8 +793,8 @@ export default function ProfileDetail() {
   <div class="page minus">
     <div class="header">
       <div class="header-left">
-        <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
-        ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
+      <div class="title">${escapeHtml(clientNameForPdf || 'Расчёт профиля')}</div>
+      ${dateStr ? `<div class="subtitle">Дата создания: ${escapeHtml(dateStr)}</div>` : ''}
       </div>
       <div class="brand">
         <span class="brand-mark"></span>
@@ -3151,6 +3152,12 @@ export default function ProfileDetail() {
               <button className="text-gray-500 hover:text-gray-800" onClick={() => setNotesOpen(false)}>✕</button>
             </div>
             <div className="p-6 overflow-y-auto flex-grow">
+              <div className="mb-4">
+                <NotesTemplates onSelect={(content) => {
+                  setNotesDraft(content);
+                  notesTouchedRef.current = true;
+                }} />
+              </div>
               <RichEditor
               value={notesDraft}
                 onChange={(html) => {

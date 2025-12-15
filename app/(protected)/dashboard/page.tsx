@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { internalApiFetch } from "@/lib/fetchers";
+import { RemindersWidget } from "@/components/RemindersWidget";
 
 async function getStats() {
   try {
@@ -177,6 +178,11 @@ export default async function DashboardPage() {
           </Link>
 
         </div>
+      </div>
+
+      {/* Напоминания */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <RemindersWidget />
       </div>
 
       {/* Недавние расчёты */}
