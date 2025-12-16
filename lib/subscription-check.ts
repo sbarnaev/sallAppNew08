@@ -1,16 +1,26 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
+import { getValidToken } from "@/lib/guards";
 
 /**
  * Проверяет доступ пользователя по подписке в API endpoint
  * @returns null если доступ есть, или NextResponse с ошибкой если доступа нет
  */
 export async function checkSubscriptionInAPI(): Promise<NextResponse | null> {
-  const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
   
-  if (!token || !baseUrl) {
+  if (!baseUrl) {
+    return NextResponse.json(
+      { message: "Unauthorized", code: "NO_ACCESS" },
+      { status: 401 }
+    );
+  }
+
+  // Получаем валидный токен (с автоматическим обновлением при необходимости)
+  const token = await getValidToken();
+  
+  if (!token) {
     return NextResponse.json(
       { message: "Unauthorized", code: "NO_ACCESS" },
       { status: 401 }
@@ -27,6 +37,8 @@ export async function checkSubscriptionInAPI(): Promise<NextResponse | null> {
     });
 
     if (!response.ok) {
+      // Если получили 401, возможно токен истек, но getValidToken должен был обновить его
+      // В этом случае возвращаем ошибку авторизации
       return NextResponse.json(
         { message: "Unauthorized", code: "NO_ACCESS" },
         { status: 401 }
@@ -67,6 +79,7 @@ export async function checkSubscriptionInAPI(): Promise<NextResponse | null> {
     return null;
   } catch (error) {
     // В случае ошибки не блокируем доступ (fail-open для стабильности)
+    // Но логируем ошибку для отладки
     console.error("Error checking subscription:", error);
     return null;
   }
