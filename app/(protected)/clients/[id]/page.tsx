@@ -303,6 +303,111 @@ export default async function ClientDetailPage({ params, searchParams }: { param
           {/* Результаты тестирования */}
           <ClientTestResults clientId={Number(params.id)} />
 
+          {/* Консультации клиента */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                Консультации
+                <span className="text-sm text-gray-500 font-normal">({consultationsTotal})</span>
+              </h2>
+              <Link href={`/consultations/new?clientId=${params.id}`} className="text-sm text-brand-600 hover:text-brand-700 font-medium">
+                + Добавить консультацию
+              </Link>
+            </div>
+            
+            <div className="space-y-3">
+              {consultations.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <div>Пока нет консультаций</div>
+                  <div className="text-sm">Создайте первую консультацию для этого клиента</div>
+                </div>
+              )}
+              
+              {consultations.map((c: any) => {
+                const typeLabels: Record<string, string> = {
+                  base: "Базовая",
+                  extended: "Расширенная",
+                  target: "Целевая",
+                  partner: "Парная"
+                };
+                const statusLabels: Record<string, string> = {
+                  scheduled: "Запланирована",
+                  completed: "Завершена",
+                  cancelled: "Отменена"
+                };
+                const statusColors: Record<string, string> = {
+                  scheduled: "bg-blue-100 text-blue-700 border-blue-200",
+                  completed: "bg-green-100 text-green-700 border-green-200",
+                  cancelled: "bg-red-100 text-red-700 border-red-200"
+                };
+                
+                return (
+                  <Link key={c.id} href={`/consultations/${c.id}`} className="block p-4 border border-gray-200 rounded-xl hover:shadow-md transition-all duration-200 hover:border-brand-200">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="font-medium text-gray-900">Консультация #{c.id}</div>
+                          <span className={`px-2 py-0.5 rounded-md text-xs font-medium border ${statusColors[c.status] || "bg-gray-100 text-gray-700 border-gray-200"}`}>
+                            {statusLabels[c.status] || c.status || "—"}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium">{typeLabels[c.type] || c.type || "—"}</span>
+                            {c.scheduled_at && (
+                              <span className="text-gray-500">
+                                {new Date(c.scheduled_at).toLocaleString('ru-RU', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            )}
+                            {c.duration && (
+                              <span className="text-gray-500">· {c.duration} мин</span>
+                            )}
+                          </div>
+                          {c.partner_client_id && (
+                            <div className="text-xs text-gray-500">Партнёр: Клиент #{c.partner_client_id}</div>
+                          )}
+                        </div>
+                      </div>
+                      <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {(consultationsHasPrev || consultationsHasNext) && (
+              <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                <div className="flex items-center gap-2">
+                  {consultationsHasPrev && (
+                    <Link href={`/clients/${params.id}?consultationPage=${consultationPage-1}&consultationLimit=${consultationLimit}`} className="px-3 py-1 rounded-lg border hover:bg-gray-50 text-sm">
+                      ← Назад
+                    </Link>
+                  )}
+                  {consultationsHasNext && (
+                    <Link href={`/clients/${params.id}?consultationPage=${consultationPage+1}&consultationLimit=${consultationLimit}`} className="px-3 py-1 rounded-lg border hover:bg-gray-50 text-sm">
+                      Вперёд →
+                    </Link>
+                  )}
+                </div>
+                <div className="text-sm text-gray-500">Стр. {consultationPage}{consultationsTotal ? ` из ${Math.ceil(consultationsTotal / consultationLimit)}` : ""}</div>
+              </div>
+            )}
+          </div>
+
           {/* Расчёты клиента */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
@@ -367,6 +472,18 @@ export default async function ClientDetailPage({ params, searchParams }: { param
           <div className="card">
             <h3 className="text-lg font-semibold mb-4">Быстрые действия</h3>
             <div className="space-y-3">
+              <Link href={`/consultations/new?clientId=${params.id}`} className="w-full flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <div className="font-medium">Новая консультация</div>
+                  <div className="text-sm text-gray-500">Создать консультацию</div>
+                </div>
+              </Link>
+
               <Link href={`/profiles/new?clientId=${params.id}`} className="w-full flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                 <div className="w-8 h-8 bg-brand-100 rounded-lg flex items-center justify-center">
                   <svg className="w-4 h-4 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -435,6 +552,10 @@ export default async function ClientDetailPage({ params, searchParams }: { param
           <div className="card">
             <h3 className="text-lg font-semibold mb-4">Статистика</h3>
             <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Всего консультаций</span>
+                <span className="font-semibold">{consultationsTotal}</span>
+              </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Всего расчётов</span>
                 <span className="font-semibold">{total}</span>

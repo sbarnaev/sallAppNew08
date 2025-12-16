@@ -22,15 +22,30 @@ async function getConsultations(searchParams: Record<string, string | string[] |
   params.set("limit", String(limit));
   params.set("offset", String(offset));
   params.set("meta", "filter_count");
-  params.set("sort", "-scheduled_at");
+  params.set("sort", "-scheduled_at,-created_at");
 
   const res = await internalApiFetch(`/api/consultations?${params.toString()}`);
   const json = await res.json();
   return json;
 }
 
+async function getClientsMap() {
+  try {
+    const res = await internalApiFetch("/api/clients?limit=1000&fields=id,name");
+    const json = await res.json().catch(() => ({ data: [] }));
+    const clientsMap: Record<number, string> = {};
+    (json?.data || []).forEach((c: any) => {
+      if (c.id) clientsMap[c.id] = c.name || `Клиент #${c.id}`;
+    });
+    return clientsMap;
+  } catch {
+    return {};
+  }
+}
+
 export default async function ConsultationsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined>}) {
   const { data = [], meta = {} } = await getConsultations(searchParams);
+  const clientsMap = await getClientsMap();
   const page = Number(searchParams.page || 1);
   const limit = Number(searchParams.limit || 20);
   const total = meta?.filter_count ?? 0;
@@ -68,7 +83,12 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
         </div>
           <div className="space-y-2">
             <label>Статус</label>
-            <input name="status" defaultValue={(searchParams.status as string) || ""} className="w-full" placeholder="scheduled" />
+            <select name="status" defaultValue={(searchParams.status as string) || ""} className="w-full">
+              <option value="">Все статусы</option>
+              <option value="scheduled">Запланирована</option>
+              <option value="completed">Завершена</option>
+              <option value="cancelled">Отменена</option>
+            </select>
         </div>
           <div className="space-y-2">
             <label>С</label>
@@ -87,28 +107,79 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
 
       <div className="grid gap-4">
         {data.length === 0 && <div className="surface text-center py-14 text-gray-600">Нет консультаций</div>}
-        {data.map((c: any) => (
-          <Link key={c.id} href={`/consultations/${c.id}`} className="surface hover:shadow-soft-lg hover:-translate-y-0.5 transition-all duration-300">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="space-y-1">
-                <div className="font-bold text-gray-900">Консультация #{c.id}</div>
-                <div className="text-sm text-gray-600">
-                  {c.scheduled_at ? new Date(c.scheduled_at).toLocaleString("ru-RU") : "Без даты"}
+        {data.map((c: any) => {
+          const typeLabels: Record<string, string> = {
+            base: "Базовая",
+            extended: "Расширенная",
+            target: "Целевая",
+            partner: "Парная"
+          };
+          const statusLabels: Record<string, string> = {
+            scheduled: "Запланирована",
+            completed: "Завершена",
+            cancelled: "Отменена"
+          };
+          const statusColors: Record<string, string> = {
+            scheduled: "bg-blue-100 text-blue-700 border-blue-200",
+            completed: "bg-green-100 text-green-700 border-green-200",
+            cancelled: "bg-red-100 text-red-700 border-red-200"
+          };
+          const clientName = c.client_id ? (clientsMap[c.client_id] || `Клиент #${c.client_id}`) : "Без клиента";
+          const partnerName = c.partner_client_id ? (clientsMap[c.partner_client_id] || `Клиент #${c.partner_client_id}`) : null;
+          
+          return (
+            <Link key={c.id} href={`/consultations/${c.id}`} className="surface hover:shadow-soft-lg hover:-translate-y-0.5 transition-all duration-300 p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="font-bold text-gray-900">Консультация #{c.id}</div>
+                    <span className={`px-2.5 py-1 rounded-md text-xs font-medium border ${statusColors[c.status] || "bg-gray-100 text-gray-700 border-gray-200"}`}>
+                      {statusLabels[c.status] || c.status || "—"}
+                    </span>
+                    <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${c.type === "partner" ? "bg-green-100 text-green-700 border border-green-200" : "bg-blue-100 text-blue-700 border border-blue-200"}`}>
+                      {typeLabels[c.type] || c.type || "—"}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-sm text-gray-600 flex items-center gap-2 flex-wrap">
+                      <Link href={`/clients/${c.client_id}`} className="text-brand-600 hover:text-brand-700 font-medium hover:underline">
+                        {clientName}
+                      </Link>
+                      {partnerName && (
+                        <>
+                          <span className="text-gray-400">+</span>
+                          <Link href={`/clients/${c.partner_client_id}`} className="text-brand-600 hover:text-brand-700 font-medium hover:underline">
+                            {partnerName}
+                          </Link>
+                        </>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-500 flex items-center gap-3 flex-wrap">
+                      {c.scheduled_at ? (
+                        <span>{new Date(c.scheduled_at).toLocaleString("ru-RU", {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}</span>
+                      ) : (
+                        <span className="text-gray-400">Без даты</span>
+                      )}
+                      {c.duration && <span>· {c.duration} мин</span>}
+                      {(c.base_cost || c.actual_cost) && (
+                        <span>· {c.actual_cost || c.base_cost} ₽</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
+                <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="badge badge-gray">
-                Клиент #{c.client_id}
-                {c.partner_client_id && ` + Партнёр #${c.partner_client_id}`}
-                </span>
-                <span className={c.type === "partner" ? "badge badge-green" : "badge badge-blue"}>
-                  {c.type === "partner" ? "Парная" : c.type || "—"}
-                </span>
-                <span className="badge badge-gray">{c.status || "—"}</span>
-              </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
 
       {(hasPrev || hasNext) && (
