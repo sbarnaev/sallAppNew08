@@ -181,16 +181,16 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
             
             {/* Действия */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5">
-              <Link href={`/clients/${c.id}`} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs font-medium transition-colors text-center">
+              <Link href={`/clients/${c.id}`} className="px-3 py-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs sm:text-xs font-medium transition-colors text-center min-h-[36px] flex items-center justify-center">
                 Открыть
               </Link>
-              <Link href={`/forecast/${c.id}`} className="px-3 py-2 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 text-xs font-medium transition-colors text-center">
+              <Link href={`/forecast/${c.id}`} className="px-3 py-2.5 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 text-xs sm:text-xs font-medium transition-colors text-center min-h-[36px] flex items-center justify-center">
                 Прогноз
               </Link>
-              <Link href={`/profiles?filter[client_id][_eq]=${c.id}`} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs font-medium transition-colors text-center">
+              <Link href={`/profiles?filter[client_id][_eq]=${c.id}`} className="px-3 py-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs sm:text-xs font-medium transition-colors text-center min-h-[36px] flex items-center justify-center">
                 Расчёты
               </Link>
-              <Link href={`/profiles/new?clientId=${c.id}`} className="px-3 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs font-medium transition-colors text-center">
+              <Link href={`/profiles/new?clientId=${c.id}`} className="px-3 py-2.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs sm:text-xs font-medium transition-colors text-center min-h-[36px] flex items-center justify-center">
                 Расчёт
               </Link>
             </div>
