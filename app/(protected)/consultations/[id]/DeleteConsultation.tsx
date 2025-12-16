@@ -23,6 +23,11 @@ export default function DeleteConsultation({ id }: Props) {
         method: "DELETE",
       });
 
+      // Если подписка истекла, api-interceptor обработает редирект
+      if (res.status === 403) {
+        return;
+      }
+
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.message || "Ошибка удаления консультации");

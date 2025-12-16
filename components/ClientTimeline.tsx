@@ -30,19 +30,40 @@ export function ClientTimeline({ clientId }: Props) {
         const profilesRes = await fetch(`/api/profiles?filter[client_id][_eq]=${clientId}&limit=100&sort=-created_at`, {
           cache: "no-store"
         });
-        const profilesData = await profilesRes.json().catch(() => ({ data: [] }));
+        // Проверяем статус перед парсингом JSON, чтобы избежать ошибок в консоли
+        let profilesData: any = { data: [] };
+        if (profilesRes.ok) {
+          profilesData = await profilesRes.json().catch(() => ({ data: [] }));
+        } else if (profilesRes.status === 403) {
+          // Подписка истекла - api-interceptor обработает редирект
+          return;
+        }
 
         // Загружаем консультации
         const consultationsRes = await fetch(`/api/consultations?filter[client_id][_eq]=${clientId}&limit=100&sort=-created_at`, {
           cache: "no-store"
         });
-        const consultationsData = await consultationsRes.json().catch(() => ({ data: [] }));
+        // Проверяем статус перед парсингом JSON, чтобы избежать ошибок в консоли
+        let consultationsData: any = { data: [] };
+        if (consultationsRes.ok) {
+          consultationsData = await consultationsRes.json().catch(() => ({ data: [] }));
+        } else if (consultationsRes.status === 403) {
+          // Подписка истекла - api-interceptor обработает редирект
+          return;
+        }
 
         // Загружаем данные клиента для получения тестов
         const clientRes = await fetch(`/api/clients/${clientId}`, {
           cache: "no-store"
         });
-        const clientData = await clientRes.json().catch(() => ({ data: {} }));
+        // Проверяем статус перед парсингом JSON, чтобы избежать ошибок в консоли
+        let clientData: any = { data: {} };
+        if (clientRes.ok) {
+          clientData = await clientRes.json().catch(() => ({ data: {} }));
+        } else if (clientRes.status === 403) {
+          // Подписка истекла - api-interceptor обработает редирект
+          return;
+        }
 
         // Загружаем все профили для получения заметок
         const allProfiles = profilesData?.data || [];
