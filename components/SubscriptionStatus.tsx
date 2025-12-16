@@ -79,10 +79,10 @@ export function SubscriptionStatus() {
   // Если доступ истёк
   if (!subscription.hasAccess) {
     return (
-      <div className="card p-3 bg-gradient-to-br from-red-50 to-orange-50 border border-red-200/80 mb-4">
+      <div className="card p-3 mb-4" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(239,68,68,0.15) 100%)', borderColor: 'rgba(239,68,68,0.3)'}}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center text-base">
+            <div className="w-8 h-8 bg-red-500/90 backdrop-blur-md rounded-lg flex items-center justify-center text-base border border-white/30 shadow-[0_4px_16px_rgba(239,68,68,0.3)]">
               ⏰
             </div>
             <div>
@@ -94,7 +94,7 @@ export function SubscriptionStatus() {
             href="https://t.me/roman_acc"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg font-semibold text-xs hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 whitespace-nowrap"
+            className="px-3 py-1.5 bg-gradient-to-r from-blue-500/90 to-indigo-600/90 backdrop-blur-md text-white rounded-lg font-semibold text-xs border border-white/20 shadow-[0_4px_16px_rgba(59,130,246,0.3)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.4)] transition-all duration-300 whitespace-nowrap"
           >
             Продлить →
           </a>
@@ -106,10 +106,10 @@ export function SubscriptionStatus() {
   // Если осталось мало дней (менее 7)
   if (subscription.daysRemaining <= 7) {
     return (
-      <div className="card p-3 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/80 mb-4">
+      <div className="card p-3 mb-4" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(245,158,11,0.15) 100%)', borderColor: 'rgba(245,158,11,0.3)'}}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center text-base">
+            <div className="w-8 h-8 bg-amber-500/90 backdrop-blur-md rounded-lg flex items-center justify-center text-base border border-white/30 shadow-[0_4px_16px_rgba(245,158,11,0.3)]">
               ⚠️
             </div>
             <div>
@@ -130,7 +130,7 @@ export function SubscriptionStatus() {
             href="https://t.me/roman_acc"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg font-semibold text-xs hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 whitespace-nowrap"
+            className="px-3 py-1.5 bg-gradient-to-r from-blue-500/90 to-indigo-600/90 backdrop-blur-md text-white rounded-lg font-semibold text-xs border border-white/20 shadow-[0_4px_16px_rgba(59,130,246,0.3)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.4)] transition-all duration-300 whitespace-nowrap"
           >
             Продлить →
           </a>
@@ -141,10 +141,10 @@ export function SubscriptionStatus() {
 
   // Нормальный статус
   return (
-    <div className="card p-3 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200/60 mb-4">
+    <div className="card p-3 mb-4" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(16,185,129,0.15) 100%)', borderColor: 'rgba(16,185,129,0.3)'}}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center text-base">
+          <div className="w-8 h-8 bg-green-500/90 backdrop-blur-md rounded-lg flex items-center justify-center text-base border border-white/30 shadow-[0_4px_16px_rgba(16,185,129,0.3)]">
             ✓
           </div>
             <div>
@@ -165,7 +165,7 @@ export function SubscriptionStatus() {
           href="https://t.me/roman_acc"
           target="_blank"
           rel="noopener noreferrer"
-          className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold text-xs hover:bg-gray-50 transition-all duration-300 whitespace-nowrap"
+          className="px-3 py-1.5 bg-white/40 backdrop-blur-md border border-white/50 text-gray-700 rounded-lg font-semibold text-xs hover:bg-white/60 hover:shadow-[0_4px_16px_rgba(31,38,135,0.1)] transition-all duration-300 whitespace-nowrap"
         >
           Продлить
         </a>

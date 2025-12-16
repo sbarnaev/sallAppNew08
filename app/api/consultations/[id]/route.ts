@@ -8,6 +8,21 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ data: null }, { status: 401 });
 
+  // Получаем текущего пользователя для проверки прав
+  let currentUserId: string | null = null;
+  try {
+    const meRes = await fetch(`${baseUrl}/users/me`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (meRes.ok) {
+      const meData = await meRes.json().catch(() => ({}));
+      currentUserId = meData?.data?.id || null;
+    }
+  } catch {
+    // Игнорируем ошибку, попробуем получить консультацию без фильтра
+  }
+
   const fields = [
     "id",
     "client_id",
@@ -21,13 +36,81 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
     "partner_client_id",
     "partner_profile_id",
     "created_at",
+    "owner_user",
   ].join(",");
-  const url = `${baseUrl}/items/consultations/${ctx.params.id}?fields=${encodeURIComponent(fields)}`;
+  
+  // Пробуем получить консультацию с фильтром по owner_user если есть
+  let url = `${baseUrl}/items/consultations/${ctx.params.id}?fields=${encodeURIComponent(fields)}`;
+  if (currentUserId) {
+    url += `&filter[owner_user][_eq]=${currentUserId}`;
+  }
+  
   const r = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   });
+  
   const data = await r.json().catch(() => ({ data: null }));
+  
+  // Если не нашли с фильтром, пробуем без фильтра (на случай если права настроены в Directus)
+  if ((r.status === 404 || !data?.data) && currentUserId) {
+    const urlWithoutFilter = `${baseUrl}/items/consultations/${ctx.params.id}?fields=${encodeURIComponent(fields)}`;
+    const r2 = await fetch(urlWithoutFilter, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    const data2 = await r2.json().catch(() => ({ data: null }));
+    
+    // Проверяем owner_user в ответе
+    if (data2?.data?.owner_user && String(data2.data.owner_user) !== String(currentUserId)) {
+      return NextResponse.json({ data: null, message: "Консультация не найдена или у вас нет прав доступа" }, { status: 404 });
+    }
+    
+    // Автоматически обновляем статус если дата прошла
+    if (data2?.data && data2.data.scheduled_at && data2.data.status === "scheduled") {
+      const scheduledDate = new Date(data2.data.scheduled_at);
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      
+      if (scheduledDate < oneHourAgo) {
+        // Обновляем статус в фоне (не ждем результата)
+        fetch(`${baseUrl}/items/consultations/${ctx.params.id}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: "completed" }),
+        }).catch(() => {});
+        
+        data2.data.status = "completed";
+      }
+    }
+    
+    return NextResponse.json(data2, { status: r2.status });
+  }
+  
+  // Автоматически обновляем статус если дата прошла
+  if (data?.data && data.data.scheduled_at && data.data.status === "scheduled") {
+    const scheduledDate = new Date(data.data.scheduled_at);
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    
+    if (scheduledDate < oneHourAgo) {
+      // Обновляем статус в фоне (не ждем результата)
+      fetch(`${baseUrl}/items/consultations/${ctx.params.id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "completed" }),
+      }).catch(() => {});
+      
+      data.data.status = "completed";
+    }
+  }
+  
   return NextResponse.json(data, { status: r.status });
 }
 

@@ -31,6 +31,10 @@ export default async function ProtectedLayout({ children }: { children: React.Re
               <span className="inline-block w-5 text-center shrink-0 text-lg">📈</span>
                 <span className="nav-item-label text-sm">Расчёты</span>
               </Link>
+              <Link className="nav-item hover:bg-white/30 hover:backdrop-blur-md rounded-xl transition-all" href="/consultations">
+                <span className="inline-block w-5 text-center shrink-0 text-lg">💬</span>
+                <span className="nav-item-label text-sm">Консультации</span>
+              </Link>
               <Link className="nav-item hover:bg-white/30 hover:backdrop-blur-md rounded-xl transition-all" href="/tests">
                 <span className="inline-block w-5 text-center shrink-0 text-lg">🧪</span>
                 <span className="nav-item-label text-sm">Тесты</span>

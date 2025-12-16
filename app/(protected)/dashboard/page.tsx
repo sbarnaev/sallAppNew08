@@ -88,7 +88,7 @@ export default async function DashboardPage() {
           <h1 className="page-title">Панель управления</h1>
           <p className="page-subtitle">Добро пожаловать в систему САЛ ПРОФИ</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Link 
             href="/clients/new" 
             className="btn btn-success"
@@ -96,8 +96,14 @@ export default async function DashboardPage() {
             + Клиент
           </Link>
           <Link 
-            href="/profiles/new" 
+            href="/consultations/new" 
             className="btn btn-primary"
+          >
+            + Консультация
+          </Link>
+          <Link 
+            href="/profiles/new" 
+            className="btn btn-secondary"
           >
             + Расчёт
           </Link>
@@ -149,31 +155,31 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      {/* Быстрые действия */}
-      <div className="card p-4 sm:p-5 bg-gradient-to-br from-white via-gray-50/30 to-white">
+      {/* Быстрые действия - Glassmorphism */}
+      <div className="card p-4 sm:p-5">
         <h2 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">Быстрые действия</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <Link href="/clients/new" className="flex items-center gap-3 p-3.5 rounded-xl border border-gray-200/80 hover:border-green-300 hover:bg-gradient-to-br hover:from-green-50/80 hover:to-white transition-all duration-300 hover:shadow hover:-translate-y-0.5 group">
-            <div className="w-11 h-11 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-md shadow-green-500/20 group-hover:shadow-lg group-hover:shadow-green-500/30 group-hover:scale-105 transition-all duration-300">
+          <Link href="/clients/new" className="flex items-center gap-3 p-3.5 rounded-xl bg-white/30 backdrop-blur-md border border-white/40 hover:border-green-300/50 hover:bg-white/50 transition-all duration-300 hover:shadow-[0_8px_24px_rgba(16,185,129,0.2)] hover:-translate-y-0.5 group">
+            <div className="w-11 h-11 bg-gradient-to-br from-green-500/90 to-green-600/90 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30 shadow-[0_4px_16px_rgba(16,185,129,0.3)] group-hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] group-hover:scale-105 transition-all duration-300">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-bold text-gray-900 group-hover:text-green-700 transition-colors text-sm">Новый клиент</div>
-              <div className="text-gray-500 text-[11px] mt-0.5">Добавить клиента</div>
+              <div className="text-gray-600 text-[11px] mt-0.5">Добавить клиента</div>
             </div>
           </Link>
 
-          <Link href="/profiles/new" className="flex items-center gap-3 p-3.5 rounded-xl border border-gray-200/80 hover:border-brand-300 hover:bg-gradient-to-br hover:from-brand-50/80 hover:to-white transition-all duration-300 hover:shadow hover:-translate-y-0.5 group">
-            <div className="w-11 h-11 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center shadow-md shadow-brand-500/20 group-hover:shadow-lg group-hover:shadow-brand-500/30 group-hover:scale-105 transition-all duration-300">
+          <Link href="/profiles/new" className="flex items-center gap-3 p-3.5 rounded-xl bg-white/30 backdrop-blur-md border border-white/40 hover:border-brand-300/50 hover:bg-white/50 transition-all duration-300 hover:shadow-[0_8px_24px_rgba(74,97,255,0.2)] hover:-translate-y-0.5 group">
+            <div className="w-11 h-11 bg-gradient-to-br from-brand-500/90 to-brand-600/90 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30 shadow-[0_4px_16px_rgba(74,97,255,0.3)] group-hover:shadow-[0_6px_20px_rgba(74,97,255,0.4)] group-hover:scale-105 transition-all duration-300">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-bold text-gray-900 group-hover:text-brand-700 transition-colors text-sm">Новый расчёт</div>
-              <div className="text-gray-500 text-[11px] mt-0.5">Создать профиль</div>
+              <div className="text-gray-600 text-[11px] mt-0.5">Создать профиль</div>
             </div>
           </Link>
 
@@ -185,8 +191,8 @@ export default async function DashboardPage() {
         <RemindersWidget />
       </div>
 
-      {/* Недавние расчёты */}
-      <div className="card p-4 sm:p-5 bg-gradient-to-br from-white via-gray-50/30 to-white">
+      {/* Недавние расчёты - Glassmorphism */}
+      <div className="card p-4 sm:p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900">Недавние расчёты</h2>
           <Link href="/profiles" className="text-xs sm:text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors px-2.5 py-1 rounded-lg hover:bg-brand-50">Все →</Link>
@@ -225,7 +231,7 @@ export default async function DashboardPage() {
               const birthDateStr = client?.birth_date ? new Date(client.birth_date).toLocaleDateString("ru-RU") : null;
               
               return (
-                <Link key={p.id} href={`/profiles/${p.id}`} className="bg-white rounded-xl border border-gray-200/80 p-4 shadow-sm hover:shadow-md hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 hover:border-blue-300 group">
+                <Link key={p.id} href={`/profiles/${p.id}`} className="bg-white/40 backdrop-blur-md rounded-xl border border-white/40 p-4 shadow-[0_4px_16px_rgba(31,38,135,0.1)] hover:shadow-[0_8px_24px_rgba(31,38,135,0.15)] hover:scale-[1.02] hover:-translate-y-0.5 hover:border-white/60 hover:bg-white/50 transition-all duration-300 group">
                   <div className="space-y-3">
                     <div className="font-bold text-base text-gray-900 break-words group-hover:text-blue-700 transition-colors leading-tight">{clientName}</div>
                     <div className="space-y-1.5 text-xs text-gray-600">
@@ -245,7 +251,7 @@ export default async function DashboardPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 pt-1">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 border border-blue-200/60">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-500/20 backdrop-blur-md text-blue-800 border border-blue-300/40" style={{boxShadow: '0 2px 8px rgba(59, 130, 246, 0.2)'}}>
                         {consultationType}
                       </span>
                     </div>

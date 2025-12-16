@@ -13,14 +13,10 @@ export default function EditConsultationPage() {
   const [error, setError] = useState<string | null>(null);
   const [consultation, setConsultation] = useState<any>(null);
   const [clients, setClients] = useState<any[]>([]);
-  const [profiles, setProfiles] = useState<any[]>([]);
-  const [partnerProfiles, setPartnerProfiles] = useState<any[]>([]);
 
   const [type, setType] = useState<string>("base");
   const [clientId, setClientId] = useState<string>("");
   const [partnerClientId, setPartnerClientId] = useState<string>("");
-  const [profileId, setProfileId] = useState<string>("");
-  const [partnerProfileId, setPartnerProfileId] = useState<string>("");
   const [scheduledAt, setScheduledAt] = useState<string>("");
   const [duration, setDuration] = useState<string>("");
   const [baseCost, setBaseCost] = useState<string>("");
@@ -45,8 +41,6 @@ export default function EditConsultationPage() {
         setType(c.type || "base");
         setClientId(String(c.client_id || ""));
         setPartnerClientId(c.partner_client_id ? String(c.partner_client_id) : "");
-        setProfileId(c.profile_id ? String(c.profile_id) : "");
-        setPartnerProfileId(c.partner_profile_id ? String(c.partner_profile_id) : "");
         setScheduledAt(c.scheduled_at ? new Date(c.scheduled_at).toISOString().slice(0, 16) : "");
         setDuration(c.duration ? String(c.duration) : "");
         setBaseCost(c.base_cost ? String(c.base_cost) : "");
@@ -58,19 +52,6 @@ export default function EditConsultationPage() {
         const clientsData = await clientsRes.json().catch(() => ({ data: [] }));
         setClients(clientsData?.data || []);
 
-        // Загружаем профили для клиента
-        if (c.client_id) {
-          const profilesRes = await fetch(`/api/profiles?filter[client_id][_eq]=${c.client_id}&limit=1000`, { cache: "no-store" });
-          const profilesData = await profilesRes.json().catch(() => ({ data: [] }));
-          setProfiles(profilesData?.data || []);
-        }
-
-        // Загружаем профили для партнёра
-        if (c.partner_client_id) {
-          const partnerProfilesRes = await fetch(`/api/profiles?filter[client_id][_eq]=${c.partner_client_id}&limit=1000`, { cache: "no-store" });
-          const partnerProfilesData = await partnerProfilesRes.json().catch(() => ({ data: [] }));
-          setPartnerProfiles(partnerProfilesData?.data || []);
-        }
       } catch (err: any) {
         setError(err.message || "Ошибка загрузки данных");
       } finally {
@@ -81,41 +62,6 @@ export default function EditConsultationPage() {
     loadData();
   }, [id]);
 
-  // Загружаем профили при смене клиента
-  useEffect(() => {
-    if (!clientId) {
-      setProfiles([]);
-      return;
-    }
-    async function loadProfiles() {
-      try {
-        const res = await fetch(`/api/profiles?filter[client_id][_eq]=${clientId}&limit=1000`, { cache: "no-store" });
-        const data = await res.json().catch(() => ({ data: [] }));
-        setProfiles(data?.data || []);
-      } catch (error) {
-        console.error("Error loading profiles:", error);
-      }
-    }
-    loadProfiles();
-  }, [clientId]);
-
-  // Загружаем профили для партнёра
-  useEffect(() => {
-    if (!partnerClientId) {
-      setPartnerProfiles([]);
-      return;
-    }
-    async function loadPartnerProfiles() {
-      try {
-        const res = await fetch(`/api/profiles?filter[client_id][_eq]=${partnerClientId}&limit=1000`, { cache: "no-store" });
-        const data = await res.json().catch(() => ({ data: [] }));
-        setPartnerProfiles(data?.data || []);
-      } catch (error) {
-        console.error("Error loading partner profiles:", error);
-      }
-    }
-    loadPartnerProfiles();
-  }, [partnerClientId]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -138,21 +84,37 @@ export default function EditConsultationPage() {
         status,
       };
 
-      if (scheduledAt) payload.scheduled_at = new Date(scheduledAt).toISOString();
+      if (!scheduledAt) {
+        setError("Дата и время обязательны для заполнения");
+        setSaving(false);
+        return;
+      }
+      
+      const date = new Date(scheduledAt);
+      if (isNaN(date.getTime())) {
+        setError("Неверный формат даты");
+        setSaving(false);
+        return;
+      }
+      payload.scheduled_at = date.toISOString();
+      
       if (duration) payload.duration = Number(duration);
       if (baseCost) payload.base_cost = Number(baseCost);
       if (actualCost) payload.actual_cost = Number(actualCost);
-      if (profileId) payload.profile_id = Number(profileId);
-      else payload.profile_id = null;
 
       // Для парных консультаций
       if (type === "partner") {
         if (partnerClientId) payload.partner_client_id = Number(partnerClientId);
-        if (partnerProfileId) payload.partner_profile_id = Number(partnerProfileId);
-        else payload.partner_profile_id = null;
       } else {
         payload.partner_client_id = null;
-        payload.partner_profile_id = null;
+      }
+      
+      // Автоматически обновляем статус на основе даты
+      const now = new Date();
+      const scheduledDate = new Date(scheduledAt);
+      if (scheduledDate < now && payload.status === "scheduled") {
+        // Если дата прошла, но статус еще scheduled, можно предложить изменить на completed
+        // Но не делаем это автоматически, оставляем пользователю выбор
       }
 
       const res = await fetch(`/api/consultations/${id}`, {
@@ -215,7 +177,7 @@ export default function EditConsultationPage() {
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="surface space-y-6">
+      <form onSubmit={onSubmit} className="surface space-y-6 max-w-3xl mx-auto">
         <div className="space-y-2">
           <label>Тип консультации *</label>
           <select
@@ -251,23 +213,6 @@ export default function EditConsultationPage() {
           </select>
         </div>
 
-        {clientId && (
-          <div className="space-y-2">
-            <label>Профиль клиента (опционально)</label>
-            <select
-              value={profileId}
-              onChange={(e) => setProfileId(e.target.value)}
-              className="w-full"
-            >
-              <option value="">Без профиля</option>
-              {profiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  Профиль #{p.id} {p.created_at ? `(${new Date(p.created_at).toLocaleDateString('ru-RU')})` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
 
         {type === "partner" && (
           <>
@@ -275,10 +220,7 @@ export default function EditConsultationPage() {
               <label>Партнёр (второй клиент) *</label>
               <select
                 value={partnerClientId}
-                onChange={(e) => {
-                  setPartnerClientId(e.target.value);
-                  setPartnerProfileId(""); // Сбрасываем профиль партнёра
-                }}
+                onChange={(e) => setPartnerClientId(e.target.value)}
                 className="w-full"
                 required
               >
@@ -291,46 +233,18 @@ export default function EditConsultationPage() {
               </select>
             </div>
 
-            {partnerClientId && (
-              <div className="space-y-2">
-                <label>Профиль партнёра (опционально)</label>
-                <select
-                  value={partnerProfileId}
-                  onChange={(e) => setPartnerProfileId(e.target.value)}
-                  className="w-full"
-                >
-                  <option value="">Без профиля</option>
-                  {partnerProfiles.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      Профиль #{p.id} {p.created_at ? `(${new Date(p.created_at).toLocaleDateString('ru-RU')})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
           </>
         )}
 
         <div className="space-y-2">
-          <label>Дата и время</label>
-          <div className="flex gap-2">
-            <input
-              type="datetime-local"
-              value={scheduledAt}
-              onChange={(e) => setScheduledAt(e.target.value)}
-              className="w-full"
-            />
-            {scheduledAt && (
-              <button
-                type="button"
-                onClick={() => setScheduledAt("")}
-                className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm whitespace-nowrap"
-                title="Очистить дату"
-              >
-                Очистить
-              </button>
-            )}
-          </div>
+          <label>Дата и время *</label>
+          <input
+            type="datetime-local"
+            value={scheduledAt}
+            onChange={(e) => setScheduledAt(e.target.value)}
+            className="w-full"
+            required
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">

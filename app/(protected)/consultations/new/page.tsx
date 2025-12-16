@@ -10,14 +10,9 @@ export default function NewConsultationPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clients, setClients] = useState<any[]>([]);
-  const [profiles, setProfiles] = useState<any[]>([]);
-  const [partnerProfiles, setPartnerProfiles] = useState<any[]>([]);
-  
   const [type, setType] = useState<string>("base");
   const [clientId, setClientId] = useState<string>(searchParams.get("clientId") || "");
   const [partnerClientId, setPartnerClientId] = useState<string>("");
-  const [profileId, setProfileId] = useState<string>("");
-  const [partnerProfileId, setPartnerProfileId] = useState<string>("");
   const [scheduledAt, setScheduledAt] = useState<string>("");
   const [duration, setDuration] = useState<string>("60");
   const [baseCost, setBaseCost] = useState<string>("");
@@ -38,41 +33,6 @@ export default function NewConsultationPage() {
     loadClients();
   }, []);
 
-  // Загружаем профили для выбранного клиента
-  useEffect(() => {
-    if (!clientId) {
-      setProfiles([]);
-      return;
-    }
-    async function loadProfiles() {
-      try {
-        const res = await fetch(`/api/profiles?filter[client_id][_eq]=${clientId}&limit=1000`, { cache: "no-store" });
-        const data = await res.json().catch(() => ({ data: [] }));
-        setProfiles(data?.data || []);
-      } catch (error) {
-        console.error("Error loading partner profiles:", error);
-      }
-    }
-    loadProfiles();
-  }, [clientId]);
-
-  // Загружаем профили для партнёра
-  useEffect(() => {
-    if (!partnerClientId) {
-      setPartnerProfiles([]);
-      return;
-    }
-    async function loadPartnerProfiles() {
-      try {
-        const res = await fetch(`/api/profiles?filter[client_id][_eq]=${partnerClientId}&limit=1000`, { cache: "no-store" });
-        const data = await res.json().catch(() => ({ data: [] }));
-        setPartnerProfiles(data?.data || []);
-      } catch (error) {
-        console.error("Error loading partner profiles:", error);
-      }
-    }
-    loadPartnerProfiles();
-  }, [partnerClientId]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -96,22 +56,27 @@ export default function NewConsultationPage() {
         status,
       };
 
-      if (scheduledAt) {
-        // Конвертируем datetime-local в ISO формат
-        const date = new Date(scheduledAt);
-        if (!isNaN(date.getTime())) {
-          payload.scheduled_at = date.toISOString();
-        }
+      if (!scheduledAt) {
+        setError("Дата и время обязательны для заполнения");
+        setLoading(false);
+        return;
       }
+      
+      // Конвертируем datetime-local в ISO формат
+      const date = new Date(scheduledAt);
+      if (isNaN(date.getTime())) {
+        setError("Неверный формат даты");
+        setLoading(false);
+        return;
+      }
+      payload.scheduled_at = date.toISOString();
       if (duration) payload.duration = Number(duration);
       if (baseCost) payload.base_cost = Number(baseCost);
       if (actualCost) payload.actual_cost = Number(actualCost);
-      if (profileId) payload.profile_id = Number(profileId);
       
       // Для парных консультаций
       if (type === "partner") {
         if (partnerClientId) payload.partner_client_id = Number(partnerClientId);
-        if (partnerProfileId) payload.partner_profile_id = Number(partnerProfileId);
       }
 
       const res = await fetch("/api/consultations", {
@@ -134,22 +99,22 @@ export default function NewConsultationPage() {
   }
 
   return (
-    <div className="space-y-8 md:space-y-10 max-w-2xl mx-auto">
+    <div className="space-y-6 md:space-y-8">
       <div className="flex items-center justify-between gap-4">
-        <div className="space-y-2">
-          <h1 className="page-title text-3xl sm:text-4xl md:text-4xl">Новая консультация</h1>
-          <p className="page-subtitle">Заполните детали и привяжите профили (если нужно)</p>
+        <div className="space-y-1">
+          <h1 className="page-title">Новая консультация</h1>
+          <p className="page-subtitle">Заполните детали консультации</p>
         </div>
         <Link href="/consultations" className="btn btn-ghost btn-sm">← Назад</Link>
       </div>
 
       {error && (
-        <div className="surface bg-red-50 border-red-200 text-red-800">
+        <div className="surface bg-red-50 border-red-200 text-red-800 p-4 rounded-xl">
           {error}
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="surface space-y-6">
+      <form onSubmit={onSubmit} className="surface space-y-6 max-w-2xl">
         <div className="space-y-2">
           <label>Тип консультации *</label>
           <select
@@ -169,10 +134,7 @@ export default function NewConsultationPage() {
           <label>Клиент *</label>
           <select
             value={clientId}
-            onChange={(e) => {
-              setClientId(e.target.value);
-              setProfileId(""); // Сбрасываем профиль при смене клиента
-            }}
+            onChange={(e) => setClientId(e.target.value)}
             className="w-full"
             required
           >
@@ -185,23 +147,6 @@ export default function NewConsultationPage() {
           </select>
         </div>
 
-        {clientId && (
-          <div className="space-y-2">
-            <label>Профиль клиента (опционально)</label>
-            <select
-              value={profileId}
-              onChange={(e) => setProfileId(e.target.value)}
-              className="w-full"
-            >
-              <option value="">Без профиля</option>
-              {profiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  Профиль #{p.id} {p.created_at ? `(${new Date(p.created_at).toLocaleDateString('ru-RU')})` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
 
         {type === "partner" && (
           <>
@@ -209,10 +154,7 @@ export default function NewConsultationPage() {
               <label>Партнёр (второй клиент) *</label>
               <select
                 value={partnerClientId}
-                onChange={(e) => {
-                  setPartnerClientId(e.target.value);
-                  setPartnerProfileId(""); // Сбрасываем профиль партнёра
-                }}
+                onChange={(e) => setPartnerClientId(e.target.value)}
                 className="w-full"
                 required
               >
@@ -225,40 +167,23 @@ export default function NewConsultationPage() {
               </select>
             </div>
 
-            {partnerClientId && (
-              <div className="space-y-2">
-                <label>Профиль партнёра (опционально)</label>
-                <select
-                  value={partnerProfileId}
-                  onChange={(e) => setPartnerProfileId(e.target.value)}
-                  className="w-full"
-                >
-                  <option value="">Без профиля</option>
-                  {partnerProfiles.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      Профиль #{p.id} {p.created_at ? `(${new Date(p.created_at).toLocaleDateString('ru-RU')})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
           </>
         )}
 
         <div className="space-y-2">
-          <label>Дата и время (опционально)</label>
+          <label>Дата и время *</label>
           <input
             type="datetime-local"
             value={scheduledAt}
             onChange={(e) => setScheduledAt(e.target.value)}
             className="w-full"
+            required
           />
-          <p className="text-xs text-gray-500">Оставьте пустым, если дата не определена</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Длительность (минуты)</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label>Длительность (минуты)</label>
             <input
               type="number"
               value={duration}
@@ -269,8 +194,8 @@ export default function NewConsultationPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Статус</label>
+          <div className="space-y-2">
+            <label>Статус</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
@@ -283,9 +208,9 @@ export default function NewConsultationPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Базовая стоимость</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label>Базовая стоимость</label>
             <input
               type="number"
               value={baseCost}
@@ -296,8 +221,8 @@ export default function NewConsultationPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Фактическая стоимость</label>
+          <div className="space-y-2">
+            <label>Фактическая стоимость</label>
             <input
               type="number"
               value={actualCost}

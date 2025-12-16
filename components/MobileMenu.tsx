@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ClientSearchModal } from "@/app/(protected)/profiles/ClientSearchModal";
 
 export function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isClientSearchOpen, setIsClientSearchOpen] = useState(false);
 
   return (
     <>
@@ -37,13 +39,13 @@ export function MobileMenu() {
               >
                 <span className="text-[16px] leading-none">👤</span>
               </Link>
-              <Link
-                href="/profiles/new"
+              <button
+                onClick={() => setIsClientSearchOpen(true)}
                 className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/90 to-brand-600/90 backdrop-blur-md text-white border border-white/20 shadow-[0_4px_16px_rgba(74,97,255,0.3)] hover:shadow-[0_6px_20px_rgba(74,97,255,0.4)] transition-all flex items-center justify-center"
                 aria-label="Новый расчёт"
               >
                 <span className="text-[16px] leading-none">🧾</span>
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -108,6 +110,14 @@ export function MobileMenu() {
               <span className="ml-2.5 font-semibold text-sm text-gray-800">Расчёты</span>
             </Link>
             <Link
+              href="/consultations"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center px-3 py-2.5 rounded-xl hover:bg-white/30 hover:backdrop-blur-md transition-all"
+            >
+              <span className="inline-block w-5 text-center shrink-0 text-lg">💬</span>
+              <span className="ml-2.5 font-semibold text-sm text-gray-800">Консультации</span>
+            </Link>
+            <Link
               href="/tests"
               onClick={() => setIsOpen(false)}
               className="flex items-center px-3 py-2.5 rounded-xl hover:bg-white/30 hover:backdrop-blur-md transition-all"
@@ -129,6 +139,9 @@ export function MobileMenu() {
           </form>
         </div>
       </aside>
+
+      {/* Модальное окно выбора клиента для нового расчета */}
+      <ClientSearchModal isOpen={isClientSearchOpen} onClose={() => setIsClientSearchOpen(false)} />
     </>
   );
 }
