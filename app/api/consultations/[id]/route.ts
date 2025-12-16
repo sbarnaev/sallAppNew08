@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 import { checkSubscriptionInAPI } from "@/lib/subscription-check";
+import { logger } from "@/lib/logger";
 
 export async function GET(_req: Request, ctx: { params: { id: string } }) {
   // Проверяем подписку
@@ -49,12 +50,42 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
   // Получаем консультацию - Directus сам отфильтрует по owner_user через permissions
   const url = `${baseUrl}/items/consultations/${ctx.params.id}?fields=${encodeURIComponent(fields)}`;
   
+  logger.log("Fetching consultation:", { 
+    id: ctx.params.id, 
+    url,
+    currentUserId 
+  });
+  
   const r = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   });
   
-  const data = await r.json().catch(() => ({ data: null, errors: [] }));
+  const responseText = await r.text();
+  let data: any = { data: null, errors: [] };
+  
+  try {
+    if (responseText) {
+      data = JSON.parse(responseText);
+    }
+  } catch (e) {
+    logger.error("Failed to parse Directus response:", { 
+      status: r.status, 
+      text: responseText.substring(0, 500),
+      error: e 
+    });
+  }
+  
+  logger.log("Directus response:", { 
+    status: r.status,
+    statusText: r.statusText,
+    hasData: !!data?.data,
+    hasErrors: !!(data?.errors && data.errors.length > 0),
+    dataId: data?.data?.id,
+    dataOwnerUser: data?.data?.owner_user,
+    errors: data?.errors,
+    fullResponse: data
+  });
   
   // Если получили ошибку доступа или консультация не найдена
   if (r.status === 403 || r.status === 404 || !data?.data) {
