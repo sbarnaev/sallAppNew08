@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 
-export default function EditConsultationPage({ params }: { params: { id: string } }) {
+export default function EditConsultationPage() {
   const router = useRouter();
+  const params = useParams();
+  const id = String(params?.id || "");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export default function EditConsultationPage({ params }: { params: { id: string 
     async function loadData() {
       try {
         // Загружаем консультацию
-        const consultationRes = await fetch(`/api/consultations/${params.id}`, { cache: "no-store" });
+        const consultationRes = await fetch(`/api/consultations/${id}`, { cache: "no-store" });
         const consultationData = await consultationRes.json().catch(() => ({ data: null }));
         const c = consultationData?.data;
         
@@ -77,7 +79,7 @@ export default function EditConsultationPage({ params }: { params: { id: string 
     }
 
     loadData();
-  }, [params.id]);
+  }, [id]);
 
   // Загружаем профили при смене клиента
   useEffect(() => {
@@ -139,7 +141,7 @@ export default function EditConsultationPage({ params }: { params: { id: string 
       if (scheduledAt) payload.scheduled_at = new Date(scheduledAt).toISOString();
       if (duration) payload.duration = Number(duration);
       if (baseCost) payload.base_cost = Number(baseCost);
-      if (actualCost) payload.actual_cost = Number(actual_cost);
+      if (actualCost) payload.actual_cost = Number(actualCost);
       if (profileId) payload.profile_id = Number(profileId);
       else payload.profile_id = null;
 
@@ -153,7 +155,7 @@ export default function EditConsultationPage({ params }: { params: { id: string 
         payload.partner_profile_id = null;
       }
 
-      const res = await fetch(`/api/consultations/${params.id}`, {
+      const res = await fetch(`/api/consultations/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -164,7 +166,7 @@ export default function EditConsultationPage({ params }: { params: { id: string 
         throw new Error(data?.message || data?.errors?.[0]?.message || "Ошибка обновления консультации");
       }
 
-      router.push(`/consultations/${params.id}`);
+      router.push(`/consultations/${id}`);
     } catch (err: any) {
       setError(err.message || String(err));
     } finally {
@@ -188,7 +190,7 @@ export default function EditConsultationPage({ params }: { params: { id: string 
       <div className="space-y-8 md:space-y-10 max-w-2xl mx-auto">
         <div className="surface bg-red-50 border-red-200 text-red-800 p-6">
           <h2 className="font-bold mb-2">Консультация не найдена</h2>
-          <p>Консультация с ID {params.id} не существует или у вас нет прав доступа.</p>
+          <p>Консультация с ID {id} не существует или у вас нет прав доступа.</p>
           <Link href="/consultations" className="text-brand-600 hover:text-brand-700 mt-4 inline-block">
             ← Вернуться к списку консультаций
           </Link>
@@ -204,7 +206,7 @@ export default function EditConsultationPage({ params }: { params: { id: string 
           <h1 className="page-title text-3xl sm:text-4xl md:text-4xl">Редактировать консультацию</h1>
           <p className="page-subtitle">Измените детали консультации</p>
         </div>
-        <Link href={`/consultations/${params.id}`} className="btn btn-ghost btn-sm">← Назад</Link>
+        <Link href={`/consultations/${id}`} className="btn btn-ghost btn-sm">← Назад</Link>
       </div>
 
       {error && (
@@ -381,7 +383,7 @@ export default function EditConsultationPage({ params }: { params: { id: string 
             {saving ? "Сохранение..." : "Сохранить изменения"}
           </button>
           <Link
-            href={`/consultations/${params.id}`}
+            href={`/consultations/${id}`}
             className="btn btn-secondary"
           >
             Отмена
