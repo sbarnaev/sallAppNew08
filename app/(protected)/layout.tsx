@@ -9,16 +9,16 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
   return (
     <ClientLayoutWrapper>
-    <div className="min-h-screen flex">
+    <div className="min-h-screen">
       {/* Мобильное меню */}
       <MobileMenu />
       
-      {/* Десктопное меню (скрыто на мобильных) - Glassmorphism */}
-        <aside className="hidden md:flex bg-white/50 backdrop-blur-[25px] border-r border-white/60 transition-all duration-300 w-[64px] hover:w-[240px] group relative flex-col h-screen shadow-[0_2px_8px_0_rgba(0,0,0,0.04)]">
+      {/* Десктопное меню (скрыто на мобильных) - Glassmorphism - Фиксированное */}
+        <aside className="hidden md:flex fixed left-0 top-0 bottom-0 bg-white/50 backdrop-blur-[25px] border-r border-white/60 transition-all duration-300 w-[64px] hover:w-[240px] group flex-col h-screen shadow-[0_2px_8px_0_rgba(0,0,0,0.04)] z-40">
         <div className="px-4 pt-5 pb-4">
           <div className="font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm text-gray-900">САЛ ПРОФИ</div>
         </div>
-        <nav className="flex-1 flex flex-col px-2">
+        <nav className="flex-1 flex flex-col px-2 overflow-y-auto">
           <div className="flex flex-col space-y-1">
               <Link className="nav-item" href="/dashboard">
               <svg className="w-5 h-5 shrink-0 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,8 +62,8 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         </nav>
       </aside>
       
-      {/* Основной контент */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pt-20 md:pt-8 pb-8 md:pb-12">
+      {/* Основной контент с отступом для фиксированного меню */}
+      <main className="md:ml-[64px] w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pt-20 md:pt-8 pb-8 md:pb-12">
         {children}
       </main>
     </div>
