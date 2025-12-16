@@ -14,6 +14,12 @@ interface SubscriptionInfo {
 export function SubscriptionStatus() {
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Логируем, что компонент загрузился
+  useEffect(() => {
+    console.log("[SubscriptionStatus] Component mounted and rendered");
+  }, []);
 
   useEffect(() => {
     async function loadSubscription() {
@@ -33,7 +39,8 @@ export function SubscriptionStatus() {
           status: res.status,
           hasData: !!data?.data,
           hasSubscription: !!data?.data?.subscription,
-          subscription: data?.data?.subscription
+          subscription: data?.data?.subscription,
+          fullData: data
         });
         
         if (data?.data?.subscription) {
@@ -58,11 +65,23 @@ export function SubscriptionStatus() {
           
           setSubscription(sub);
         } else {
-          // Если нет данных о подписке, устанавливаем null
-          setSubscription(null);
+          // Если нет данных о подписке, но есть data.data - создаем объект подписки
+          if (data?.data) {
+            console.warn("[SubscriptionStatus] No subscription data in response, but user data exists:", data.data);
+            // Создаем объект подписки с null значениями
+            setSubscription({
+              expiresAt: null,
+              hasAccess: true,
+              daysRemaining: null
+            });
+          } else {
+            console.error("[SubscriptionStatus] No data in API response");
+            setSubscription(null);
+          }
         }
       } catch (error) {
-        console.error("Error loading subscription:", error);
+        console.error("[SubscriptionStatus] Error loading subscription:", error);
+        setError(error instanceof Error ? error.message : String(error));
       } finally {
         setLoading(false);
       }
@@ -85,15 +104,46 @@ export function SubscriptionStatus() {
           <div className="w-8 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
           <div className="flex-1">
             <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+            <div className="text-xs text-gray-500 mt-1">Загрузка информации о подписке...</div>
           </div>
         </div>
       </div>
     );
   }
 
-  // Если нет данных о подписке
+  // Если есть ошибка
+  if (error) {
+    return (
+      <div className="card p-3 mb-4 bg-red-50/50 border border-red-200 rounded-lg">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center text-base">
+            ❌
+          </div>
+          <div>
+            <div className="font-bold text-red-800 text-sm">Ошибка загрузки подписки</div>
+            <div className="text-xs text-red-700">{error}</div>
+            <div className="text-xs text-red-600 mt-1">Проверьте консоль браузера (F12)</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Если нет данных о подписке - показываем информационное сообщение для отладки
   if (!subscription) {
-    return null;
+    return (
+      <div className="card p-3 mb-4 bg-yellow-50/50 border border-yellow-200 rounded-lg">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center text-base">
+            ⚠️
+          </div>
+          <div>
+            <div className="font-bold text-yellow-800 text-sm">Информация о подписке недоступна</div>
+            <div className="text-xs text-yellow-700">Проверьте консоль браузера (F12) для отладки</div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Если нет ограничений по подписке (старые пользователи) - показываем информационное сообщение
