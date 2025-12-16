@@ -2,6 +2,15 @@ import Link from "next/link";
 import { internalApiFetch } from "@/lib/fetchers";
 import DeleteConsultation from "./DeleteConsultation";
 
+function formatPrice(price: number | string | null | undefined): string {
+  if (!price) return "0";
+  const num = typeof price === 'string' ? parseFloat(price) : price;
+  if (isNaN(num)) return "0";
+  // Округляем до целого и форматируем с пробелами для тысяч
+  const rounded = Math.round(num);
+  return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
 async function getConsultation(id: string) {
   const res = await internalApiFetch(`/api/consultations/${id}`);
   const json = await res.json().catch(() => ({}));
@@ -146,13 +155,13 @@ export default async function ConsultationDetailPage({ params }: { params: { id:
                   {c.base_cost && (
                     <div className="space-y-2">
                       <div className="text-sm text-gray-500">Базовая стоимость</div>
-                      <div className="font-medium">{c.base_cost} ₽</div>
+                      <div className="font-medium">{formatPrice(c.base_cost)} ₽</div>
                     </div>
                   )}
                   {c.actual_cost && (
                     <div className="space-y-2">
                       <div className="text-sm text-gray-500">Фактическая стоимость</div>
-                      <div className="font-medium">{c.actual_cost} ₽</div>
+                      <div className="font-medium">{formatPrice(c.actual_cost)} ₽</div>
                     </div>
                   )}
                 </>
@@ -166,48 +175,22 @@ export default async function ConsultationDetailPage({ params }: { params: { id:
             </div>
           </div>
 
-          {/* Клиенты и профили */}
+          {/* Клиент */}
           <div className="card">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              Клиенты и профили
+              Клиент
             </h2>
-            <div className="space-y-4">
-              {c.client_id && (
-                <div className="p-4 border border-gray-200 rounded-xl">
-                  <div className="text-sm text-gray-500 mb-2">Клиент</div>
-                  <Link href={`/clients/${c.client_id}`} className="font-medium text-brand-600 hover:text-brand-700">
-                    {client?.name || `Клиент #${c.client_id}`}
-                  </Link>
-                  {c.profile_id && (
-                    <div className="mt-2">
-                      <div className="text-sm text-gray-500 mb-1">Профиль</div>
-                      <Link href={`/profiles/${c.profile_id}`} className="text-sm text-brand-600 hover:text-brand-700">
-                        Профиль #{c.profile_id} →
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              )}
-              {c.partner_client_id && (
-                <div className="p-4 border border-gray-200 rounded-xl">
-                  <div className="text-sm text-gray-500 mb-2">Партнёр</div>
-                  <Link href={`/clients/${c.partner_client_id}`} className="font-medium text-brand-600 hover:text-brand-700">
-                    {partnerClient?.name || `Клиент #${c.partner_client_id}`}
-                  </Link>
-                  {c.partner_profile_id && (
-                    <div className="mt-2">
-                      <div className="text-sm text-gray-500 mb-1">Профиль партнёра</div>
-                      <Link href={`/profiles/${c.partner_profile_id}`} className="text-sm text-brand-600 hover:text-brand-700">
-                        Профиль #{c.partner_profile_id} →
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            {c.client_id && (
+              <div className="p-4 border border-gray-200 rounded-xl">
+                <div className="text-sm text-gray-500 mb-2">Клиент</div>
+                <Link href={`/clients/${c.client_id}`} className="font-medium text-brand-600 hover:text-brand-700">
+                  {client?.name || `Клиент #${c.client_id}`}
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Детали консультации */}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { internalApiFetch } from "@/lib/fetchers";
 import { RemindersWidget } from "@/components/RemindersWidget";
 import { SubscriptionStatus } from "@/components/SubscriptionStatus";
+import { UpcomingConsultationsWidget } from "@/components/UpcomingConsultationsWidget";
 
 async function getStats() {
   try {
@@ -201,6 +202,9 @@ export default async function DashboardPage() {
 
       {/* Напоминания */}
       <RemindersWidget />
+
+      {/* Предстоящие консультации */}
+      <UpcomingConsultationsWidget />
 
       {/* Недавние расчёты */}
       <div className="card p-5">

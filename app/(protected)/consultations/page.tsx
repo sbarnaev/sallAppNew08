@@ -1,6 +1,15 @@
 import Link from "next/link";
 import { internalApiFetch } from "@/lib/fetchers";
 
+function formatPrice(price: number | string | null | undefined): string {
+  if (!price) return "0";
+  const num = typeof price === 'string' ? parseFloat(price) : price;
+  if (isNaN(num)) return "0";
+  // Округляем до целого и форматируем с пробелами для тысяч
+  const rounded = Math.round(num);
+  return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
 async function getConsultations(searchParams: Record<string, string | string[] | undefined>) {
   const params = new URLSearchParams();
   const page = Number(searchParams.page || 1);
@@ -187,7 +196,7 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
                       )}
                       {c.duration && <span>· {c.duration} мин</span>}
                       {(c.base_cost || c.actual_cost) && (
-                        <span>· {c.actual_cost || c.base_cost} ₽</span>
+                        <span>· {formatPrice(c.actual_cost || c.base_cost)} ₽</span>
                       )}
                     </div>
                   </div>

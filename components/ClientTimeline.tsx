@@ -94,12 +94,21 @@ export function ClientTimeline({ clientId }: Props) {
             partner: "Партнёрская"
           };
           
+          const statusLabels: Record<string, string> = {
+            scheduled: "Запланирована",
+            completed: "Завершена",
+            cancelled: "Отменена"
+          };
+          
+          const consultationDate = consultation.scheduled_at || consultation.created_at;
+          const dateObj = consultationDate ? new Date(consultationDate) : null;
+          
           timelineEvents.push({
             id: `consultation-${consultation.id}`,
             type: "consultation",
             title: `${typeLabels[consultation.type] || consultation.type} консультация`,
-            date: consultation.scheduled_at || consultation.created_at,
-            description: consultation.status ? `Статус: ${consultation.status}` : undefined,
+            date: consultationDate,
+            description: consultation.status ? `Статус: ${statusLabels[consultation.status] || consultation.status}` : undefined,
             link: `/consultations/${consultation.id}`,
             icon: "💬",
             color: "green"
