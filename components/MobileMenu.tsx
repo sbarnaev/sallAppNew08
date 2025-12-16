@@ -10,13 +10,13 @@ export function MobileMenu() {
 
   return (
     <>
-      {/* Мобильный top-bar (всегда виден на мобиле) - Glassmorphism */}
+      {/* Мобильный top-bar (всегда виден на мобиле) */}
       <header className="md:hidden fixed top-0 inset-x-0 z-[60]">
-        <div className="pt-[env(safe-area-inset-top)] bg-white/30 backdrop-blur-2xl border-b border-white/30" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.2) 100%)', boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.5)'}}>
+        <div className="pt-[env(safe-area-inset-top)] bg-white/80 backdrop-blur-md border-b border-gray-200/60">
           <div className="h-14 px-3 flex items-center gap-2.5">
       <button
         onClick={() => setIsOpen(true)}
-              className="w-9 h-9 rounded-xl bg-white/40 backdrop-blur-md border border-white/40 shadow-[0_4px_16px_rgba(31,38,135,0.1)] hover:bg-white/60 hover:shadow-[0_6px_20px_rgba(31,38,135,0.15)] transition-all flex items-center justify-center"
+              className="w-9 h-9 rounded-lg bg-white border border-gray-200 shadow-sm hover:shadow transition-all flex items-center justify-center"
         aria-label="Открыть меню"
       >
               <svg className="w-5 h-5 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -34,14 +34,17 @@ export function MobileMenu() {
             <div className="flex items-center gap-1.5">
               <Link
                 href="/clients/new"
-                className="w-9 h-9 rounded-xl bg-gradient-to-br from-green-500/90 to-green-600/90 backdrop-blur-md text-white border border-white/20 shadow-[0_4px_16px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center"
+                className="w-9 h-9 rounded-lg bg-green-600 text-white shadow-sm hover:shadow transition-all flex items-center justify-center"
                 aria-label="Новый клиент"
               >
                 <span className="text-[16px] leading-none">👤</span>
               </Link>
               <button
-                onClick={() => setIsClientSearchOpen(true)}
-                className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/90 to-brand-600/90 backdrop-blur-md text-white border border-white/20 shadow-[0_4px_16px_rgba(74,97,255,0.3)] hover:shadow-[0_6px_20px_rgba(74,97,255,0.4)] transition-all flex items-center justify-center"
+                onClick={() => {
+                  setIsClientSearchOpen(true);
+                  setIsOpen(false); // Закрываем меню при открытии модалки
+                }}
+                className="w-9 h-9 rounded-lg bg-brand-600 text-white shadow-sm hover:shadow transition-all flex items-center justify-center"
                 aria-label="Новый расчёт"
               >
                 <span className="text-[16px] leading-none">🧾</span>
