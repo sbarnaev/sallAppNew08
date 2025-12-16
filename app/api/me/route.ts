@@ -52,13 +52,15 @@ export async function GET() {
         const expiresDate = new Date(expiresAt);
         const now = new Date();
         const hasAccess = expiresDate > now;
-        // Считаем полные дни (округление вниз) + если осталось больше 12 часов от следующего дня, добавляем 1
+        // Считаем количество полных дней (округление вниз)
+        // Если осталось меньше 24 часов - это 0 полных дней, но для отображения показываем 1 день
         const diffMs = expiresDate.getTime() - now.getTime();
         const fullDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
         const remainingHours = (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60);
-        // Если осталось больше 12 часов сверх полных дней, считаем как еще один день
+        // Если осталось меньше 24 часов, но больше 0 - это 1 день для отображения
+        // Если осталось больше 24 часов - показываем полные дни
         const daysRemaining = hasAccess 
-          ? (remainingHours > 12 ? fullDays + 1 : fullDays)
+          ? (fullDays === 0 && remainingHours > 0 ? 1 : fullDays)
           : 0;
         
         // Если доступ истёк, возвращаем 403
