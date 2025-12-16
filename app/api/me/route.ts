@@ -13,6 +13,8 @@ export async function GET() {
     // Добавляем информацию о доступе
     if (data?.data) {
       const expiresAt = data.data.subscription_expires_at;
+      
+      // Всегда создаем объект subscription для единообразия
       if (expiresAt) {
         const expiresDate = new Date(expiresAt);
         const now = new Date();
@@ -40,13 +42,14 @@ export async function GET() {
           );
         }
         
+        // Доступ активен - возвращаем информацию о подписке
         data.data.subscription = {
           expiresAt,
-          hasAccess,
+          hasAccess: true,
           daysRemaining
         };
       } else {
-        // Для существующих пользователей без поля - считаем что доступ есть
+        // Для пользователей без поля subscription_expires_at - безлимит
         data.data.subscription = {
           expiresAt: null,
           hasAccess: true,
