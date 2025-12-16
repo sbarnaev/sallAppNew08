@@ -208,6 +208,15 @@ export async function POST(req: NextRequest) {
   // Используем return=* и fields=id чтобы Directus вернул созданную запись с ID
   const url = `${baseUrl}/items/consultations?return=*&fields=id,client_id,type,status,scheduled_at,created_at,owner_user`;
   
+  // Логируем в консоль для отладки
+  console.log("[POST /api/consultations] Creating consultation:", { 
+    consultationNumber,
+    clientId,
+    ownerUser: currentUser.id,
+    payload: { ...payload, scheduled_at: scheduledDate },
+    url 
+  });
+  
   logger.log("Creating consultation:", { 
     consultationNumber,
     payload: { ...payload, scheduled_at: scheduledDate },
@@ -226,6 +235,11 @@ export async function POST(req: NextRequest) {
   });
 
   // Логируем статус и заголовки
+  console.log("[POST /api/consultations] Directus response status:", { 
+    status: r.status, 
+    statusText: r.statusText
+  });
+  
   logger.log("Directus response:", { 
     status: r.status, 
     statusText: r.statusText,
@@ -263,6 +277,20 @@ export async function POST(req: NextRequest) {
   }
 
   // Логируем полный ответ
+  console.log("[POST /api/consultations] Directus response data:", { 
+    status: r.status,
+    hasData: !!data?.data,
+    hasId: !!(data?.data?.id || data?.id),
+    consultationId: data?.data?.id || data?.id,
+    data: data?.data ? { 
+      id: data.data.id, 
+      client_id: data.data.client_id,
+      owner_user: data.data.owner_user 
+    } : null,
+    errors: data?.errors,
+    fullData: JSON.stringify(data).substring(0, 500)
+  });
+  
   logger.log("Directus response data:", { 
     status: r.status,
     hasData: !!data?.data,
