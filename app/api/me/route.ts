@@ -1,35 +1,54 @@
 import { NextResponse } from "next/server";
 import { fetchDirectusWithAuth } from "@/lib/guards";
+import { getDirectusUrl } from "@/lib/env";
+import { getValidToken } from "@/lib/guards";
 
 export async function GET() {
   try {
-    const response = await fetchDirectusWithAuth("users/me?fields=id,first_name,last_name,email,contact,subscription_expires_at");
+    // Получаем базовую информацию о пользователе
+    const response = await fetchDirectusWithAuth("users/me?fields=id,first_name,last_name,email,contact");
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {
       return NextResponse.json(data || { data: null }, { status: response.status });
     }
 
-    // Логируем что вернул Directus
-    console.log("[API /api/me] Directus response:", {
-      hasData: !!data?.data,
-      dataKeys: data?.data ? Object.keys(data.data) : [],
-      subscriptionExpiresAt: data?.data?.subscription_expires_at,
-      rawData: JSON.stringify(data?.data).substring(0, 500)
-    });
+    // Делаем отдельный запрос для subscription_expires_at (как в checkSubscriptionInAPI)
+    let expiresAt: string | null = null;
+    try {
+      const token = await getValidToken();
+      const baseUrl = getDirectusUrl();
+      
+      if (token && baseUrl) {
+        const subscriptionResponse = await fetch(`${baseUrl}/users/me?fields=id,subscription_expires_at`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+          cache: "no-store",
+        });
+
+        if (subscriptionResponse.ok) {
+          const subscriptionData = await subscriptionResponse.json().catch(() => null);
+          expiresAt = subscriptionData?.data?.subscription_expires_at || null;
+          
+          console.log("[API /api/me] Subscription check:", {
+            hasSubscriptionData: !!subscriptionData?.data,
+            expiresAt,
+            subscriptionDataKeys: subscriptionData?.data ? Object.keys(subscriptionData.data) : []
+          });
+        }
+      }
+    } catch (error) {
+      console.error("[API /api/me] Error fetching subscription:", error);
+    }
 
     // Добавляем информацию о доступе
     if (data?.data) {
-      // Пробуем разные варианты названия поля
-      const expiresAt = data.data.subscription_expires_at 
-        || data.data["subscription_expires_at"]
-        || data.data["Subscription Expires At"]
-        || data.data.subscriptionExpiresAt;
-      
-      console.log("[API /api/me] Found expiresAt:", expiresAt);
       
       // Всегда создаем объект subscription для единообразия
       if (expiresAt) {
+        console.log("[API /api/me] Processing expiresAt:", expiresAt);
         const expiresDate = new Date(expiresAt);
         const now = new Date();
         const hasAccess = expiresDate > now;
