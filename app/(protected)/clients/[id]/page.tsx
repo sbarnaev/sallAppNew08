@@ -447,7 +447,7 @@ export default async function ClientDetailPage({ params, searchParams }: { param
                 </div>
                 <div className="text-left">
                   <div className="font-medium">Прогностика</div>
-                  <div className="text-sm text-gray-500">Прогноз совместимости</div>
+                  <div className="text-sm text-gray-500">Прогноз ресурсов</div>
                 </div>
               </Link>
 

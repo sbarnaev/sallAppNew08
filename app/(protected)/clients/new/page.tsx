@@ -161,9 +161,9 @@ export default function NewClientPage() {
             </div>
 
             <div className="space-y-2">
-              <label>Пол *</label>
+              <label className="text-sm font-medium text-gray-700">Пол *</label>
               <select
-                className="w-full bg-white"
+                className="w-full bg-white/50 backdrop-blur-[20px] border border-white/60 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:border-accent-500/50 focus:ring-1 focus:ring-accent-500/20 focus:bg-white/60 transition-all duration-200"
                 value={gender}
                 onChange={(e) => setGender(e.target.value as "male" | "female" | "")}
                 required
@@ -211,9 +211,9 @@ export default function NewClientPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label>Откуда пришел</label>
+              <label className="text-sm font-medium text-gray-700">Откуда пришел</label>
               <select
-                className="w-full bg-white"
+                className="w-full bg-white/50 backdrop-blur-[20px] border border-white/60 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:border-accent-500/50 focus:ring-1 focus:ring-accent-500/20 focus:bg-white/60 transition-all duration-200"
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
               >
@@ -230,9 +230,9 @@ export default function NewClientPage() {
             </div>
 
             <div className="space-y-2">
-              <label>Способ общения</label>
+              <label className="text-sm font-medium text-gray-700">Способ общения</label>
               <select
-                className="w-full bg-white"
+                className="w-full bg-white/50 backdrop-blur-[20px] border border-white/60 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:border-accent-500/50 focus:ring-1 focus:ring-accent-500/20 focus:bg-white/60 transition-all duration-200"
                 value={communicationMethod}
                 onChange={(e) => setCommunicationMethod(e.target.value)}
               >

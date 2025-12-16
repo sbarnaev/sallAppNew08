@@ -1385,7 +1385,7 @@ export default function ProfileDetail() {
           const checked = Boolean(checkedMap[hashKey] ?? checkedMap[legacyKey]);
           const inputId = `${hashKey}-${i}`;
           return (
-            <li key={hashKey} className="grid grid-cols-[22px_1fr] gap-3 items-start">
+            <li key={hashKey} className="flex items-start gap-3">
               <input
                 id={inputId}
                 type="checkbox"
@@ -1396,9 +1396,9 @@ export default function ProfileDetail() {
                   localUiStateRef.current = next;
                   saveChecked(next);
                 }}
-                className="mt-0.5 h-[18px] w-[18px] rounded border-2 border-indigo-300 bg-indigo-100 text-indigo-600 focus:ring-0"
+                className="mt-0.5 h-[18px] w-[18px] shrink-0 rounded border-2 border-indigo-300 bg-indigo-100 text-indigo-600 focus:ring-0"
               />
-              <label htmlFor={inputId} className="leading-relaxed text-gray-800 cursor-pointer">
+              <label htmlFor={inputId} className="leading-relaxed text-gray-800 cursor-pointer flex-1 pl-1">
                 {text}
               </label>
             </li>
@@ -3154,7 +3154,15 @@ export default function ProfileDetail() {
             <div className="p-6 overflow-y-auto flex-grow">
               <div className="mb-4">
                 <NotesTemplates onSelect={(content) => {
-                  setNotesDraft(content);
+                  // Если в заметке уже есть текст, добавляем шаблон в конец
+                  // Если заметка пустая, просто устанавливаем шаблон
+                  const currentText = notesDraft.trim();
+                  if (currentText) {
+                    // Добавляем разделитель и шаблон в конец
+                    setNotesDraft(currentText + '<br/><br/>' + content);
+                  } else {
+                    setNotesDraft(content);
+                  }
                   notesTouchedRef.current = true;
                 }} />
               </div>

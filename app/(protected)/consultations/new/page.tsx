@@ -116,11 +116,11 @@ export default function NewConsultationPage() {
 
       <form onSubmit={onSubmit} className="surface space-y-6 max-w-2xl">
         <div className="space-y-2">
-          <label>Тип консультации *</label>
+          <label className="text-sm font-medium text-gray-700">Тип консультации *</label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value)}
-            className="w-full"
+            className="w-full bg-white/50 backdrop-blur-[20px] border border-white/60 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:border-accent-500/50 focus:ring-1 focus:ring-accent-500/20 focus:bg-white/60 transition-all duration-200"
             required
           >
             <option value="base">Базовая</option>
@@ -131,11 +131,11 @@ export default function NewConsultationPage() {
         </div>
 
         <div className="space-y-2">
-          <label>Клиент *</label>
+          <label className="text-sm font-medium text-gray-700">Клиент *</label>
           <select
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
-            className="w-full"
+            className="w-full bg-white/50 backdrop-blur-[20px] border border-white/60 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:border-accent-500/50 focus:ring-1 focus:ring-accent-500/20 focus:bg-white/60 transition-all duration-200"
             required
           >
             <option value="">Выберите клиента</option>
@@ -151,11 +151,11 @@ export default function NewConsultationPage() {
         {type === "partner" && (
           <>
             <div className="space-y-2">
-              <label>Партнёр (второй клиент) *</label>
+              <label className="text-sm font-medium text-gray-700">Партнёр (второй клиент) *</label>
               <select
                 value={partnerClientId}
                 onChange={(e) => setPartnerClientId(e.target.value)}
-                className="w-full"
+                className="w-full bg-white/50 backdrop-blur-[20px] border border-white/60 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:border-accent-500/50 focus:ring-1 focus:ring-accent-500/20 focus:bg-white/60 transition-all duration-200"
                 required
               >
                 <option value="">Выберите партнёра</option>
