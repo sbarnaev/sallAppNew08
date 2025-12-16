@@ -2,6 +2,30 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 import { checkSubscriptionInAPI } from "@/lib/subscription-check";
+import { logger } from "@/lib/logger";
+
+// Функция для получения текущего пользователя
+async function getCurrentUser(token: string, baseUrl: string) {
+  try {
+    const response = await fetch(`${baseUrl}/users/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json"
+      },
+      cache: "no-store"
+    });
+
+    if (response.ok) {
+      const data = await response.json().catch(() => ({}));
+      return data?.data || null;
+    }
+
+    return null;
+  } catch (error) {
+    logger.error("Error getting current user:", error);
+    return null;
+  }
+}
 
 export async function GET(req: NextRequest) {
   // Проверяем подписку
@@ -80,10 +104,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "client_id must be a positive integer" }, { status: 400 });
   }
 
+  // Получаем текущего пользователя
+  const currentUser = await getCurrentUser(token, baseUrl);
+
+  if (!currentUser?.id) {
+    return NextResponse.json({ message: "Ошибка получения данных пользователя" }, { status: 500 });
+  }
+
   const payload: any = {
     client_id: clientId,
     type: body.type || "base",
     status: body.status || "scheduled",
+    owner_user: currentUser.id,
   };
 
   // Валидация опциональных полей
