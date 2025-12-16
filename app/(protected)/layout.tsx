@@ -63,7 +63,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       </aside>
       
       {/* Основной контент с отступом для фиксированного меню */}
-      <main className="md:ml-[64px] w-[calc(100%-64px)] flex justify-center pt-20 md:pt-8 pb-8 md:pb-12">
+      <main className="w-full md:ml-[64px] md:w-[calc(100%-64px)] flex justify-center pt-20 md:pt-8 pb-8 md:pb-12">
         <div className="w-full max-w-7xl px-4 sm:px-6 md:px-8">
           {children}
         </div>
