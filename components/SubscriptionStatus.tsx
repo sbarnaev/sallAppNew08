@@ -15,11 +15,6 @@ export function SubscriptionStatus() {
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Логируем, что компонент загрузился
-  useEffect(() => {
-    console.log("[SubscriptionStatus] Component mounted and rendered");
-  }, []);
 
   useEffect(() => {
     async function loadSubscription() {
@@ -33,15 +28,6 @@ export function SubscriptionStatus() {
         }
         
         const data = await res.json().catch(() => ({ data: null }));
-        
-        // Логируем для отладки
-        console.log("[SubscriptionStatus] API response:", {
-          status: res.status,
-          hasData: !!data?.data,
-          hasSubscription: !!data?.data?.subscription,
-          subscription: data?.data?.subscription,
-          fullData: data
-        });
         
         if (data?.data?.subscription) {
           const sub = data.data.subscription;
@@ -64,23 +50,17 @@ export function SubscriptionStatus() {
           }
           
           setSubscription(sub);
+        } else if (data?.data) {
+          // Если нет данных о подписке, но есть data.data - создаем объект подписки (безлимит)
+          setSubscription({
+            expiresAt: null,
+            hasAccess: true,
+            daysRemaining: null
+          });
         } else {
-          // Если нет данных о подписке, но есть data.data - создаем объект подписки
-          if (data?.data) {
-            console.warn("[SubscriptionStatus] No subscription data in response, but user data exists:", data.data);
-            // Создаем объект подписки с null значениями
-            setSubscription({
-              expiresAt: null,
-              hasAccess: true,
-              daysRemaining: null
-            });
-          } else {
-            console.error("[SubscriptionStatus] No data in API response");
-            setSubscription(null);
-          }
+          setSubscription(null);
         }
       } catch (error) {
-        console.error("[SubscriptionStatus] Error loading subscription:", error);
         setError(error instanceof Error ? error.message : String(error));
       } finally {
         setLoading(false);
@@ -129,31 +109,19 @@ export function SubscriptionStatus() {
     );
   }
 
-  // Если нет данных о подписке - показываем информационное сообщение для отладки
+  // Если нет данных о подписке - не показываем ничего
   if (!subscription) {
-    return (
-      <div className="card p-3 mb-4 bg-yellow-50/50 border border-yellow-200 rounded-lg">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center text-base">
-            ⚠️
-          </div>
-          <div>
-            <div className="font-bold text-yellow-800 text-sm">Информация о подписке недоступна</div>
-            <div className="text-xs text-yellow-700">Проверьте консоль браузера (F12) для отладки</div>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
-  // Если нет ограничений по подписке (старые пользователи) - показываем информационное сообщение
-  if (subscription.expiresAt === null || subscription.daysRemaining === null) {
+  // Если нет ограничений по подписке (expiresAt === null) - безлимит
+  if (subscription.expiresAt === null) {
     return (
       <div className="card p-3 mb-4" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(59,130,246,0.15) 100%)', borderColor: 'rgba(59,130,246,0.3)'}}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-blue-500/90 backdrop-blur-md rounded-lg flex items-center justify-center text-base border border-white/30 shadow-[0_4px_16px_rgba(59,130,246,0.3)]">
-              ℹ️
+              ∞
             </div>
             <div>
               <div className="font-bold text-blue-800 text-sm">Неограниченный доступ</div>
@@ -165,8 +133,8 @@ export function SubscriptionStatus() {
     );
   }
 
-  // Если доступ истёк
-  if (!subscription.hasAccess) {
+  // Если доступ истёк или нет подписки - ограничение доступа
+  if (!subscription.hasAccess || subscription.daysRemaining === null) {
     return (
       <div className="card p-3 mb-4" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(239,68,68,0.15) 100%)', borderColor: 'rgba(239,68,68,0.3)'}}>
         <div className="flex items-center justify-between gap-3">
@@ -175,8 +143,12 @@ export function SubscriptionStatus() {
               ⏰
             </div>
             <div>
-              <div className="font-bold text-red-800 text-sm">Доступ истёк</div>
-              <div className="text-xs text-red-700">Подписка закончилась</div>
+              <div className="font-bold text-red-800 text-sm">Доступ ограничен</div>
+              <div className="text-xs text-red-700">
+                {subscription.expiresAt 
+                  ? `Подписка закончилась ${new Date(subscription.expiresAt).toLocaleDateString("ru-RU")}`
+                  : "Подписка не активирована"}
+              </div>
             </div>
           </div>
           <a

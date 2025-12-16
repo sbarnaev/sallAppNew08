@@ -63,18 +63,17 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
   return (
     <div className="space-y-8 md:space-y-10">
       {/* Заголовок с статистикой */}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+      <div className="flex flex-col gap-4">
         <div className="space-y-2">
           <h1 className="page-title">Клиенты</h1>
           <p className="page-subtitle">Всего клиентов: <span className="text-gray-900 font-bold">{total}</span></p>
         </div>
-        <div className="flex gap-3">
-          <Link href="/clients/new" className="btn btn-success">
+        <div className="flex">
+          <Link href="/clients/new" className="btn btn-success w-full sm:w-auto">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            <span className="hidden sm:inline">Новый клиент</span>
-            <span className="sm:hidden">Новый</span>
+            <span>Новый клиент</span>
           </Link>
         </div>
       </div>

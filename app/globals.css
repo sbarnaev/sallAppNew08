@@ -66,10 +66,11 @@
 
 body {
   background:
-    radial-gradient(1600px circle at 12% -5%, rgba(59, 130, 246, 0.06), transparent 60%),
-    radial-gradient(1400px circle at 88% 10%, rgba(99, 102, 241, 0.05), transparent 60%),
-    radial-gradient(1200px circle at 50% 105%, rgba(16, 185, 129, 0.04), transparent 60%),
-    linear-gradient(180deg, #fafbfc 0%, #ffffff 50%, #f8fafc 100%);
+    radial-gradient(1800px circle at 10% -3%, rgba(74, 97, 255, 0.12), transparent 55%),
+    radial-gradient(1600px circle at 90% 8%, rgba(139, 92, 246, 0.10), transparent 55%),
+    radial-gradient(1400px circle at 50% 105%, rgba(16, 185, 129, 0.08), transparent 60%),
+    radial-gradient(1200px circle at 30% 50%, rgba(236, 72, 153, 0.06), transparent 50%),
+    linear-gradient(180deg, #f8fafc 0%, #ffffff 40%, #f1f5f9 80%, #ffffff 100%);
   @apply text-gray-900;
   font-feature-settings: "rlig" 1, "calt" 1;
   -webkit-font-smoothing: antialiased;
@@ -102,16 +103,16 @@ body {
   }
 }
 
-/* Премиальные карточки - более строгие углы */
+/* Премиальные карточки - прозрачные для градиентного фона */
 .card {
-  @apply bg-white/70 backdrop-blur-md rounded-lg;
-  @apply shadow-[0_1px_3px_0_rgba(0,0,0,0.08),0_1px_2px_0_rgba(0,0,0,0.04)] border border-gray-200/60;
-  @apply p-5 sm:p-6;
+  @apply bg-white/60 backdrop-blur-md rounded-lg;
+  @apply shadow-[0_1px_3px_0_rgba(0,0,0,0.08),0_1px_2px_0_rgba(0,0,0,0.04)] border border-white/50;
+  @apply p-5;
   @apply transition-all duration-200 ease-out;
 }
 
 .card:hover {
-  @apply shadow-[0_4px_12px_0_rgba(0,0,0,0.12),0_2px_4px_0_rgba(0,0,0,0.06)] border-gray-300/80;
+  @apply bg-white/75 shadow-[0_4px_12px_0_rgba(0,0,0,0.12),0_2px_4px_0_rgba(0,0,0,0.06)] border-white/70;
   transform: translateY(-1px);
 }
 
@@ -249,11 +250,11 @@ h3, h4, h5, h6 {
 
   /* Desktop nav items */
   .nav-item {
-    @apply flex items-center px-3 py-2.5 rounded-md whitespace-nowrap;
+    @apply flex items-center px-3 py-2.5 rounded-lg whitespace-nowrap;
     @apply transition-all duration-150;
-    @apply hover:bg-gray-100/60;
+    @apply hover:bg-gray-100;
   }
   .nav-item-label {
-    @apply ml-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-medium text-gray-700;
+    @apply ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-medium text-gray-700;
   }
 }

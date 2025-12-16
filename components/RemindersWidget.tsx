@@ -185,8 +185,8 @@ export function RemindersWidget() {
 
   if (loading) {
     return (
-      <div className="card p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Напоминания</h3>
+      <div className="card p-5">
+        <h3 className="text-base font-bold text-gray-900 mb-4">Напоминания</h3>
         <div className="flex items-center justify-center py-4">
           <svg className="animate-spin h-5 w-5 text-brand-600" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -199,9 +199,9 @@ export function RemindersWidget() {
 
   if (reminders.length === 0) {
     return (
-      <div className="card p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Напоминания</h3>
-        <div className="text-center py-6 text-gray-500">
+      <div className="card p-5">
+        <h3 className="text-base font-bold text-gray-900 mb-4">Напоминания</h3>
+        <div className="text-center py-4 text-gray-500">
           <p className="text-sm">Нет напоминаний на ближайшие 7 дней</p>
         </div>
       </div>
@@ -244,29 +244,29 @@ export function RemindersWidget() {
   };
 
   return (
-    <div className="card p-6">
-      <h3 className="text-lg font-bold text-gray-900 mb-4">Напоминания</h3>
+    <div className="card p-5">
+      <h3 className="text-base font-bold text-gray-900 mb-4">Напоминания</h3>
       
-      <div className="space-y-3">
+      <div className="space-y-2">
         {reminders.map((reminder) => (
           <Link
             key={reminder.id}
             href={reminder.link || "#"}
-            className="block p-4 rounded-2xl border-2 hover:shadow-md transition-all duration-300 group"
+            className="block p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200 group"
           >
-            <div className="flex items-start gap-4">
-              <div className={`w-12 h-12 rounded-xl border-2 ${getReminderColor(reminder.type)} flex items-center justify-center text-2xl shrink-0 group-hover:scale-110 transition-transform`}>
+            <div className="flex items-start gap-3">
+              <div className={`w-10 h-10 rounded-lg border ${getReminderColor(reminder.type)} flex items-center justify-center text-lg shrink-0`}>
                 {getReminderIcon(reminder.type)}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-bold text-gray-900 group-hover:text-brand-600 transition-colors mb-1">
+                <div className="font-semibold text-sm text-gray-900 group-hover:text-brand-600 transition-colors mb-0.5">
                   {reminder.title}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-xs text-gray-600">
                   {formatDaysUntil(reminder.daysUntil, reminder.type, reminder.date)}
                 </div>
                 {reminder.date && reminder.type !== "no-contact" && (
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-gray-500 mt-0.5">
                     {new Date(reminder.date).toLocaleDateString("ru-RU", {
                       year: "numeric",
                       month: "long",
@@ -281,10 +281,10 @@ export function RemindersWidget() {
       </div>
 
       {reminders.filter(r => r.type === "no-contact").length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="mt-4 pt-3 border-t border-gray-200">
           <Link
             href="/clients"
-            className="text-sm text-brand-600 hover:text-brand-700 font-semibold"
+            className="text-sm text-brand-600 hover:text-brand-700 font-medium"
           >
             Все клиенты →
           </Link>

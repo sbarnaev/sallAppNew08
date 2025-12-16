@@ -81,73 +81,76 @@ export default async function DashboardPage() {
   const clientsMap = await getClientsMap(clientIds);
 
   return (
-    <div className="space-y-5 md:space-y-6">
+    <div className="space-y-6">
+      {/* Статус подписки */}
+      <SubscriptionStatus />
+      
       {/* Заголовок */}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+      <div className="flex flex-col gap-4">
         <div className="space-y-1">
           <h1 className="page-title">Панель управления</h1>
           <p className="page-subtitle">Добро пожаловать в систему САЛ ПРОФИ</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Link 
             href="/clients/new" 
-            className="btn btn-success"
+            className="btn btn-success w-full sm:w-auto"
           >
             + Клиент
           </Link>
           <Link 
             href="/consultations/new" 
-            className="btn btn-primary"
+            className="btn btn-primary w-full sm:w-auto"
           >
             + Консультация
           </Link>
           <Link 
             href="/profiles/new" 
-            className="btn btn-secondary"
+            className="btn btn-secondary w-full sm:w-auto"
           >
             + Расчёт
           </Link>
         </div>
       </div>
 
-      {/* Статистика - Glassmorphism */}
+      {/* Статистика */}
       <div className="grid md:grid-cols-3 gap-4">
-        <Link href="/clients" className="card hover:scale-[1.02] transition-all duration-300 p-4 sm:p-5 group" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(16,185,129,0.1) 100%)', borderColor: 'rgba(16,185,129,0.3)'}}>
+        <Link href="/clients" className="card p-5 group border-l-4 border-l-green-500">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="text-xs text-gray-600 mb-1 font-semibold uppercase tracking-wider">Клиенты</div>
-              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 group-hover:text-green-700 transition-colors leading-none">{stats.clients}</div>
+              <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">Клиенты</div>
+              <div className="text-3xl font-bold text-gray-900 group-hover:text-green-600 transition-colors leading-none">{stats.clients}</div>
             </div>
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-green-500/90 to-green-600/90 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30 shadow-[0_8px_24px_rgba(16,185,129,0.3)] group-hover:shadow-[0_12px_32px_rgba(16,185,129,0.4)] group-hover:scale-105 transition-all duration-300">
-              <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-11 h-11 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
           </div>
         </Link>
 
-        <Link href="/profiles" className="card hover:scale-[1.02] transition-all duration-300 p-4 sm:p-5 group" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(74,97,255,0.1) 100%)', borderColor: 'rgba(74,97,255,0.3)'}}>
+        <Link href="/profiles" className="card p-5 group border-l-4 border-l-brand-500">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="text-xs text-gray-600 mb-1 font-semibold uppercase tracking-wider">Расчёты</div>
-              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 group-hover:text-brand-700 transition-colors leading-none">{stats.profiles}</div>
+              <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">Расчёты</div>
+              <div className="text-3xl font-bold text-gray-900 group-hover:text-brand-600 transition-colors leading-none">{stats.profiles}</div>
             </div>
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-brand-500/90 to-brand-600/90 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30 shadow-[0_8px_24px_rgba(74,97,255,0.3)] group-hover:shadow-[0_12px_32px_rgba(74,97,255,0.4)] group-hover:scale-105 transition-all duration-300">
-              <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-11 h-11 bg-brand-100 rounded-lg flex items-center justify-center group-hover:bg-brand-200 transition-colors">
+              <svg className="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </div>
           </div>
         </Link>
 
-        <Link href="/consultations" className="card hover:scale-[1.02] transition-all duration-300 p-4 sm:p-5 group" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(59,130,246,0.1) 100%)', borderColor: 'rgba(59,130,246,0.3)'}}>
+        <Link href="/consultations" className="card p-5 group border-l-4 border-l-blue-500">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="text-xs text-gray-600 mb-1 font-semibold uppercase tracking-wider">Консультации</div>
-              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-none">{stats.consultations}</div>
+              <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">Консультации</div>
+              <div className="text-3xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors leading-none">{stats.consultations}</div>
             </div>
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500/90 to-blue-600/90 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30 shadow-[0_8px_24px_rgba(59,130,246,0.3)] group-hover:shadow-[0_12px_32px_rgba(59,130,246,0.4)] group-hover:scale-105 transition-all duration-300">
-              <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-11 h-11 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
@@ -155,31 +158,31 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      {/* Быстрые действия - Glassmorphism */}
-      <div className="card p-4 sm:p-5">
-        <h2 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">Быстрые действия</h2>
+      {/* Быстрые действия */}
+      <div className="card p-5">
+        <h2 className="text-base font-bold mb-4 text-gray-900">Быстрые действия</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <Link href="/clients/new" className="flex items-center gap-3 p-3.5 rounded-xl bg-white/30 backdrop-blur-md border border-white/40 hover:border-green-300/50 hover:bg-white/50 transition-all duration-300 hover:shadow-[0_8px_24px_rgba(16,185,129,0.2)] hover:-translate-y-0.5 group">
-            <div className="w-11 h-11 bg-gradient-to-br from-green-500/90 to-green-600/90 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30 shadow-[0_4px_16px_rgba(16,185,129,0.3)] group-hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] group-hover:scale-105 transition-all duration-300">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          <Link href="/clients/new" className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:bg-green-50/50 transition-all duration-200 group">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-bold text-gray-900 group-hover:text-green-700 transition-colors text-sm">Новый клиент</div>
-              <div className="text-gray-600 text-[11px] mt-0.5">Добавить клиента</div>
+              <div className="font-semibold text-gray-900 group-hover:text-green-700 transition-colors text-sm">Новый клиент</div>
+              <div className="text-gray-500 text-xs mt-0.5">Добавить клиента</div>
             </div>
           </Link>
 
-          <Link href="/profiles/new" className="flex items-center gap-3 p-3.5 rounded-xl bg-white/30 backdrop-blur-md border border-white/40 hover:border-brand-300/50 hover:bg-white/50 transition-all duration-300 hover:shadow-[0_8px_24px_rgba(74,97,255,0.2)] hover:-translate-y-0.5 group">
-            <div className="w-11 h-11 bg-gradient-to-br from-brand-500/90 to-brand-600/90 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30 shadow-[0_4px_16px_rgba(74,97,255,0.3)] group-hover:shadow-[0_6px_20px_rgba(74,97,255,0.4)] group-hover:scale-105 transition-all duration-300">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          <Link href="/profiles/new" className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:border-brand-300 hover:bg-brand-50/50 transition-all duration-200 group">
+            <div className="w-10 h-10 bg-brand-100 rounded-lg flex items-center justify-center group-hover:bg-brand-200 transition-colors">
+              <svg className="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-bold text-gray-900 group-hover:text-brand-700 transition-colors text-sm">Новый расчёт</div>
-              <div className="text-gray-600 text-[11px] mt-0.5">Создать профиль</div>
+              <div className="font-semibold text-gray-900 group-hover:text-brand-700 transition-colors text-sm">Новый расчёт</div>
+              <div className="text-gray-500 text-xs mt-0.5">Создать профиль</div>
             </div>
           </Link>
 
@@ -187,15 +190,13 @@ export default async function DashboardPage() {
       </div>
 
       {/* Напоминания */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <RemindersWidget />
-      </div>
+      <RemindersWidget />
 
-      {/* Недавние расчёты - Glassmorphism */}
-      <div className="card p-4 sm:p-5">
+      {/* Недавние расчёты */}
+      <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900">Недавние расчёты</h2>
-          <Link href="/profiles" className="text-xs sm:text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors px-2.5 py-1 rounded-lg hover:bg-brand-50">Все →</Link>
+          <h2 className="text-base font-bold text-gray-900">Недавние расчёты</h2>
+          <Link href="/profiles" className="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors">Все →</Link>
         </div>
         {recentProfiles.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
@@ -205,7 +206,7 @@ export default async function DashboardPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {recentProfiles.map((p: any) => {
               // Определяем тип расчета из raw_json
               let consultationType = "Базовый";
@@ -231,27 +232,27 @@ export default async function DashboardPage() {
               const birthDateStr = client?.birth_date ? new Date(client.birth_date).toLocaleDateString("ru-RU") : null;
               
               return (
-                <Link key={p.id} href={`/profiles/${p.id}`} className="bg-white/40 backdrop-blur-md rounded-xl border border-white/40 p-4 shadow-[0_4px_16px_rgba(31,38,135,0.1)] hover:shadow-[0_8px_24px_rgba(31,38,135,0.15)] hover:scale-[1.02] hover:-translate-y-0.5 hover:border-white/60 hover:bg-white/50 transition-all duration-300 group">
+                <Link key={p.id} href={`/profiles/${p.id}`} className="bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 hover:shadow-md transition-all duration-200 group">
                   <div className="space-y-3">
-                    <div className="font-bold text-base text-gray-900 break-words group-hover:text-blue-700 transition-colors leading-tight">{clientName}</div>
-                    <div className="space-y-1.5 text-xs text-gray-600">
+                    <div className="font-semibold text-base text-gray-900 break-words group-hover:text-brand-600 transition-colors leading-tight">{clientName}</div>
+                    <div className="space-y-1.5 text-xs text-gray-500">
                       <div className="flex items-center gap-2">
                         <svg className="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        <span className="text-gray-600">Дата расчета: {dateStr}</span>
+                        <span>Дата расчета: {dateStr}</span>
                       </div>
                       {birthDateStr && (
                         <div className="flex items-center gap-2">
                           <svg className="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          <span className="text-gray-600">Дата рождения: {birthDateStr}</span>
+                          <span>Дата рождения: {birthDateStr}</span>
                         </div>
                       )}
                     </div>
                     <div className="flex items-center gap-2 pt-1">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-500/20 backdrop-blur-md text-blue-800 border border-blue-300/40" style={{boxShadow: '0 2px 8px rgba(59, 130, 246, 0.2)'}}>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
                         {consultationType}
                       </span>
                     </div>
