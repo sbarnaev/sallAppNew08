@@ -69,8 +69,11 @@ export function SubscriptionStatus() {
             const now = new Date();
             const hasAccess = expiresDate > now;
             const diff = expiresDate.getTime() - now.getTime();
+            // Считаем полные дни (округление вниз) + если осталось больше 12 часов от следующего дня, добавляем 1
+            const fullDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const remainingHours = (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60);
             const daysRemaining = hasAccess 
-              ? Math.ceil(diff / (1000 * 60 * 60 * 24))
+              ? (remainingHours > 12 ? fullDays + 1 : fullDays)
               : 0;
             
             const hours = diff > 0 ? Math.floor(diff / (1000 * 60 * 60)) : 0;
