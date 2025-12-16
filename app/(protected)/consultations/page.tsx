@@ -51,9 +51,9 @@ async function getClientsMap(clientIds: number[]) {
 export default async function ConsultationsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined>}) {
   const { data = [], meta = {} } = await getConsultations(searchParams);
   // Получаем только уникальные ID клиентов из консультаций
-  const clientIds = [...new Set(data.map((c: any) => c.client_id).filter((id: any): id is number => !!id && typeof id === 'number'))];
-  const partnerClientIds = [...new Set(data.map((c: any) => c.partner_client_id).filter((id: any): id is number => !!id && typeof id === 'number'))];
-  const allClientIds = [...new Set([...clientIds, ...partnerClientIds])];
+  const clientIds: number[] = [...new Set(data.map((c: any) => c.client_id).filter((id: any): id is number => !!id && typeof id === 'number'))];
+  const partnerClientIds: number[] = [...new Set(data.map((c: any) => c.partner_client_id).filter((id: any): id is number => !!id && typeof id === 'number'))];
+  const allClientIds: number[] = [...new Set([...clientIds, ...partnerClientIds])];
   const clientsMap = await getClientsMap(allClientIds);
   const page = Number(searchParams.page || 1);
   const limit = Number(searchParams.limit || 20);
