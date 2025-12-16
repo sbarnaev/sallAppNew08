@@ -148,15 +148,30 @@ export default function EditConsultationPage() {
     );
   }
 
-  if (!consultation) {
+  if (!consultation || error) {
     return (
       <div className="space-y-8 md:space-y-10 max-w-2xl mx-auto">
         <div className="surface bg-red-50 border-red-200 text-red-800 p-6">
-          <h2 className="font-bold mb-2">Консультация не найдена</h2>
-          <p>Консультация с ID {id} не существует или у вас нет прав доступа.</p>
-          <Link href="/consultations" className="text-brand-600 hover:text-brand-700 mt-4 inline-block">
-            ← Вернуться к списку консультаций
-          </Link>
+          <h2 className="font-bold mb-2 text-lg">Консультация не найдена</h2>
+          <p className="mb-4">
+            {error || `Консультация с ID ${id} не существует.`}
+          </p>
+          <p className="text-sm text-red-700 mb-4">
+            Возможные причины:
+          </p>
+          <ul className="list-disc list-inside text-sm text-red-700 mb-4 space-y-1">
+            <li>Консультация была удалена</li>
+            <li>Консультация принадлежит другому пользователю</li>
+            <li>Неправильный ID в ссылке</li>
+          </ul>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Link href="/consultations" className="btn btn-primary w-full sm:w-auto">
+              ← Вернуться к списку консультаций
+            </Link>
+            <Link href="/consultations/new" className="btn btn-secondary w-full sm:w-auto">
+              Создать новую консультацию
+            </Link>
+          </div>
         </div>
       </div>
     );
