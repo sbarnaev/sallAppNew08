@@ -53,9 +53,6 @@ export async function GET(req: NextRequest) {
         "duration",
         "base_cost",
         "actual_cost",
-        "profile_id",
-        "partner_client_id",
-        "partner_profile_id",
         "created_at",
         "consultation_number",
       ].join(",")

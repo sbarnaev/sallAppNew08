@@ -30,6 +30,8 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
     // Игнорируем ошибку
   }
 
+  // Запрашиваем только те поля, которые точно существуют и доступны
+  // Не включаем profile_id, partner_client_id, partner_profile_id - они могут отсутствовать или быть недоступны
   const fields = [
     "id",
     "client_id",
@@ -39,9 +41,6 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
     "duration",
     "base_cost",
     "actual_cost",
-    "profile_id",
-    "partner_client_id",
-    "partner_profile_id",
     "created_at",
     "owner_user",
     "consultation_number",
