@@ -28,6 +28,14 @@ export function SubscriptionStatus() {
         
         const data = await res.json().catch(() => ({ data: null }));
         
+        // Логируем для отладки
+        console.log("[SubscriptionStatus] API response:", {
+          status: res.status,
+          hasData: !!data?.data,
+          hasSubscription: !!data?.data?.subscription,
+          subscription: data?.data?.subscription
+        });
+        
         if (data?.data?.subscription) {
           const sub = data.data.subscription;
           
@@ -49,6 +57,9 @@ export function SubscriptionStatus() {
           }
           
           setSubscription(sub);
+        } else {
+          // Если нет данных о подписке, устанавливаем null
+          setSubscription(null);
         }
       } catch (error) {
         console.error("Error loading subscription:", error);
@@ -67,13 +78,41 @@ export function SubscriptionStatus() {
     return () => clearInterval(interval);
   }, []);
 
-  if (loading || !subscription) {
+  if (loading) {
+    return (
+      <div className="card p-3 mb-4 bg-gray-50/50 border border-gray-200 rounded-lg">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div className="flex-1">
+            <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Если нет данных о подписке
+  if (!subscription) {
     return null;
   }
 
-  // Если нет ограничений по подписке (старые пользователи)
+  // Если нет ограничений по подписке (старые пользователи) - показываем информационное сообщение
   if (subscription.expiresAt === null || subscription.daysRemaining === null) {
-    return null;
+    return (
+      <div className="card p-3 mb-4" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(59,130,246,0.15) 100%)', borderColor: 'rgba(59,130,246,0.3)'}}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-blue-500/90 backdrop-blur-md rounded-lg flex items-center justify-center text-base border border-white/30 shadow-[0_4px_16px_rgba(59,130,246,0.3)]">
+              ℹ️
+            </div>
+            <div>
+              <div className="font-bold text-blue-800 text-sm">Неограниченный доступ</div>
+              <div className="text-xs text-blue-700">У вас нет ограничений по подписке</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Если доступ истёк
@@ -139,7 +178,7 @@ export function SubscriptionStatus() {
     );
   }
 
-  // Нормальный статус
+  // Нормальный статус (больше 7 дней)
   return (
     <div className="card p-3 mb-4" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(16,185,129,0.15) 100%)', borderColor: 'rgba(16,185,129,0.3)'}}>
       <div className="flex items-center justify-between gap-3">
@@ -147,19 +186,19 @@ export function SubscriptionStatus() {
           <div className="w-8 h-8 bg-green-500/90 backdrop-blur-md rounded-lg flex items-center justify-center text-base border border-white/30 shadow-[0_4px_16px_rgba(16,185,129,0.3)]">
             ✓
           </div>
-            <div>
-              <div className="font-bold text-green-800 text-sm">
-                Доступ активен
-              </div>
-              <div className="text-xs text-green-700">
-                Осталось {subscription.daysRemaining} {subscription.daysRemaining === 1 ? "день" : subscription.daysRemaining < 5 ? "дня" : "дней"} до {new Date(subscription.expiresAt).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
-              </div>
-              {subscription.hoursRemaining !== undefined && subscription.hoursRemaining !== null && subscription.hoursRemaining < 24 && (
-                <div className="text-[10px] text-green-600 mt-0.5">
-                  До окончания: {subscription.hoursRemaining} ч {subscription.minutesRemaining ?? 0} мин
-                </div>
-              )}
+          <div>
+            <div className="font-bold text-green-800 text-sm">
+              Доступ активен
             </div>
+            <div className="text-xs text-green-700">
+              Осталось {subscription.daysRemaining} {subscription.daysRemaining === 1 ? "день" : subscription.daysRemaining < 5 ? "дня" : "дней"} до {new Date(subscription.expiresAt).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
+            </div>
+            {subscription.hoursRemaining !== undefined && subscription.hoursRemaining !== null && subscription.hoursRemaining < 24 && (
+              <div className="text-[10px] text-green-600 mt-0.5">
+                До окончания: {subscription.hoursRemaining} ч {subscription.minutesRemaining ?? 0} мин
+              </div>
+            )}
+          </div>
         </div>
         <a
           href="https://t.me/roman_acc"
