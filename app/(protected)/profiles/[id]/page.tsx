@@ -528,8 +528,8 @@ export default function ProfileDetail() {
     }
     body {
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      color: #0f172a;
-      background: #ffffff;
+      color: #1A1A1A;
+      background: #FAF9F7;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       text-rendering: geometricPrecision;
@@ -541,12 +541,13 @@ export default function ProfileDetail() {
       --pdf-subtitle-fs: 11px;
       --pdf-section-fs: 20px;
       --pdf-li-fs: 12.8px;
-      --pdf-li-lh: 1.45;
-      --pdf-li-gap: 8px;
-      --pdf-li-pad-y: 10px;
-      --pdf-li-pad-x: 12px;
-      --accent: #4a61ff;
-      --accent-soft: rgba(74, 97, 255, 0.14);
+      --pdf-li-lh: 1.5;
+      --pdf-li-gap: 10px;
+      --pdf-li-pad-y: 12px;
+      --pdf-li-pad-x: 14px;
+      --accent: #4A6FA5;
+      --accent-soft: rgba(74, 111, 165, 0.08);
+      --accent-light: rgba(74, 111, 165, 0.12);
 
       page-break-after: always;
       page-break-inside: avoid;
@@ -556,10 +557,10 @@ export default function ProfileDetail() {
       display: flex;
       flex-direction: column;
       background:
-        radial-gradient(900px circle at 18% -10%, rgba(74, 97, 255, 0.10), transparent 55%),
-        radial-gradient(750px circle at 82% 0%, rgba(16, 185, 129, 0.08), transparent 55%),
-        linear-gradient(180deg, #ffffff 0%, #ffffff 60%, #f8fafc 100%);
-      overflow: hidden; /* важно: не даём вылезать за страницу, будем подгонять типографику */
+        radial-gradient(2000px circle at 20% 30%, rgba(74, 111, 165, 0.03), transparent 50%),
+        radial-gradient(1800px circle at 80% 70%, rgba(91, 127, 184, 0.02), transparent 50%),
+        linear-gradient(180deg, #FAF9F7 0%, #F5F4F2 50%, #FAF9F7 100%);
+      overflow: hidden;
       box-sizing: border-box;
       position: relative;
     }
@@ -569,22 +570,23 @@ export default function ProfileDetail() {
       top: 0;
       left: 0;
       right: 0;
-      height: 6px;
-      background: linear-gradient(90deg, var(--accent), #2034b4 55%, rgba(32, 52, 180, 0.35));
-      opacity: 0.9;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), rgba(74, 111, 165, 0.4));
+      opacity: 0.6;
     }
     .page:last-child {
       page-break-after: auto;
     }
-    .page.strengths { --accent: #f97316; --accent-soft: rgba(249, 115, 22, 0.14); }
-    .page.weaknesses { --accent: #ea580c; --accent-soft: rgba(234, 88, 12, 0.14); }
-    .page.plus { --accent: #059669; --accent-soft: rgba(5, 150, 105, 0.14); }
-    .page.minus { --accent: #dc2626; --accent-soft: rgba(220, 38, 38, 0.14); }
+    /* Все секции используют один спокойный акцент */
+    .page.strengths { --accent: #4A6FA5; --accent-soft: rgba(74, 111, 165, 0.08); --accent-light: rgba(74, 111, 165, 0.12); }
+    .page.weaknesses { --accent: #4A6FA5; --accent-soft: rgba(74, 111, 165, 0.08); --accent-light: rgba(74, 111, 165, 0.12); }
+    .page.plus { --accent: #4A6FA5; --accent-soft: rgba(74, 111, 165, 0.08); --accent-light: rgba(74, 111, 165, 0.12); }
+    .page.minus { --accent: #4A6FA5; --accent-soft: rgba(74, 111, 165, 0.08); --accent-light: rgba(74, 111, 165, 0.12); }
 
     .header {
-      margin-bottom: 10px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.55);
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.5);
       flex-shrink: 0;
       display: flex;
       align-items: flex-end;
@@ -594,44 +596,45 @@ export default function ProfileDetail() {
     .brand {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       white-space: nowrap;
     }
     .brand-mark {
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 999px;
-      background: linear-gradient(135deg, #4a61ff, #2034b4);
-      box-shadow: 0 0 0 4px rgba(74, 97, 255, 0.14);
+      background: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
       flex-shrink: 0;
     }
     .brand-name {
-      font-size: 10px;
-      letter-spacing: 0.18em;
+      font-size: 9px;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      font-weight: 800;
-      color: #334155;
+      font-weight: 600;
+      color: #6B6B6B;
     }
     .header-left { min-width: 0; }
     .title {
       font-size: var(--pdf-title-fs);
-      font-weight: 800;
-      letter-spacing: -0.015em;
+      font-weight: 600;
+      letter-spacing: -0.02em;
       margin-bottom: 4px;
+      color: #1A1A1A;
     }
     .subtitle {
       font-size: var(--pdf-subtitle-fs);
-      color: #64748b;
-      font-weight: 600;
+      color: #6B6B6B;
+      font-weight: 400;
     }
     .section-title {
       font-size: var(--pdf-section-fs);
-      font-weight: 850;
-      color: #0f172a;
-      margin: 10px 0 10px 0;
-      padding-bottom: 8px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.55);
-      letter-spacing: -0.015em;
+      font-weight: 600;
+      color: #1A1A1A;
+      margin: 12px 0 14px 0;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+      letter-spacing: -0.02em;
       flex-shrink: 0;
       display: flex;
       align-items: center;
@@ -639,11 +642,11 @@ export default function ProfileDetail() {
     }
     .section-title::before {
       content: "";
-      width: 10px;
-      height: 10px;
-      border-radius: 4px;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
       background: var(--accent);
-      box-shadow: 0 0 0 4px var(--accent-soft);
+      box-shadow: 0 0 0 3px var(--accent-soft);
       flex-shrink: 0;
     }
     .content {
@@ -667,38 +670,41 @@ export default function ProfileDetail() {
     li {
       break-inside: avoid;
       margin: 0 0 var(--pdf-li-gap) 0;
-      padding: var(--pdf-li-pad-y) var(--pdf-li-pad-x) var(--pdf-li-pad-y) calc(var(--pdf-li-pad-x) + 22px);
+      padding: var(--pdf-li-pad-y) var(--pdf-li-pad-x) var(--pdf-li-pad-y) calc(var(--pdf-li-pad-x) + 20px);
       position: relative;
       line-height: var(--pdf-li-lh);
       font-size: var(--pdf-li-fs);
-      color: #0f172a;
-      background: rgba(255, 255, 255, 0.92);
-      border-radius: 12px;
-      border: 1px solid rgba(226, 232, 240, 0.95);
-      border-left: 4px solid var(--accent);
-      box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+      color: #1A1A1A;
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-left: 2px solid var(--accent);
+      box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(255, 255, 255, 0.6);
     }
     li::before {
       content: "";
       position: absolute;
-      left: 14px;
-      top: 12px;
-      width: 9px;
-      height: 9px;
+      left: 12px;
+      top: 14px;
+      width: 6px;
+      height: 6px;
       border-radius: 999px;
       background: var(--accent);
-      box-shadow: 0 0 0 4px var(--accent-soft);
+      box-shadow: 0 0 0 2px var(--accent-soft);
     }
     .footer {
       margin-top: auto;
-      padding-top: 10px;
-      border-top: 1px solid rgba(226, 232, 240, 0.95);
-      font-size: 11px;
-      color: #94a3b8;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.5);
+      font-size: 10px;
+      color: #8B8B8B;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
+      font-weight: 400;
     }
     /* Если совсем не влазит — включим 2 колонки */
     .page.compact-2col ul { column-count: 2; }
@@ -843,7 +849,7 @@ export default function ProfileDetail() {
       element.style.left = '0';
       element.style.top = '-10000px';
       element.style.width = '210mm';
-      element.style.backgroundColor = 'white';
+      element.style.backgroundColor = '#FAF9F7';
       element.style.opacity = '1';
       element.style.visibility = 'visible';
       element.style.pointerEvents = 'none';
@@ -882,8 +888,8 @@ export default function ProfileDetail() {
           let titleFs = 18;
           let sectionFs = 20;
           let liFs = 12.8;
-          let liGap = 8;
-          let liPadY = 10;
+          let liGap = 10;
+          let liPadY = 12;
 
           const apply = () => {
             pageEl.style.setProperty('--pdf-title-fs', `${titleFs}px`);
@@ -899,8 +905,8 @@ export default function ProfileDetail() {
             await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
             if (pageEl.scrollHeight <= pageEl.clientHeight) return;
             liFs = Math.max(11.2, liFs - 0.4);
-            liGap = Math.max(6, liGap - 0.5);
-            liPadY = Math.max(8, liPadY - 0.5);
+            liGap = Math.max(8, liGap - 0.5);
+            liPadY = Math.max(10, liPadY - 0.5);
             sectionFs = Math.max(16, sectionFs - 0.5);
             titleFs = Math.max(16, titleFs - 0.3);
             apply();
@@ -917,8 +923,8 @@ export default function ProfileDetail() {
           for (let step = 0; step < 6; step++) {
             if (pageEl.scrollHeight <= pageEl.clientHeight) return;
             liFs = Math.max(10.8, liFs - 0.3);
-            liGap = Math.max(5, liGap - 0.4);
-            liPadY = Math.max(7, liPadY - 0.4);
+            liGap = Math.max(8, liGap - 0.4);
+            liPadY = Math.max(10, liPadY - 0.4);
             apply();
             await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
           }
@@ -943,7 +949,7 @@ export default function ProfileDetail() {
           const canvas = await html2canvas(pageEl, {
           scale: 2, 
           useCORS: true,
-          backgroundColor: '#ffffff',
+          backgroundColor: '#FAF9F7',
             logging: false,
           });
           const imgData = canvas.toDataURL('image/jpeg', 0.95);
