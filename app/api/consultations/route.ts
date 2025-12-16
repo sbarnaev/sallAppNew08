@@ -209,6 +209,72 @@ export async function POST(req: NextRequest) {
     cache: "no-store",
   });
 
-  const data = await r.json().catch(() => ({}));
+  // Логируем ответ для отладки
+  const responseText = await r.text();
+  let data: any = {};
+  
+  try {
+    data = JSON.parse(responseText);
+  } catch (e) {
+    // Если ответ не JSON (например, 204 No Content)
+    logger.log("Directus response is not JSON:", { status: r.status, text: responseText });
+    if (r.status === 204 || r.status === 200) {
+      // При успешном создании без тела ответа, нужно получить созданную запись
+      // Попробуем получить последнюю консультацию для этого пользователя
+      const fetchUrl = `${baseUrl}/items/consultations?filter[owner_user][_eq]=${currentUser.id}&filter[client_id][_eq]=${clientId}&sort=-created_at&limit=1&fields=id,client_id,type,status,scheduled_at,created_at`;
+      const fetchRes = await fetch(fetchUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      const fetchData = await fetchRes.json().catch(() => ({ data: [] }));
+      if (fetchData?.data && Array.isArray(fetchData.data) && fetchData.data.length > 0) {
+        const created = fetchData.data[0];
+        // Проверяем, что это действительно только что созданная запись (в пределах последних 5 секунд)
+        const createdTime = new Date(created.created_at).getTime();
+        const now = Date.now();
+        if (now - createdTime < 5000 && created.client_id === clientId) {
+          return NextResponse.json({ data: created }, { status: 200 });
+        }
+      }
+      return NextResponse.json({ 
+        message: "Консультация создана, но не удалось получить её ID. Проверьте список консультаций.",
+        data: null 
+      }, { status: 200 });
+    }
+    return NextResponse.json({ 
+      message: "Ошибка создания консультации",
+      errors: [{ message: responseText || "Неизвестная ошибка" }]
+    }, { status: r.status });
+  }
+
+  // Если есть ошибки от Directus
+  if (data?.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+    logger.error("Directus errors:", data.errors);
+    return NextResponse.json({ 
+      message: data.errors[0].message || "Ошибка создания консультации",
+      errors: data.errors
+    }, { status: r.status >= 400 ? r.status : 400 });
+  }
+
+  // Проверяем, что данные действительно есть
+  if (!data?.data && r.status >= 200 && r.status < 300) {
+    logger.warn("Consultation created but no data returned:", { status: r.status, response: data });
+    // Пробуем получить созданную запись
+    const fetchUrl = `${baseUrl}/items/consultations?filter[owner_user][_eq]=${currentUser.id}&filter[client_id][_eq]=${clientId}&sort=-created_at&limit=1&fields=id,client_id,type,status,scheduled_at,created_at`;
+    const fetchRes = await fetch(fetchUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    const fetchData = await fetchRes.json().catch(() => ({ data: [] }));
+    if (fetchData?.data && Array.isArray(fetchData.data) && fetchData.data.length > 0) {
+      const created = fetchData.data[0];
+      const createdTime = new Date(created.created_at).getTime();
+      const now = Date.now();
+      if (now - createdTime < 5000 && created.client_id === clientId) {
+        return NextResponse.json({ data: created }, { status: 200 });
+      }
+    }
+  }
+
   return NextResponse.json(data, { status: r.status });
 } 

@@ -26,29 +26,36 @@ export function RemindersWidget() {
         today.setHours(0, 0, 0, 0);
         const in7Days = new Date(today);
         in7Days.setDate(in7Days.getDate() + 7);
+        const oneMonthAgo = new Date(today);
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-        // Загружаем всех клиентов
-        const clientsRes = await fetch("/api/clients?limit=1000", { cache: "no-store" });
-        const clientsData = await clientsRes.json().catch(() => ({ data: [] }));
-        const clients = clientsData?.data || [];
+        const remindersList: Reminder[] = [];
 
-        // Загружаем консультации на ближайшие 7 дней (только запланированные)
+        // 1. Загружаем консультации на ближайшие 7 дней (только запланированные) - это быстрый запрос
         const consultationsRes = await fetch(
-          `/api/consultations?filter[scheduled_at][_gte]=${today.toISOString()}&filter[scheduled_at][_lte]=${in7Days.toISOString()}&filter[status][_eq]=scheduled&limit=100`,
-          { cache: "no-store" }
+          `/api/consultations?filter[scheduled_at][_gte]=${today.toISOString()}&filter[scheduled_at][_lte]=${in7Days.toISOString()}&filter[status][_eq]=scheduled&limit=100&fields=id,client_id,partner_client_id,type,scheduled_at`,
+          { cache: { next: { revalidate: 30 } } }
         );
         const consultationsData = await consultationsRes.json().catch(() => ({ data: [] }));
         const consultations = consultationsData?.data || [];
 
-        // Загружаем последние расчёты для каждого клиента, чтобы определить "не было контакта >1 месяца"
-        const profilesRes = await fetch("/api/profiles?limit=1000&sort=-created_at", { cache: "no-store" });
-        const profilesData = await profilesRes.json().catch(() => ({ data: [] }));
-        const profiles = profilesData?.data || [];
+        // Получаем уникальные ID клиентов из консультаций
+        const consultationClientIds = new Set<number>();
+        consultations.forEach((c: any) => {
+          if (c.client_id) consultationClientIds.add(c.client_id);
+          if (c.partner_client_id) consultationClientIds.add(c.partner_client_id);
+        });
 
-        const remindersList: Reminder[] = [];
+        // 2. Загружаем только клиентов с днями рождения в ближайшие 7 дней
+        // Используем фильтр по дате рождения через API (если поддерживается) или загружаем последние 100
+        const clientsForBirthdaysRes = await fetch("/api/clients?limit=100&sort=-created_at&fields=id,name,birth_date,created_at", { 
+          cache: { next: { revalidate: 60 } } 
+        });
+        const clientsForBirthdaysData = await clientsForBirthdaysRes.json().catch(() => ({ data: [] }));
+        const clientsForBirthdays = clientsForBirthdaysData?.data || [];
 
-        // Проверяем дни рождения
-        clients.forEach((client: any) => {
+        // Проверяем дни рождения только у загруженных клиентов
+        clientsForBirthdays.forEach((client: any) => {
           if (client.birth_date) {
             const birthDate = new Date(client.birth_date);
             const thisYearBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
@@ -76,16 +83,28 @@ export function RemindersWidget() {
           }
         });
 
-        // Проверяем предстоящие консультации (только запланированные)
+        // 3. Обрабатываем консультации - загружаем только нужных клиентов
+        const clientIdsForConsultations = Array.from(consultationClientIds);
+        let clientsMap: Record<number, any> = {};
+        
+        if (clientIdsForConsultations.length > 0) {
+          const ids = clientIdsForConsultations.join(',');
+          const clientsRes = await fetch(`/api/clients?filter[id][_in]=${ids}&fields=id,name&limit=100`, { 
+            cache: { next: { revalidate: 60 } } 
+          });
+          const clientsData = await clientsRes.json().catch(() => ({ data: [] }));
+          clientsData?.data?.forEach((c: any) => {
+            if (c.id) clientsMap[c.id] = c;
+          });
+        }
+
         consultations.forEach((consultation: any) => {
-          // Показываем только запланированные консультации
           if (consultation.scheduled_at && consultation.status === "scheduled") {
             const consultationDate = new Date(consultation.scheduled_at);
             const daysUntil = Math.ceil((consultationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
             
-            // Показываем консультации на ближайшие 7 дней (включая сегодня)
             if (daysUntil >= 0 && daysUntil <= 7) {
-              const client = clients.find((c: any) => c.id === consultation.client_id);
+              const client = clientsMap[consultation.client_id];
               const typeLabels: Record<string, string> = {
                 base: "Базовая",
                 extended: "Расширенная",
@@ -108,29 +127,50 @@ export function RemindersWidget() {
           }
         });
 
-        // Загружаем все консультации для проверки "нет контакта"
-        const allConsultationsRes = await fetch("/api/consultations?limit=1000&sort=-scheduled_at", { cache: "no-store" });
-        const allConsultationsData = await allConsultationsRes.json().catch(() => ({ data: [] }));
-        const allConsultations = allConsultationsData?.data || [];
+        // 4. Проверяем клиентов без контакта >1 месяца - загружаем только последние 100 клиентов
+        // и их последние расчёты/консультации
+        const recentClientsRes = await fetch("/api/clients?limit=100&sort=-created_at&fields=id,name,created_at", { 
+          cache: { next: { revalidate: 60 } } 
+        });
+        const recentClientsData = await recentClientsRes.json().catch(() => ({ data: [] }));
+        const recentClients = recentClientsData?.data || [];
 
-        // Проверяем клиентов без контакта >1 месяца
-        const oneMonthAgo = new Date(today);
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        // Загружаем последние расчёты (только последние 200)
+        const recentProfilesRes = await fetch("/api/profiles?limit=200&sort=-created_at&fields=id,client_id,created_at", { 
+          cache: { next: { revalidate: 60 } } 
+        });
+        const recentProfilesData = await recentProfilesRes.json().catch(() => ({ data: [] }));
+        const recentProfiles = recentProfilesData?.data || [];
 
-        clients.forEach((client: any) => {
-          // Находим последний расчёт для этого клиента
-          const clientProfiles = profiles.filter((p: any) => p.client_id === client.id);
-          const lastProfile = clientProfiles.length > 0 ? clientProfiles[0] : null; // Уже отсортированы по дате создания DESC
+        // Загружаем последние консультации (только последние 200)
+        const recentConsultationsRes = await fetch("/api/consultations?limit=200&sort=-scheduled_at,-created_at&fields=id,client_id,scheduled_at,created_at", { 
+          cache: { next: { revalidate: 60 } } 
+        });
+        const recentConsultationsData = await recentConsultationsRes.json().catch(() => ({ data: [] }));
+        const recentConsultations = recentConsultationsData?.data || [];
 
-          // Находим последнюю консультацию для этого клиента (включая завершённые)
-          const clientConsultations = allConsultations.filter((c: any) => c.client_id === client.id);
-          const lastConsultation = clientConsultations.length > 0 
-            ? clientConsultations.sort((a: any, b: any) => {
-                const dateA = new Date(a.scheduled_at || a.created_at).getTime();
-                const dateB = new Date(b.scheduled_at || b.created_at).getTime();
-                return dateB - dateA;
-              })[0]
-            : null;
+        // Группируем по client_id для быстрого поиска
+        const profilesByClient: Record<number, any> = {};
+        recentProfiles.forEach((p: any) => {
+          if (p.client_id && (!profilesByClient[p.client_id] || new Date(p.created_at) > new Date(profilesByClient[p.client_id].created_at))) {
+            profilesByClient[p.client_id] = p;
+          }
+        });
+
+        const consultationsByClient: Record<number, any> = {};
+        recentConsultations.forEach((c: any) => {
+          if (c.client_id) {
+            const date = new Date(c.scheduled_at || c.created_at).getTime();
+            if (!consultationsByClient[c.client_id] || date > new Date(consultationsByClient[c.client_id].scheduled_at || consultationsByClient[c.client_id].created_at).getTime()) {
+              consultationsByClient[c.client_id] = c;
+            }
+          }
+        });
+
+        // Проверяем только загруженных клиентов
+        recentClients.forEach((client: any) => {
+          const lastProfile = profilesByClient[client.id];
+          const lastConsultation = consultationsByClient[client.id];
 
           const lastProfileDate = lastProfile ? new Date(lastProfile.created_at) : null;
           const lastConsultationDate = lastConsultation ? new Date(lastConsultation.scheduled_at || lastConsultation.created_at) : null;
@@ -143,11 +183,9 @@ export function RemindersWidget() {
           } else if (lastConsultationDate) {
             lastContactDate = lastConsultationDate;
           } else {
-            // Если нет ни расчётов, ни консультаций, используем дату создания клиента
             lastContactDate = new Date(client.created_at);
           }
 
-          // Если последний контакт был более месяца назад
           if (lastContactDate < oneMonthAgo) {
             const daysSince = Math.floor((today.getTime() - lastContactDate.getTime()) / (1000 * 60 * 60 * 24));
             

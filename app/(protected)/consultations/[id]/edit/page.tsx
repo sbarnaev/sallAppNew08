@@ -48,8 +48,8 @@ export default function EditConsultationPage() {
         setActualCost(c.actual_cost ? String(c.actual_cost) : "");
         setStatus(c.status || "scheduled");
 
-        // Загружаем клиентов
-        const clientsRes = await fetch("/api/clients?limit=1000", { cache: "no-store" });
+        // Загружаем клиентов (только последние 100 для производительности)
+        const clientsRes = await fetch("/api/clients?limit=100&sort=-created_at", { cache: "no-store" });
         const clientsData = await clientsRes.json().catch(() => ({ data: [] }));
         setClients(clientsData?.data || []);
 

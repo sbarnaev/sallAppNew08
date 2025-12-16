@@ -27,7 +27,7 @@ async function getProfiles(searchParams: Record<string, string | string[] | unde
     params.set("meta", "filter_count");
 
     const { status, data } = await fetchJson(`/api/profiles?${params.toString()}`, { 
-      cache: 'no-store',
+      cache: { next: { revalidate: 10 } },
       signal: AbortSignal.timeout(10000), // 10 секунд таймаут
     });
     
@@ -57,7 +57,7 @@ async function getClientsMap(clientIds: number[]) {
   if (clientIds.length === 0) return {};
   try {
     const ids = clientIds.join(',');
-    const { status, data } = await fetchJson(`/api/clients?filter[id][_in]=${ids}&fields=id,name,birth_date&limit=1000`, { 
+    const { status, data } = await fetchJson(`/api/clients?filter[id][_in]=${ids}&fields=id,name,birth_date&limit=100`, { 
       cache: 'no-store',
       signal: AbortSignal.timeout(10000), // 10 секунд таймаут
     });

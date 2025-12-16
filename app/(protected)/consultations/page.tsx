@@ -29,9 +29,14 @@ async function getConsultations(searchParams: Record<string, string | string[] |
   return json;
 }
 
-async function getClientsMap() {
+async function getClientsMap(clientIds: number[]) {
   try {
-    const res = await internalApiFetch("/api/clients?limit=1000&fields=id,name");
+    if (clientIds.length === 0) return {};
+    // Загружаем только нужных клиентов по их ID
+    const ids = clientIds.join(',');
+    const res = await internalApiFetch(`/api/clients?filter[id][_in]=${ids}&fields=id,name&limit=100`, {
+      cache: { next: { revalidate: 60 } }
+    });
     const json = await res.json().catch(() => ({ data: [] }));
     const clientsMap: Record<number, string> = {};
     (json?.data || []).forEach((c: any) => {
@@ -45,7 +50,11 @@ async function getClientsMap() {
 
 export default async function ConsultationsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined>}) {
   const { data = [], meta = {} } = await getConsultations(searchParams);
-  const clientsMap = await getClientsMap();
+  // Получаем только уникальные ID клиентов из консультаций
+  const clientIds = [...new Set(data.map((c: any) => c.client_id).filter((id: any): id is number => !!id && typeof id === 'number'))];
+  const partnerClientIds = [...new Set(data.map((c: any) => c.partner_client_id).filter((id: any): id is number => !!id && typeof id === 'number'))];
+  const allClientIds = [...new Set([...clientIds, ...partnerClientIds])];
+  const clientsMap = await getClientsMap(allClientIds);
   const page = Number(searchParams.page || 1);
   const limit = Number(searchParams.limit || 20);
   const total = meta?.filter_count ?? 0;

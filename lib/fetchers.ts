@@ -10,7 +10,7 @@ export function getBaseUrl(): string {
   return "http://localhost:3000";
 }
 
-export async function internalApiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+export async function internalApiFetch(path: string, init: RequestInit & { next?: { revalidate?: number } } = {}): Promise<Response> {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const jar = cookies().getAll();
   const cookieHeader = jar.map((c) => `${c.name}=${encodeURIComponent(c.value)}`).join("; ");
@@ -20,7 +20,30 @@ export async function internalApiFetch(path: string, init: RequestInit = {}): Pr
     cookie: cookieHeader,
   } as HeadersInit;
   const url = `${getBaseUrl()}${normalizedPath}`;
-  return fetch(url, { ...init, headers: mergedHeaders, cache: init.cache ?? "no-store" });
+  
+  // Извлекаем next из init если есть
+  const { next, ...restInit } = init;
+  
+  // Если cache явно указан, используем его, иначе применяем revalidate по умолчанию
+  const cacheOption = restInit.cache !== undefined 
+    ? restInit.cache 
+    : (next?.revalidate !== undefined ? undefined : "force-cache");
+  
+  // Формируем опции для fetch
+  const fetchOptions: RequestInit & { next?: { revalidate?: number } } = {
+    ...restInit,
+    headers: mergedHeaders,
+  };
+  
+  // Добавляем cache или next в зависимости от того, что указано
+  if (cacheOption !== undefined) {
+    fetchOptions.cache = cacheOption as RequestCache;
+  }
+  if (next !== undefined || (!restInit.cache && !next)) {
+    fetchOptions.next = next || { revalidate: 30 };
+  }
+  
+  return fetch(url, fetchOptions);
 }
 
 export async function fetchJson<T = any>(path: string, init: RequestInit = {}): Promise<{ ok: boolean; status: number; data: T | null; rawText?: string; }> {

@@ -19,19 +19,47 @@ export default function NewConsultationPage() {
   const [actualCost, setActualCost] = useState<string>("");
   const [status, setStatus] = useState<string>("scheduled");
 
-  // Загружаем клиентов
+  // Загружаем клиентов с поиском
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loadingClients, setLoadingClients] = useState(false);
+
   useEffect(() => {
     async function loadClients() {
+      if (searchTerm.length < 2 && !searchTerm) {
+        // Загружаем только первые 50 клиентов для начального отображения
+        setLoadingClients(true);
+        try {
+          const res = await fetch("/api/clients?limit=50&sort=-created_at", { 
+            cache: "no-store" 
+          });
+          const data = await res.json().catch(() => ({ data: [] }));
+          setClients(data?.data || []);
+        } catch (error) {
+          console.error("Error loading clients:", error);
+        } finally {
+          setLoadingClients(false);
+        }
+        return;
+      }
+
+      // При поиске загружаем результаты поиска
+      setLoadingClients(true);
       try {
-        const res = await fetch("/api/clients?limit=1000", { cache: "no-store" });
+        const res = await fetch(`/api/clients?search=${encodeURIComponent(searchTerm)}&limit=100`, { 
+          cache: "no-store" 
+        });
         const data = await res.json().catch(() => ({ data: [] }));
         setClients(data?.data || []);
       } catch (error) {
-        console.error("Error loading partner profiles:", error);
+        console.error("Error searching clients:", error);
+      } finally {
+        setLoadingClients(false);
       }
     }
-    loadClients();
-  }, []);
+
+    const timeoutId = setTimeout(loadClients, searchTerm ? 300 : 0);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
 
 
   async function onSubmit(e: React.FormEvent) {
@@ -86,11 +114,22 @@ export default function NewConsultationPage() {
       });
 
       const data = await res.json().catch(() => ({}));
+      
       if (!res.ok) {
-        throw new Error(data?.message || data?.errors?.[0]?.message || "Ошибка создания консультации");
+        const errorMessage = data?.message || data?.errors?.[0]?.message || "Ошибка создания консультации";
+        console.error("Error creating consultation:", { status: res.status, data });
+        throw new Error(errorMessage);
       }
 
-      router.push(`/consultations/${data?.data?.id || data?.id}`);
+      // Проверяем, что консультация действительно создана и есть ID
+      const consultationId = data?.data?.id || data?.id;
+      if (!consultationId) {
+        console.error("Consultation created but no ID returned:", data);
+        throw new Error("Консультация создана, но не удалось получить её ID. Проверьте список консультаций.");
+      }
+
+      // Редиректим на страницу созданной консультации
+      router.push(`/consultations/${consultationId}`);
     } catch (err: any) {
       setError(err.message || String(err));
     } finally {
@@ -132,19 +171,35 @@ export default function NewConsultationPage() {
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700">Клиент *</label>
-          <select
-            value={clientId}
-            onChange={(e) => setClientId(e.target.value)}
-            className="!bg-white/50 !backdrop-blur-[20px] !border !border-white/60 !rounded-xl !px-4 !py-2.5 !text-sm !text-gray-900 focus:!border-accent-500/50 focus:!ring-1 focus:!ring-accent-500/20 focus:!bg-white/60 !transition-all !duration-200 !shadow-[0_1px_2px_0_rgba(0,0,0,0.03)] focus:!shadow-[0_2px_8px_0_rgba(74,111,165,0.08)]"
-            required
-          >
-            <option value="">Выберите клиента</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name || `Клиент #${c.id}`}
-              </option>
-            ))}
-          </select>
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Поиск клиента..."
+              className="!bg-white/50 !backdrop-blur-[20px] !border !border-white/60 !rounded-xl !px-4 !py-2.5 !text-sm !text-gray-900 focus:!border-accent-500/50 focus:!ring-1 focus:!ring-accent-500/20 focus:!bg-white/60 !transition-all !duration-200 !shadow-[0_1px_2px_0_rgba(0,0,0,0.03)] focus:!shadow-[0_2px_8px_0_rgba(74,111,165,0.08)]"
+            />
+            {loadingClients && (
+              <div className="text-xs text-gray-500">Поиск клиентов...</div>
+            )}
+            <select
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              className="!bg-white/50 !backdrop-blur-[20px] !border !border-white/60 !rounded-xl !px-4 !py-2.5 !text-sm !text-gray-900 focus:!border-accent-500/50 focus:!ring-1 focus:!ring-accent-500/20 focus:!bg-white/60 !transition-all !duration-200 !shadow-[0_1px_2px_0_rgba(0,0,0,0.03)] focus:!shadow-[0_2px_8px_0_rgba(74,111,165,0.08)]"
+              required
+              disabled={loadingClients}
+            >
+              <option value="">Выберите клиента</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name || `Клиент #${c.id}`}
+                </option>
+              ))}
+            </select>
+            {!searchTerm && clients.length === 50 && (
+              <div className="text-xs text-gray-500">Показаны последние 50 клиентов. Используйте поиск для поиска других.</div>
+            )}
+          </div>
         </div>
 
 

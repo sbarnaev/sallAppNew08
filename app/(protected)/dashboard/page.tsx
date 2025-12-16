@@ -5,11 +5,11 @@ import { SubscriptionStatus } from "@/components/SubscriptionStatus";
 
 async function getStats() {
   try {
-    // Параллельно загружаем статистику
+    // Параллельно загружаем статистику с кэшированием на 60 секунд
     const [clientsRes, profilesRes, consultationsRes] = await Promise.all([
-      internalApiFetch("/api/clients?limit=1&meta=filter_count", { cache: "no-store" }),
-      internalApiFetch("/api/profiles?limit=1&meta=filter_count", { cache: "no-store" }),
-      internalApiFetch("/api/consultations?limit=1&meta=filter_count", { cache: "no-store" }),
+      internalApiFetch("/api/clients?limit=1&meta=filter_count", { cache: { next: { revalidate: 60 } } }),
+      internalApiFetch("/api/profiles?limit=1&meta=filter_count", { cache: { next: { revalidate: 60 } } }),
+      internalApiFetch("/api/consultations?limit=1&meta=filter_count", { cache: { next: { revalidate: 60 } } }),
     ]);
 
     // Параллельно парсим все ответы
@@ -31,7 +31,7 @@ async function getStats() {
 
 async function getRecentProfiles() {
   try {
-    const res = await internalApiFetch("/api/profiles?limit=5&sort=-created_at", { cache: "no-store" });
+    const res = await internalApiFetch("/api/profiles?limit=5&sort=-created_at", { cache: { next: { revalidate: 30 } } });
     const data = await res.json().catch(() => ({ data: [] }));
     return data?.data || [];
   } catch {
@@ -43,8 +43,8 @@ async function getClientsMap(clientIds: number[]) {
   try {
     if (clientIds.length === 0) return {};
     const ids = clientIds.join(',');
-    const res = await internalApiFetch(`/api/clients?filter[id][_in]=${ids}&fields=id,name,birth_date&limit=1000`, { 
-      cache: "no-store"
+    const res = await internalApiFetch(`/api/clients?filter[id][_in]=${ids}&fields=id,name,birth_date&limit=100`, { 
+      cache: { next: { revalidate: 60 } }
     });
     if (!res.ok) {
       console.error("Failed to fetch clients:", res.status);
