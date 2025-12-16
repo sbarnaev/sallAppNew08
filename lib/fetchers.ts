@@ -55,7 +55,7 @@ export async function internalApiFetch(
   return fetch(url, fetchOptions);
 }
 
-export async function fetchJson<T = any>(path: string, init: RequestInit = {}): Promise<{ ok: boolean; status: number; data: T | null; rawText?: string; }> {
+export async function fetchJson<T = any>(path: string, init: InternalApiFetchOptions = {}): Promise<{ ok: boolean; status: number; data: T | null; rawText?: string; }> {
   const res = await internalApiFetch(path, init);
   const contentType = res.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
