@@ -49,13 +49,6 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
   // Получаем консультацию - Directus сам отфильтрует по owner_user через permissions
   const url = `${baseUrl}/items/consultations/${ctx.params.id}?fields=${encodeURIComponent(fields)}`;
   
-  // Логируем в консоль для отладки
-  console.log("[GET /api/consultations/[id]] Fetching consultation:", { 
-    id: ctx.params.id, 
-    url,
-    currentUserId 
-  });
-  
   logger.log("Fetching consultation:", { 
     id: ctx.params.id, 
     url,
@@ -75,31 +68,12 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
       data = JSON.parse(responseText);
     }
   } catch (e) {
-    console.error("[GET /api/consultations/[id]] Failed to parse Directus response:", { 
-      status: r.status, 
-      text: responseText.substring(0, 500),
-      error: e 
-    });
     logger.error("Failed to parse Directus response:", { 
       status: r.status, 
       text: responseText.substring(0, 500),
       error: e 
     });
   }
-  
-  // Логируем в консоль для отладки
-  console.log("[GET /api/consultations/[id]] Directus response:", { 
-    status: r.status,
-    statusText: r.statusText,
-    hasData: !!data?.data,
-    hasErrors: !!(data?.errors && data.errors.length > 0),
-    dataId: data?.data?.id,
-    dataOwnerUser: data?.data?.owner_user,
-    currentUserId,
-    ownerMatch: data?.data?.owner_user ? String(data.data.owner_user) === String(currentUserId) : 'N/A',
-    errors: data?.errors,
-    responseText: responseText.substring(0, 200)
-  });
   
   logger.log("Directus response:", { 
     status: r.status,

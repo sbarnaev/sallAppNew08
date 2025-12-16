@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 import { getValidToken } from "@/lib/guards";
+import { logger } from "@/lib/logger";
 
 /**
  * Проверяет доступ пользователя по подписке в API endpoint
@@ -80,7 +81,7 @@ export async function checkSubscriptionInAPI(): Promise<NextResponse | null> {
   } catch (error) {
     // В случае ошибки не блокируем доступ (fail-open для стабильности)
     // Но логируем ошибку для отладки
-    console.error("Error checking subscription:", error);
+    logger.error("Error checking subscription:", error);
     return null;
   }
 }

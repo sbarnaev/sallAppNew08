@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 import { ClientTestData, TestResult } from "@/lib/test-types";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   const token = cookies().get("directus_access_token")?.value;
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
           try {
             currentTestData = JSON.parse(testirovanieRaw);
           } catch (e) {
-            console.warn("Failed to parse testirovanie JSON:", e);
+            logger.warn("Failed to parse testirovanie JSON:", e);
             currentTestData = {};
           }
         } else if (typeof testirovanieRaw === "object") {
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
     // Если нет clientId, просто возвращаем результат (можно сохранить в localStorage на клиенте)
     return NextResponse.json({ success: true, result });
   } catch (error) {
-    console.error("Error saving test result:", error);
+    logger.error("Error saving test result:", error);
     return NextResponse.json(
       { message: "Error saving test result", error: String(error) },
       { status: 500 }

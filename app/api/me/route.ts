@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { fetchDirectusWithAuth } from "@/lib/guards";
 import { getDirectusUrl } from "@/lib/env";
 import { getValidToken } from "@/lib/guards";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -32,7 +33,7 @@ export async function GET() {
           const subscriptionData = await subscriptionResponse.json().catch(() => null);
           expiresAt = subscriptionData?.data?.subscription_expires_at || null;
           
-          console.log("[API /api/me] Subscription check:", {
+          logger.log("Subscription check:", {
             hasSubscriptionData: !!subscriptionData?.data,
             expiresAt,
             subscriptionDataKeys: subscriptionData?.data ? Object.keys(subscriptionData.data) : []
@@ -40,7 +41,7 @@ export async function GET() {
         }
       }
     } catch (error) {
-      console.error("[API /api/me] Error fetching subscription:", error);
+      logger.error("Error fetching subscription:", error);
     }
 
     // Добавляем информацию о доступе
@@ -48,7 +49,7 @@ export async function GET() {
       
       // Всегда создаем объект subscription для единообразия
       if (expiresAt) {
-        console.log("[API /api/me] Processing expiresAt:", expiresAt);
+        logger.log("Processing expiresAt:", expiresAt);
         const expiresDate = new Date(expiresAt);
         const now = new Date();
         const hasAccess = expiresDate > now;

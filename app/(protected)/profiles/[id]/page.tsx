@@ -392,7 +392,9 @@ export default function ProfileDetail() {
           }
         }
       } catch (e) {
-        console.warn("Failed to fetch client name for PDF:", e);
+        if (process.env.NODE_ENV === 'development') {
+          console.warn("Failed to fetch client name for PDF:", e);
+        }
       }
       
       try {
@@ -473,7 +475,9 @@ export default function ProfileDetail() {
           }
         }
       } catch (error) {
-        console.error('Error processing data for PDF:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error processing data for PDF:', error);
+        }
         alert('Ошибка при обработке данных для PDF');
         return;
       }
@@ -481,16 +485,20 @@ export default function ProfileDetail() {
       // Проверяем, что есть данные для экспорта
       if (strengths.length === 0 && weaknesses.length === 0 && resourceSignals.length === 0 && deficitSignals.length === 0) {
         alert('Нет данных для экспорта. Убедитесь, что базовый расчет завершен.');
-        console.error('PDF Export: No data found');
+        if (process.env.NODE_ENV === 'development') {
+          console.error('PDF Export: No data found');
+        }
         return;
         }
         
-      console.log('PDF Export: Data found', {
-        strengths: strengths.length,
-        weaknesses: weaknesses.length,
-        resourceSignals: resourceSignals.length,
-        deficitSignals: deficitSignals.length
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('PDF Export: Data found', {
+          strengths: strengths.length,
+          weaknesses: weaknesses.length,
+          resourceSignals: resourceSignals.length,
+          deficitSignals: deficitSignals.length
+        });
+      }
       
       const dateStr = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('ru-RU') : '';
       
@@ -831,7 +839,9 @@ export default function ProfileDetail() {
       
       const parserError = doc.querySelector('parsererror');
       if (parserError) {
-        console.error('HTML parsing error:', parserError.textContent);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('HTML parsing error:', parserError.textContent);
+        }
         alert('Ошибка парсинга HTML: ' + parserError.textContent);
         return;
       }
@@ -959,7 +969,9 @@ export default function ProfileDetail() {
 
         pdf.save(filename);
       } catch (error) {
-        console.error('[PDF Export] Error generating PDF:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[PDF Export] Error generating PDF:', error);
+        }
         alert('Ошибка при генерации PDF: ' + (error instanceof Error ? error.message : String(error)));
       } finally {
         if (element.parentNode) document.body.removeChild(element);
@@ -1239,7 +1251,9 @@ export default function ProfileDetail() {
       }
         }
       } catch (streamError) {
-        console.error("Stream reading error:", streamError);
+        if (process.env.NODE_ENV === 'development') {
+          console.error("Stream reading error:", streamError);
+        }
         if (acc) {
           // Если уже есть текст, сохраняем его
       const finalHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: acc }];
@@ -1250,7 +1264,9 @@ export default function ProfileDetail() {
       const finalHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: acc }];
       await saveChatHistory(finalHistory);
     } catch (err: any) {
-      console.error("Chat error:", err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Chat error:", err);
+      }
       const errorMsg = err?.message || "Ошибка чата";
       const errorHistory: Array<{ role: "user" | "assistant"; content: string }> = [...history, { role: "assistant" as const, content: `Ошибка: ${errorMsg}` }];
       setAnswer(`Ошибка: ${errorMsg}`);
@@ -1359,7 +1375,9 @@ export default function ProfileDetail() {
     try {
       if (typeof payload === "string") payload = JSON.parse(payload);
     } catch (parseError) {
-      console.warn("[DEBUG] renderedFromJson: failed to parse JSON", parseError);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn("[DEBUG] renderedFromJson: failed to parse JSON", parseError);
+      }
       return null;
     }
     // Если payload - это объект (не массив), оборачиваем в массив
@@ -1465,10 +1483,12 @@ export default function ProfileDetail() {
     // Debug logging removed to reduce console noise
     
     if (!hasAnyData) {
-      console.warn("[DEBUG] renderedFromJson: no recognizable data fields in items", {
-        items,
-        firstItemKeys: items[0] ? Object.keys(items[0]) : []
-      });
+      if (process.env.NODE_ENV === 'development') {
+        console.warn("[DEBUG] renderedFromJson: no recognizable data fields in items", {
+          items,
+          firstItemKeys: items[0] ? Object.keys(items[0]) : []
+        });
+      }
       return null;
     }
     
@@ -2836,12 +2856,14 @@ export default function ProfileDetail() {
                         className="w-full h-full object-contain"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          console.error(`[ERROR] Failed to load image ${i + 1}:`, {
-                            url: imageUrl,
-                            imageData: img,
-                            error: '403 Forbidden - возможно файл не загружен в S3 или bucket не публичный',
-                            suggestion: 'Проверьте: 1) Файл загружен в S3 по пути sall_app/photo/{ID}.jpeg, 2) Bucket настроен как публичный'
-                          });
+                          if (process.env.NODE_ENV === 'development') {
+                            console.error(`[ERROR] Failed to load image ${i + 1}:`, {
+                              url: imageUrl,
+                              imageData: img,
+                              error: '403 Forbidden - возможно файл не загружен в S3 или bucket не публичный',
+                              suggestion: 'Проверьте: 1) Файл загружен в S3 по пути sall_app/photo/{ID}.jpeg, 2) Bucket настроен как публичный'
+                            });
+                          }
                           target.style.display = 'none';
                           const placeholder = target.nextElementSibling as HTMLElement;
                           if (placeholder) {
@@ -3028,13 +3050,15 @@ export default function ProfileDetail() {
         
         // Если есть raw_json, но renderedFromJson вернул null, показываем отладочную информацию
         if (profile?.raw_json && !polling) {
-          console.warn("[DEBUG] raw_json exists but renderedFromJson is null:", {
-            rawJsonType: typeof profile.raw_json,
-            rawJsonKeys: typeof profile.raw_json === 'object' && profile.raw_json !== null ? Object.keys(profile.raw_json) : [],
-            rawJsonPreview: typeof profile.raw_json === 'string' 
-              ? profile.raw_json.substring(0, 200) 
-              : JSON.stringify(profile.raw_json).substring(0, 200)
-          });
+          if (process.env.NODE_ENV === 'development') {
+            console.warn("[DEBUG] raw_json exists but renderedFromJson is null:", {
+              rawJsonType: typeof profile.raw_json,
+              rawJsonKeys: typeof profile.raw_json === 'object' && profile.raw_json !== null ? Object.keys(profile.raw_json) : [],
+              rawJsonPreview: typeof profile.raw_json === 'string'
+                ? profile.raw_json.substring(0, 200)
+                : JSON.stringify(profile.raw_json).substring(0, 200)
+            });
+          }
           
           // Пытаемся отобразить raw_json в сыром виде для отладки
           return (
