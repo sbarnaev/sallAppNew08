@@ -57,6 +57,16 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
   
   // Если получили ошибку доступа или консультация не найдена
   if (r.status === 403 || r.status === 404 || !data?.data) {
+    // Если есть ошибки от Directus
+    if (data?.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+      const errorMessage = data.errors[0].message || "Консультация не найдена";
+      return NextResponse.json({ 
+        data: null, 
+        message: errorMessage,
+        errors: data.errors
+      }, { status: r.status === 403 ? 403 : 404 });
+    }
+    
     // Если есть owner_user в ответе и он не совпадает с текущим пользователем
     if (data?.data?.owner_user && currentUserId && String(data.data.owner_user) !== String(currentUserId)) {
       return NextResponse.json({ 
@@ -65,18 +75,10 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
       }, { status: 404 });
     }
     
-    // Если есть ошибки от Directus
-    if (data?.errors && data.errors.length > 0) {
-      return NextResponse.json({ 
-        data: null, 
-        message: data.errors[0].message || "Консультация не найдена или у вас нет прав доступа",
-        errors: data.errors
-      }, { status: r.status });
-    }
-    
+    // Стандартное сообщение для несуществующей консультации
     return NextResponse.json({ 
       data: null, 
-      message: "Консультация не найдена или у вас нет прав доступа" 
+      message: `Консультация с ID ${ctx.params.id} не найдена. Возможно, она была удалена или у вас нет прав доступа.`
     }, { status: 404 });
   }
   

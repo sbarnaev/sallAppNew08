@@ -120,7 +120,7 @@ export default function NewConsultationPage() {
           <select
             value={type}
             onChange={(e) => setType(e.target.value)}
-            className="w-full bg-white/50 backdrop-blur-[20px] border border-white/60 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:border-accent-500/50 focus:ring-1 focus:ring-accent-500/20 focus:bg-white/60 transition-all duration-200"
+            className="!bg-white/50 !backdrop-blur-[20px] !border !border-white/60 !rounded-xl !px-4 !py-2.5 !text-sm !text-gray-900 focus:!border-accent-500/50 focus:!ring-1 focus:!ring-accent-500/20 focus:!bg-white/60 !transition-all !duration-200 !shadow-[0_1px_2px_0_rgba(0,0,0,0.03)] focus:!shadow-[0_2px_8px_0_rgba(74,111,165,0.08)]"
             required
           >
             <option value="base">Базовая</option>
@@ -135,7 +135,7 @@ export default function NewConsultationPage() {
           <select
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
-            className="w-full bg-white/50 backdrop-blur-[20px] border border-white/60 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:border-accent-500/50 focus:ring-1 focus:ring-accent-500/20 focus:bg-white/60 transition-all duration-200"
+            className="!bg-white/50 !backdrop-blur-[20px] !border !border-white/60 !rounded-xl !px-4 !py-2.5 !text-sm !text-gray-900 focus:!border-accent-500/50 focus:!ring-1 focus:!ring-accent-500/20 focus:!bg-white/60 !transition-all !duration-200 !shadow-[0_1px_2px_0_rgba(0,0,0,0.03)] focus:!shadow-[0_2px_8px_0_rgba(74,111,165,0.08)]"
             required
           >
             <option value="">Выберите клиента</option>
@@ -155,7 +155,7 @@ export default function NewConsultationPage() {
               <select
                 value={partnerClientId}
                 onChange={(e) => setPartnerClientId(e.target.value)}
-                className="w-full bg-white/50 backdrop-blur-[20px] border border-white/60 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:border-accent-500/50 focus:ring-1 focus:ring-accent-500/20 focus:bg-white/60 transition-all duration-200"
+                className="!bg-white/50 !backdrop-blur-[20px] !border !border-white/60 !rounded-xl !px-4 !py-2.5 !text-sm !text-gray-900 focus:!border-accent-500/50 focus:!ring-1 focus:!ring-accent-500/20 focus:!bg-white/60 !transition-all !duration-200 !shadow-[0_1px_2px_0_rgba(0,0,0,0.03)] focus:!shadow-[0_2px_8px_0_rgba(74,111,165,0.08)]"
                 required
               >
                 <option value="">Выберите партнёра</option>

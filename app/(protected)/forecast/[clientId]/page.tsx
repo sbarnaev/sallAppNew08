@@ -262,22 +262,22 @@ export default function ForecastPage() {
                           </div>
                         </div>
                         {/* Десктопная версия: полная информация */}
-                        <div className="hidden md:flex flex-1 flex flex-col justify-center text-xs leading-tight space-y-1.5 px-1">
-                          <div className="flex justify-between items-center gap-2">
-                            <span className="opacity-90 font-medium">Л:</span>
-                            <span className="font-bold">{forecast.personality.score.toFixed(1)}</span>
+                        <div className="hidden md:flex flex-1 flex flex-col justify-center text-xs leading-tight space-y-2 px-2">
+                          <div className="flex justify-between items-center gap-3">
+                            <span className="opacity-90 font-medium text-[11px]">Л:</span>
+                            <span className="font-semibold text-[12px]">{forecast.personality.score.toFixed(1)}</span>
                           </div>
-                          <div className="flex justify-between items-center gap-2">
-                            <span className="opacity-90 font-medium">К:</span>
-                            <span className="font-bold">{forecast.connector.score.toFixed(1)}</span>
+                          <div className="flex justify-between items-center gap-3">
+                            <span className="opacity-90 font-medium text-[11px]">К:</span>
+                            <span className="font-semibold text-[12px]">{forecast.connector.score.toFixed(1)}</span>
                           </div>
-                          <div className="flex justify-between items-center gap-2">
-                            <span className="opacity-90 font-medium">Р:</span>
-                            <span className="font-bold">{forecast.realization.score.toFixed(1)}</span>
+                          <div className="flex justify-between items-center gap-3">
+                            <span className="opacity-90 font-medium text-[11px]">Р:</span>
+                            <span className="font-semibold text-[12px]">{forecast.realization.score.toFixed(1)}</span>
                           </div>
-                          <div className="flex justify-between items-center gap-2 border-t border-current border-opacity-30 pt-1.5 mt-1.5">
-                            <span className="opacity-95 font-semibold">И:</span>
-                            <span className="font-extrabold text-base">{forecast.index.toFixed(1)}</span>
+                          <div className="flex justify-between items-center gap-3 border-t border-current border-opacity-30 pt-2 mt-1">
+                            <span className="opacity-95 font-semibold text-[11px]">И:</span>
+                            <span className="font-bold text-[14px]">{forecast.index.toFixed(1)}</span>
                           </div>
                         </div>
                       </div>

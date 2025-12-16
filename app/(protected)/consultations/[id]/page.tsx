@@ -26,24 +26,39 @@ async function getClient(id: number) {
 
 export default async function ConsultationDetailPage({ params }: { params: { id: string } }) {
   const c = await getConsultation(params.id);
-  const details = await getDetails(params.id);
   
-  const client = c?.client_id ? await getClient(c.client_id) : null;
-  const partnerClient = c?.partner_client_id ? await getClient(c.partner_client_id) : null;
-
   if (!c) {
     return (
       <div className="space-y-6">
         <div className="card bg-red-50 border-red-200 text-red-800 p-6">
-          <h2 className="font-bold mb-2">Консультация не найдена</h2>
-          <p>Консультация с ID {params.id} не существует или у вас нет прав доступа.</p>
-          <Link href="/consultations" className="text-brand-600 hover:text-brand-700 mt-4 inline-block">
-            ← Вернуться к списку консультаций
-          </Link>
+          <h2 className="font-bold mb-2 text-lg">Консультация не найдена</h2>
+          <p className="mb-4">
+            Консультация с ID <span className="font-mono font-bold">{params.id}</span> не существует.
+          </p>
+          <p className="text-sm text-red-700 mb-4">
+            Возможные причины:
+          </p>
+          <ul className="list-disc list-inside text-sm text-red-700 mb-4 space-y-1">
+            <li>Консультация была удалена</li>
+            <li>Консультация принадлежит другому пользователю</li>
+            <li>Неправильный ID в ссылке</li>
+          </ul>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Link href="/consultations" className="btn btn-primary w-full sm:w-auto">
+              ← Вернуться к списку консультаций
+            </Link>
+            <Link href="/consultations/new" className="btn btn-secondary w-full sm:w-auto">
+              Создать новую консультацию
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
+  
+  const details = await getDetails(params.id);
+  const client = c?.client_id ? await getClient(c.client_id) : null;
+  const partnerClient = c?.partner_client_id ? await getClient(c.partner_client_id) : null;
 
   const typeLabels: Record<string, string> = {
     base: "Базовая",

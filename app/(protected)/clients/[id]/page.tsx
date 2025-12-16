@@ -81,14 +81,14 @@ export default async function ClientDetailPage({ params, searchParams }: { param
       {/* Заголовок с быстрыми действиями */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/60 backdrop-blur-[15px] rounded-full border border-white/60 flex items-center justify-center text-gray-700 text-xl sm:text-2xl font-semibold">
             {client.name ? client.name.charAt(0).toUpperCase() : '?'}
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">
               {client.name || 'Без имени'}
             </h1>
-            <div className="text-sm text-gray-500 mt-1">
+            <div className="text-sm text-gray-600 mt-1">
               Создан: {new Date(client.created_at).toLocaleDateString('ru-RU')}
             </div>
           </div>
@@ -101,6 +101,57 @@ export default async function ClientDetailPage({ params, searchParams }: { param
             Редактировать
           </Link>
           <DeleteClient id={params.id} />
+        </div>
+      </div>
+
+      {/* Мобильная версия: быстрые действия */}
+      <div className="lg:hidden card">
+        <h3 className="text-base font-semibold mb-3">Быстрые действия</h3>
+        <div className="grid grid-cols-2 gap-2">
+          <Link href={`/forecast/${params.id}`} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/40 backdrop-blur-[15px] border border-white/60 hover:bg-white/55 transition-all">
+            <div className="w-10 h-10 bg-white/50 backdrop-blur-[10px] rounded-lg border border-white/60 flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <div className="text-center">
+              <div className="font-medium text-xs text-gray-900">Прогностика</div>
+              <div className="text-[10px] text-gray-600">Ресурсы</div>
+            </div>
+          </Link>
+          <Link href={`/consultations/new?clientId=${params.id}`} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/40 backdrop-blur-[15px] border border-white/60 hover:bg-white/55 transition-all">
+            <div className="w-10 h-10 bg-white/50 backdrop-blur-[10px] rounded-lg border border-white/60 flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </div>
+            <div className="text-center">
+              <div className="font-medium text-xs text-gray-900">Консультация</div>
+              <div className="text-[10px] text-gray-600">Создать</div>
+            </div>
+          </Link>
+          <Link href={`/profiles/new?clientId=${params.id}`} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/40 backdrop-blur-[15px] border border-white/60 hover:bg-white/55 transition-all">
+            <div className="w-10 h-10 bg-white/50 backdrop-blur-[10px] rounded-lg border border-white/60 flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <div className="text-center">
+              <div className="font-medium text-xs text-gray-900">Расчёт</div>
+              <div className="text-[10px] text-gray-600">Создать</div>
+            </div>
+          </Link>
+          <Link href={`/tests?clientId=${params.id}`} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/40 backdrop-blur-[15px] border border-white/60 hover:bg-white/55 transition-all">
+            <div className="w-10 h-10 bg-white/50 backdrop-blur-[10px] rounded-lg border border-white/60 flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="text-center">
+              <div className="font-medium text-xs text-gray-900">Тесты</div>
+              <div className="text-[10px] text-gray-600">Психологические</div>
+            </div>
+          </Link>
         </div>
       </div>
 
