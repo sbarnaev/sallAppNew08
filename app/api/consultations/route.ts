@@ -145,20 +145,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "scheduled_at must be a valid date string" }, { status: 400 });
   }
 
-  // Генерируем кастомный ID: префикс CONSULT + client_id + timestamp (последние 6 цифр)
-  // Это гарантирует уникальность и позволяет легко идентифицировать консультацию
-  const timestamp = Date.now().toString().slice(-6); // Последние 6 цифр timestamp
-  const customId = parseInt(`${clientId}${timestamp}`, 10);
+  // Генерируем кастомный номер консультации: CONS-{client_id}-{timestamp}
+  // Используем последние 6 цифр timestamp для уникальности
+  const timestamp = Date.now().toString().slice(-6);
+  const consultationNumber = `CONS-${clientId}-${timestamp}`;
   
-  // Проверяем, что ID не превышает максимальное значение для integer (если ID - integer)
-  // Если ID в Directus - это UUID, то нужно использовать другой подход
   const payload: any = {
-    id: customId, // Пробуем установить кастомный ID
     client_id: clientId,
     type: body.type || "base",
     status: body.status || "scheduled",
     owner_user: currentUser.id,
     scheduled_at: scheduledDate,
+    // Добавляем кастомный номер, если поле существует в Directus
+    // Если поля нет - Directus просто проигнорирует его
+    consultation_number: consultationNumber,
   };
 
   
@@ -208,8 +208,8 @@ export async function POST(req: NextRequest) {
   // Используем return=* и fields=id чтобы Directus вернул созданную запись с ID
   const url = `${baseUrl}/items/consultations?return=*&fields=id,client_id,type,status,scheduled_at,created_at,owner_user`;
   
-  logger.log("Creating consultation with custom ID:", { 
-    customId,
+  logger.log("Creating consultation:", { 
+    consultationNumber,
     payload: { ...payload, scheduled_at: scheduledDate },
     url 
   });
