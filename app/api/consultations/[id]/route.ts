@@ -43,6 +43,7 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
     "partner_profile_id",
     "created_at",
     "owner_user",
+    "consultation_number",
   ].join(",");
   
   // Получаем консультацию - Directus сам отфильтрует по owner_user через permissions
