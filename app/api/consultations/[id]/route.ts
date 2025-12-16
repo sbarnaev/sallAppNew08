@@ -14,7 +14,7 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ data: null }, { status: 401 });
 
-  // Получаем текущего пользователя для проверки прав
+  // Получаем текущего пользователя для дополнительной проверки
   let currentUserId: string | null = null;
   try {
     const meRes = await fetch(`${baseUrl}/users/me`, {
@@ -26,7 +26,7 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
       currentUserId = meData?.data?.id || null;
     }
   } catch {
-    // Игнорируем ошибку, попробуем получить консультацию без фильтра
+    // Игнорируем ошибку
   }
 
   const fields = [
@@ -45,55 +45,39 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
     "owner_user",
   ].join(",");
   
-  // Пробуем получить консультацию с фильтром по owner_user если есть
-  let url = `${baseUrl}/items/consultations/${ctx.params.id}?fields=${encodeURIComponent(fields)}`;
-  if (currentUserId) {
-    url += `&filter[owner_user][_eq]=${currentUserId}`;
-  }
+  // Получаем консультацию - Directus сам отфильтрует по owner_user через permissions
+  const url = `${baseUrl}/items/consultations/${ctx.params.id}?fields=${encodeURIComponent(fields)}`;
   
   const r = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   });
   
-  const data = await r.json().catch(() => ({ data: null }));
+  const data = await r.json().catch(() => ({ data: null, errors: [] }));
   
-  // Если не нашли с фильтром, пробуем без фильтра (на случай если права настроены в Directus)
-  if ((r.status === 404 || !data?.data) && currentUserId) {
-    const urlWithoutFilter = `${baseUrl}/items/consultations/${ctx.params.id}?fields=${encodeURIComponent(fields)}`;
-    const r2 = await fetch(urlWithoutFilter, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    const data2 = await r2.json().catch(() => ({ data: null }));
-    
-    // Проверяем owner_user в ответе
-    if (data2?.data?.owner_user && String(data2.data.owner_user) !== String(currentUserId)) {
-      return NextResponse.json({ data: null, message: "Консультация не найдена или у вас нет прав доступа" }, { status: 404 });
+  // Если получили ошибку доступа или консультация не найдена
+  if (r.status === 403 || r.status === 404 || !data?.data) {
+    // Если есть owner_user в ответе и он не совпадает с текущим пользователем
+    if (data?.data?.owner_user && currentUserId && String(data.data.owner_user) !== String(currentUserId)) {
+      return NextResponse.json({ 
+        data: null, 
+        message: "Консультация не найдена или у вас нет прав доступа" 
+      }, { status: 404 });
     }
     
-    // Автоматически обновляем статус если дата прошла
-    if (data2?.data && data2.data.scheduled_at && data2.data.status === "scheduled") {
-      const scheduledDate = new Date(data2.data.scheduled_at);
-      const now = new Date();
-      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-      
-      if (scheduledDate < oneHourAgo) {
-        // Обновляем статус в фоне (не ждем результата)
-        fetch(`${baseUrl}/items/consultations/${ctx.params.id}`, {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ status: "completed" }),
-        }).catch(() => {});
-        
-        data2.data.status = "completed";
-      }
+    // Если есть ошибки от Directus
+    if (data?.errors && data.errors.length > 0) {
+      return NextResponse.json({ 
+        data: null, 
+        message: data.errors[0].message || "Консультация не найдена или у вас нет прав доступа",
+        errors: data.errors
+      }, { status: r.status });
     }
     
-    return NextResponse.json(data2, { status: r2.status });
+    return NextResponse.json({ 
+      data: null, 
+      message: "Консультация не найдена или у вас нет прав доступа" 
+    }, { status: 404 });
   }
   
   // Автоматически обновляем статус если дата прошла
