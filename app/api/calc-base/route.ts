@@ -150,7 +150,7 @@ export async function POST(req: Request) {
   }
 
   // 2) Вызываем n8n, передаём profileId (если удалось создать) и publicCode
-  let r: Response;
+  let r: Response | null = null;
   let data: any = null;
   try {
     // Retry logic for n8n
@@ -247,7 +247,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // @ts-ignore
     if (!r) throw new Error("No response from n8n");
 
     data = await r.json().catch(() => ({}));
@@ -273,7 +272,8 @@ export async function POST(req: Request) {
     }, { status: 502 });
   }
 
-  if (!r.ok) {
+  // TypeScript guard: после проверки выше r не может быть null
+  if (!r || !r.ok) {
     let msg = data?.message || data?.error || "Calculation failed";
     // Улучшенная обработка ошибок n8n
     if (data?.error?.message) {

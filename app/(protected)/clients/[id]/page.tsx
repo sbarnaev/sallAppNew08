@@ -29,15 +29,38 @@ async function getClientProfiles(id: string, searchParams: Record<string, string
   return json;
 }
 
+async function getClientConsultations(id: string, searchParams: Record<string, string | string[] | undefined>) {
+  const params = new URLSearchParams();
+  const consultationPage = Number(searchParams.consultationPage || 1);
+  const consultationLimit = Number(searchParams.consultationLimit || 20);
+  const offset = (consultationPage - 1) * consultationLimit;
+  params.set("filter[client_id][_eq]", id);
+  params.set("limit", String(consultationLimit));
+  params.set("offset", String(offset));
+  params.set("meta", "filter_count");
+  if (!params.has("sort")) params.set("sort", "-scheduled_at,-created_at");
+
+  const res = await internalApiFetch(`/api/consultations?${params.toString()}`, { cache: 'no-store' });
+  const json = await res.json().catch(()=>({ data: [], meta: {} }));
+  return json;
+}
+
 export default async function ClientDetailPage({ params, searchParams }: { params: { id: string }, searchParams: Record<string, string | string[] | undefined>}) {
   const client = await getClient(params.id);
   const { data: profiles = [], meta = {} } = await getClientProfiles(params.id, searchParams);
+  const { data: consultations = [], meta: consultationsMeta = {} } = await getClientConsultations(params.id, searchParams);
 
   const page = Number(searchParams.page || 1);
   const limit = Number(searchParams.limit || 20);
   const total = meta?.filter_count ?? 0;
   const hasNext = page * limit < total;
   const hasPrev = page > 1;
+
+  const consultationPage = Number(searchParams.consultationPage || 1);
+  const consultationLimit = Number(searchParams.consultationLimit || 20);
+  const consultationsTotal = consultationsMeta?.filter_count ?? 0;
+  const consultationsHasNext = consultationPage * consultationLimit < consultationsTotal;
+  const consultationsHasPrev = consultationPage > 1;
 
 
 
@@ -92,9 +115,16 @@ export default async function ClientDetailPage({ params, searchParams }: { param
             <span className="hidden sm:inline">Новый расчёт</span>
             <span className="sm:hidden">Расчёт</span>
           </Link>
-          <Link href={`/consultations/express/${params.id}`} className="rounded-xl bg-green-100 text-green-700 px-4 md:px-6 py-2 hover:bg-green-200 border border-green-200 flex items-center gap-2">
+          <Link href={`/consultations/new?clientId=${params.id}`} className="rounded-xl bg-green-100 text-green-700 px-4 md:px-6 py-2 hover:bg-green-200 border border-green-200 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            <span className="hidden sm:inline">Новая консультация</span>
+            <span className="sm:hidden">Консультация</span>
+          </Link>
+          <Link href={`/consultations/express/${params.id}`} className="rounded-xl bg-emerald-100 text-emerald-700 px-4 md:px-6 py-2 hover:bg-emerald-200 border border-emerald-200 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
             <span className="hidden sm:inline">Экспресс-консультация</span>
             <span className="sm:hidden">Экспресс</span>

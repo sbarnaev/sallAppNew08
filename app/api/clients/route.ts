@@ -4,6 +4,7 @@ import { getDirectusUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { refreshAccessToken } from "@/lib/auth";
 import { checkSubscriptionInAPI } from "@/lib/subscription-check";
+import { getValidToken } from "@/lib/guards";
 
 // Функция для получения текущего пользователя
 async function getCurrentUser(token: string, baseUrl: string) {
@@ -367,35 +368,24 @@ export async function POST(req: NextRequest) {
 
     // Если токен истек, попробуем обновить его
     if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
+      // Используем функцию getValidToken для автоматического обновления токена
+      const newToken = await getValidToken();
+      
+      if (newToken) {
+        // Повторим запрос с новым токеном
+        const retryRes = await fetch(url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${newToken}`,
+            "Content-Type": "application/json",
+            Accept: "application/json"
+          },
+          body: JSON.stringify(clientData),
+        });
 
-      // Попробуем обновить токен
-      const origin = req.nextUrl.origin;
-      const refreshRes = await fetch(`${origin}/api/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
+        const retryData = await retryRes.json().catch(() => ({}));
 
-      if (refreshRes.ok) {
-        // Получим новый токен из ответа
-        const refreshData = await refreshRes.json().catch(() => ({}));
-        const newToken = refreshData?.access_token || cookies().get("directus_access_token")?.value;
-
-        if (newToken) {
-          // Повторим запрос с новым токеном
-          const retryRes = await fetch(url, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${newToken}`,
-              "Content-Type": "application/json",
-              Accept: "application/json"
-            },
-            body: JSON.stringify(clientData),
-          });
-
-          const retryData = await retryRes.json().catch(() => ({}));
-
-          return NextResponse.json(retryData, { status: retryRes.status });
-        }
+        return NextResponse.json(retryData, { status: retryRes.status });
       }
     }
 
