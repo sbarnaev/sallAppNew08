@@ -10,9 +10,23 @@ export async function GET() {
       return NextResponse.json(data || { data: null }, { status: response.status });
     }
 
+    // Логируем что вернул Directus
+    console.log("[API /api/me] Directus response:", {
+      hasData: !!data?.data,
+      dataKeys: data?.data ? Object.keys(data.data) : [],
+      subscriptionExpiresAt: data?.data?.subscription_expires_at,
+      rawData: JSON.stringify(data?.data).substring(0, 500)
+    });
+
     // Добавляем информацию о доступе
     if (data?.data) {
-      const expiresAt = data.data.subscription_expires_at;
+      // Пробуем разные варианты названия поля
+      const expiresAt = data.data.subscription_expires_at 
+        || data.data["subscription_expires_at"]
+        || data.data["Subscription Expires At"]
+        || data.data.subscriptionExpiresAt;
+      
+      console.log("[API /api/me] Found expiresAt:", expiresAt);
       
       // Всегда создаем объект subscription для единообразия
       if (expiresAt) {
