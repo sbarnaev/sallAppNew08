@@ -24,7 +24,7 @@ async function getClients(searchParams: Record<string, string | string[] | undef
       params.set("search", searchTerm);
     }
 
-    const res = await internalApiFetch(`/api/clients?${params.toString()}`, { cache: { next: { revalidate: 10 } } });
+    const res = await internalApiFetch(`/api/clients?${params.toString()}`, { next: { revalidate: 10 } });
     
     if (!res.ok) {
       console.error("API error:", res.status, res.statusText);

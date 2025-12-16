@@ -35,7 +35,7 @@ async function getClientsMap(clientIds: number[]) {
     // Загружаем только нужных клиентов по их ID
     const ids = clientIds.join(',');
     const res = await internalApiFetch(`/api/clients?filter[id][_in]=${ids}&fields=id,name&limit=100`, {
-      cache: { next: { revalidate: 60 } }
+      next: { revalidate: 60 }
     });
     const json = await res.json().catch(() => ({ data: [] }));
     const clientsMap: Record<number, string> = {};

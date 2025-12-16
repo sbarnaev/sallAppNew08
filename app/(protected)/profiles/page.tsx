@@ -27,7 +27,7 @@ async function getProfiles(searchParams: Record<string, string | string[] | unde
     params.set("meta", "filter_count");
 
     const { status, data } = await fetchJson(`/api/profiles?${params.toString()}`, { 
-      cache: { next: { revalidate: 10 } },
+      next: { revalidate: 10 },
       signal: AbortSignal.timeout(10000), // 10 секунд таймаут
     });
     

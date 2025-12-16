@@ -85,7 +85,7 @@ body {
   }
 
   /* Базовые поля ввода с glassmorphism */
-  input, select, textarea {
+  input, textarea {
     @apply rounded-xl border border-white/60 bg-white/40 backdrop-blur-[20px] px-4 py-2.5 text-sm text-gray-900;
     @apply placeholder:text-gray-500;
     @apply focus:border-accent-500/50 focus:ring-1 focus:ring-accent-500/20 focus:bg-white/60;
@@ -93,9 +93,35 @@ body {
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03), inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
   }
   
-  input:focus, select:focus, textarea:focus {
+  input:focus, textarea:focus {
     box-shadow: 0 2px 8px 0 rgba(74, 111, 165, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(25px);
+  }
+
+  /* Select с glassmorphism - убираем дефолтные стили браузера */
+  select {
+    @apply rounded-xl border border-white/60 bg-white/40 backdrop-blur-[20px] px-4 py-2.5 text-sm text-gray-900;
+    @apply focus:border-accent-500/50 focus:ring-1 focus:ring-accent-500/20 focus:bg-white/60;
+    @apply transition-all duration-200 ease-out;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03), inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2 4L6 8L10 4' stroke='%234A6FA5' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+    padding-right: 36px;
+  }
+  
+  select:focus {
+    box-shadow: 0 2px 8px 0 rgba(74, 111, 165, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(25px);
+  }
+
+  select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   label {

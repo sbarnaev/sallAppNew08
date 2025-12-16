@@ -10,7 +10,15 @@ export function getBaseUrl(): string {
   return "http://localhost:3000";
 }
 
-export async function internalApiFetch(path: string, init: RequestInit & { next?: { revalidate?: number } } = {}): Promise<Response> {
+type InternalApiFetchOptions = Omit<RequestInit, 'cache'> & {
+  cache?: RequestCache;
+  next?: { revalidate?: number };
+};
+
+export async function internalApiFetch(
+  path: string, 
+  init: InternalApiFetchOptions = {}
+): Promise<Response> {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const jar = cookies().getAll();
   const cookieHeader = jar.map((c) => `${c.name}=${encodeURIComponent(c.value)}`).join("; ");
@@ -24,23 +32,24 @@ export async function internalApiFetch(path: string, init: RequestInit & { next?
   // Извлекаем next из init если есть
   const { next, ...restInit } = init;
   
-  // Если cache явно указан, используем его, иначе применяем revalidate по умолчанию
-  const cacheOption = restInit.cache !== undefined 
-    ? restInit.cache 
-    : (next?.revalidate !== undefined ? undefined : "force-cache");
-  
   // Формируем опции для fetch
-  const fetchOptions: RequestInit & { next?: { revalidate?: number } } = {
+  // Если cache явно указан как "no-store", используем его
+  // Если указан next с revalidate, используем его
+  // Иначе используем revalidate по умолчанию (30 сек)
+  const fetchOptions: any = {
     ...restInit,
     headers: mergedHeaders,
   };
   
-  // Добавляем cache или next в зависимости от того, что указано
-  if (cacheOption !== undefined) {
-    fetchOptions.cache = cacheOption as RequestCache;
-  }
-  if (next !== undefined || (!restInit.cache && !next)) {
-    fetchOptions.next = next || { revalidate: 30 };
+  if (restInit.cache !== undefined) {
+    // Если cache явно указан, используем его
+    fetchOptions.cache = restInit.cache;
+  } else if (next !== undefined) {
+    // Если next указан, используем его
+    fetchOptions.next = next;
+  } else {
+    // По умолчанию используем revalidate 30 секунд для улучшения производительности
+    fetchOptions.next = { revalidate: 30 };
   }
   
   return fetch(url, fetchOptions);

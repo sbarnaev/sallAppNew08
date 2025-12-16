@@ -34,7 +34,7 @@ export function RemindersWidget() {
         // 1. Загружаем консультации на ближайшие 7 дней (только запланированные) - это быстрый запрос
         const consultationsRes = await fetch(
           `/api/consultations?filter[scheduled_at][_gte]=${today.toISOString()}&filter[scheduled_at][_lte]=${in7Days.toISOString()}&filter[status][_eq]=scheduled&limit=100&fields=id,client_id,partner_client_id,type,scheduled_at`,
-          { cache: { next: { revalidate: 30 } } }
+          { next: { revalidate: 30 } }
         );
         const consultationsData = await consultationsRes.json().catch(() => ({ data: [] }));
         const consultations = consultationsData?.data || [];
@@ -49,7 +49,7 @@ export function RemindersWidget() {
         // 2. Загружаем только клиентов с днями рождения в ближайшие 7 дней
         // Используем фильтр по дате рождения через API (если поддерживается) или загружаем последние 100
         const clientsForBirthdaysRes = await fetch("/api/clients?limit=100&sort=-created_at&fields=id,name,birth_date,created_at", { 
-          cache: { next: { revalidate: 60 } } 
+          next: { revalidate: 60 } 
         });
         const clientsForBirthdaysData = await clientsForBirthdaysRes.json().catch(() => ({ data: [] }));
         const clientsForBirthdays = clientsForBirthdaysData?.data || [];
@@ -90,7 +90,7 @@ export function RemindersWidget() {
         if (clientIdsForConsultations.length > 0) {
           const ids = clientIdsForConsultations.join(',');
           const clientsRes = await fetch(`/api/clients?filter[id][_in]=${ids}&fields=id,name&limit=100`, { 
-            cache: { next: { revalidate: 60 } } 
+            next: { revalidate: 60 } 
           });
           const clientsData = await clientsRes.json().catch(() => ({ data: [] }));
           clientsData?.data?.forEach((c: any) => {
@@ -130,21 +130,21 @@ export function RemindersWidget() {
         // 4. Проверяем клиентов без контакта >1 месяца - загружаем только последние 100 клиентов
         // и их последние расчёты/консультации
         const recentClientsRes = await fetch("/api/clients?limit=100&sort=-created_at&fields=id,name,created_at", { 
-          cache: { next: { revalidate: 60 } } 
+          next: { revalidate: 60 } 
         });
         const recentClientsData = await recentClientsRes.json().catch(() => ({ data: [] }));
         const recentClients = recentClientsData?.data || [];
 
         // Загружаем последние расчёты (только последние 200)
         const recentProfilesRes = await fetch("/api/profiles?limit=200&sort=-created_at&fields=id,client_id,created_at", { 
-          cache: { next: { revalidate: 60 } } 
+          next: { revalidate: 60 } 
         });
         const recentProfilesData = await recentProfilesRes.json().catch(() => ({ data: [] }));
         const recentProfiles = recentProfilesData?.data || [];
 
         // Загружаем последние консультации (только последние 200)
         const recentConsultationsRes = await fetch("/api/consultations?limit=200&sort=-scheduled_at,-created_at&fields=id,client_id,scheduled_at,created_at", { 
-          cache: { next: { revalidate: 60 } } 
+          next: { revalidate: 60 } 
         });
         const recentConsultationsData = await recentConsultationsRes.json().catch(() => ({ data: [] }));
         const recentConsultations = recentConsultationsData?.data || [];
