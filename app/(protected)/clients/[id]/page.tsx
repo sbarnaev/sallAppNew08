@@ -202,11 +202,11 @@ export default async function ClientDetailPage({ params, searchParams }: { param
                           <div className="text-sm text-gray-600 mb-4 font-medium">Коды САЛ</div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4">
                             {codeOrder.map((key) => (
-                              <div key={key} className="flex flex-col items-center gap-2 p-3 md:p-4 bg-white/50 backdrop-blur-[15px] rounded-xl border border-white/60 shadow-[0_1px_4px_0_rgba(0,0,0,0.03)]">
-                                <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-white/60 backdrop-blur-[10px] border border-white/60 text-accent-700 font-semibold text-lg md:text-xl grid place-items-center shadow-[0_1px_2px_0_rgba(0,0,0,0.03)]">
+                              <div key={key} className="flex flex-col items-center gap-2.5 p-3 md:p-4 bg-white/50 backdrop-blur-[15px] rounded-xl border border-white/60 shadow-[0_1px_4px_0_rgba(0,0,0,0.03)]">
+                                <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-white/70 backdrop-blur-[10px] border border-white/60 text-accent-600 font-semibold text-xl md:text-2xl grid place-items-center shadow-[0_1px_2px_0_rgba(0,0,0,0.03)]">
                                   {codes[key]}
                                 </div>
-                                <div className="text-[10px] md:text-xs text-gray-700 text-center font-medium leading-tight min-h-[28px] md:min-h-[32px] flex items-center justify-center">
+                                <div className="text-[11px] md:text-xs text-gray-700 text-center font-medium leading-tight min-h-[32px] md:min-h-[36px] flex items-center justify-center px-1">
                                   {getCodeShortLabel(key)}
                                 </div>
                               </div>
