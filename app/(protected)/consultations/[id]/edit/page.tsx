@@ -28,11 +28,12 @@ export default function EditConsultationPage() {
       try {
         // Загружаем консультацию
         const consultationRes = await fetch(`/api/consultations/${id}`, { cache: "no-store" });
-        const consultationData = await consultationRes.json().catch(() => ({ data: null }));
+        const consultationData = await consultationRes.json().catch(() => ({ data: null, message: "Ошибка загрузки" }));
         const c = consultationData?.data;
         
         if (!c) {
-          setError("Консультация не найдена");
+          const errorMessage = consultationData?.message || `Консультация с ID ${id} не найдена. Возможно, она была удалена или у вас нет прав доступа.`;
+          setError(errorMessage);
           setLoading(false);
           return;
         }
