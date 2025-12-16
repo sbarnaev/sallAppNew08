@@ -162,22 +162,22 @@ export default function EditConsultationPage() {
   }
 
   return (
-    <div className="space-y-8 md:space-y-10 max-w-2xl mx-auto">
+    <div className="space-y-6 md:space-y-8">
       <div className="flex items-center justify-between gap-4">
-        <div className="space-y-2">
-          <h1 className="page-title text-3xl sm:text-4xl md:text-4xl">Редактировать консультацию</h1>
+        <div className="space-y-1">
+          <h1 className="page-title">Редактировать консультацию</h1>
           <p className="page-subtitle">Измените детали консультации</p>
         </div>
         <Link href={`/consultations/${id}`} className="btn btn-ghost btn-sm">← Назад</Link>
       </div>
 
       {error && (
-        <div className="surface bg-red-50 border-red-200 text-red-800">
+        <div className="surface bg-red-50 border-red-200 text-red-800 p-4 rounded-xl">
           {error}
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="surface space-y-6 max-w-3xl mx-auto">
+      <form onSubmit={onSubmit} className="surface space-y-6 max-w-2xl">
         <div className="space-y-2">
           <label>Тип консультации *</label>
           <select
@@ -247,9 +247,9 @@ export default function EditConsultationPage() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Длительность (минуты)</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label>Длительность (минуты)</label>
             <input
               type="number"
               value={duration}
@@ -260,8 +260,8 @@ export default function EditConsultationPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Статус</label>
+          <div className="space-y-2">
+            <label>Статус</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
@@ -274,9 +274,9 @@ export default function EditConsultationPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Базовая стоимость</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label>Базовая стоимость</label>
             <input
               type="number"
               value={baseCost}
@@ -287,8 +287,8 @@ export default function EditConsultationPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Фактическая стоимость</label>
+          <div className="space-y-2">
+            <label>Фактическая стоимость</label>
             <input
               type="number"
               value={actualCost}
