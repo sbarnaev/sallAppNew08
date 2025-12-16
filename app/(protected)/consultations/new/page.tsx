@@ -115,6 +115,14 @@ export default function NewConsultationPage() {
 
       const data = await res.json().catch(() => ({}));
       
+      console.log("Consultation creation response:", { 
+        status: res.status, 
+        ok: res.ok,
+        hasData: !!data?.data,
+        hasId: !!(data?.data?.id || data?.id),
+        data 
+      });
+      
       if (!res.ok) {
         const errorMessage = data?.message || data?.errors?.[0]?.message || "Ошибка создания консультации";
         console.error("Error creating consultation:", { status: res.status, data });
@@ -125,9 +133,15 @@ export default function NewConsultationPage() {
       const consultationId = data?.data?.id || data?.id;
       if (!consultationId) {
         console.error("Consultation created but no ID returned:", data);
-        throw new Error("Консультация создана, но не удалось получить её ID. Проверьте список консультаций.");
+        // Вместо ошибки, редиректим на список консультаций
+        setError("Консультация создана, но ID не получен. Проверьте список консультаций.");
+        setTimeout(() => {
+          router.push("/consultations");
+        }, 2000);
+        return;
       }
 
+      console.log("Redirecting to consultation:", consultationId);
       // Редиректим на страницу созданной консультации
       router.push(`/consultations/${consultationId}`);
     } catch (err: any) {

@@ -196,8 +196,14 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Используем return=* чтобы Directus вернул созданную запись
-  const url = `${baseUrl}/items/consultations?return=*`;
+  // Используем return=* и fields=id чтобы Directus вернул созданную запись с ID
+  const url = `${baseUrl}/items/consultations?return=*&fields=id,client_id,type,status,scheduled_at,created_at,owner_user`;
+  
+  logger.log("Creating consultation:", { 
+    payload: { ...payload, scheduled_at: scheduledDate },
+    url 
+  });
+  
   const r = await fetch(url, {
     method: "POST",
     headers: {
@@ -209,43 +215,51 @@ export async function POST(req: NextRequest) {
     cache: "no-store",
   });
 
-  // Логируем ответ для отладки
+  // Логируем статус и заголовки
+  logger.log("Directus response:", { 
+    status: r.status, 
+    statusText: r.statusText,
+    headers: Object.fromEntries(r.headers.entries())
+  });
+
+  // Получаем ответ как текст сначала
   const responseText = await r.text();
   let data: any = {};
   
   try {
-    data = JSON.parse(responseText);
+    if (responseText) {
+      data = JSON.parse(responseText);
+    }
   } catch (e) {
-    // Если ответ не JSON (например, 204 No Content)
-    logger.log("Directus response is not JSON:", { status: r.status, text: responseText });
-    if (r.status === 204 || r.status === 200) {
-      // При успешном создании без тела ответа, нужно получить созданную запись
-      // Попробуем получить последнюю консультацию для этого пользователя
-      const fetchUrl = `${baseUrl}/items/consultations?filter[owner_user][_eq]=${currentUser.id}&filter[client_id][_eq]=${clientId}&sort=-created_at&limit=1&fields=id,client_id,type,status,scheduled_at,created_at`;
-      const fetchRes = await fetch(fetchUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
-      const fetchData = await fetchRes.json().catch(() => ({ data: [] }));
-      if (fetchData?.data && Array.isArray(fetchData.data) && fetchData.data.length > 0) {
-        const created = fetchData.data[0];
-        // Проверяем, что это действительно только что созданная запись (в пределах последних 5 секунд)
-        const createdTime = new Date(created.created_at).getTime();
-        const now = Date.now();
-        if (now - createdTime < 5000 && created.client_id === clientId) {
-          return NextResponse.json({ data: created }, { status: 200 });
-        }
-      }
+    logger.error("Failed to parse Directus response:", { 
+      status: r.status, 
+      text: responseText.substring(0, 500),
+      error: e 
+    });
+    
+    // Если статус успешный, но нет JSON - это странно
+    if (r.status >= 200 && r.status < 300) {
       return NextResponse.json({ 
-        message: "Консультация создана, но не удалось получить её ID. Проверьте список консультаций.",
-        data: null 
+        message: "Консультация создана, но ответ от сервера не содержит данных. Проверьте список консультаций.",
+        data: null,
+        debug: { status: r.status, responseText: responseText.substring(0, 200) }
       }, { status: 200 });
     }
+    
     return NextResponse.json({ 
       message: "Ошибка создания консультации",
       errors: [{ message: responseText || "Неизвестная ошибка" }]
     }, { status: r.status });
   }
+
+  // Логируем полный ответ
+  logger.log("Directus response data:", { 
+    status: r.status,
+    hasData: !!data?.data,
+    hasId: !!(data?.data?.id || data?.id),
+    data: data?.data ? { id: data.data.id, client_id: data.data.client_id } : null,
+    errors: data?.errors
+  });
 
   // Если есть ошибки от Directus
   if (data?.errors && Array.isArray(data.errors) && data.errors.length > 0) {
@@ -256,25 +270,48 @@ export async function POST(req: NextRequest) {
     }, { status: r.status >= 400 ? r.status : 400 });
   }
 
-  // Проверяем, что данные действительно есть
-  if (!data?.data && r.status >= 200 && r.status < 300) {
-    logger.warn("Consultation created but no data returned:", { status: r.status, response: data });
-    // Пробуем получить созданную запись
-    const fetchUrl = `${baseUrl}/items/consultations?filter[owner_user][_eq]=${currentUser.id}&filter[client_id][_eq]=${clientId}&sort=-created_at&limit=1&fields=id,client_id,type,status,scheduled_at,created_at`;
-    const fetchRes = await fetch(fetchUrl, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
+  // Проверяем статус ответа
+  if (!r.ok) {
+    logger.error("Directus returned error status:", { 
+      status: r.status, 
+      data 
     });
-    const fetchData = await fetchRes.json().catch(() => ({ data: [] }));
-    if (fetchData?.data && Array.isArray(fetchData.data) && fetchData.data.length > 0) {
-      const created = fetchData.data[0];
-      const createdTime = new Date(created.created_at).getTime();
-      const now = Date.now();
-      if (now - createdTime < 5000 && created.client_id === clientId) {
-        return NextResponse.json({ data: created }, { status: 200 });
-      }
-    }
+    return NextResponse.json({ 
+      message: data?.message || "Ошибка создания консультации",
+      errors: data?.errors || [{ message: `HTTP ${r.status}: ${r.statusText}` }]
+    }, { status: r.status });
   }
 
+  // Проверяем, что данные действительно есть
+  if (!data?.data) {
+    logger.warn("Consultation created but no data in response:", { 
+      status: r.status, 
+      response: data 
+    });
+    
+    // Если нет данных, но статус успешный - это проблема
+    return NextResponse.json({ 
+      message: "Консультация создана, но сервер не вернул данные. Проверьте список консультаций.",
+      data: null,
+      debug: { status: r.status, response: data }
+    }, { status: 200 });
+  }
+
+  // Проверяем, что есть ID
+  if (!data.data.id) {
+    logger.error("Consultation created but no ID in response:", data);
+    return NextResponse.json({ 
+      message: "Консультация создана, но ID не получен. Проверьте список консультаций.",
+      data: null,
+      debug: { response: data }
+    }, { status: 200 });
+  }
+
+  // Все хорошо, возвращаем данные
+  logger.log("Consultation created successfully:", { 
+    id: data.data.id,
+    client_id: data.data.client_id 
+  });
+  
   return NextResponse.json(data, { status: r.status });
 } 
