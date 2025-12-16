@@ -589,6 +589,12 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
 }
 
 export async function DELETE(req: Request, ctx: { params: { id: string }}) {
+  // Проверяем подписку
+  const subscriptionCheck = await checkSubscriptionInAPI();
+  if (subscriptionCheck) {
+    return subscriptionCheck;
+  }
+
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) {
@@ -712,6 +718,12 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
 }
 
 export async function PATCH(req: Request, ctx: { params: { id: string }}) {
+  // Проверяем подписку
+  const subscriptionCheck = await checkSubscriptionInAPI();
+  if (subscriptionCheck) {
+    return subscriptionCheck;
+  }
+
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });

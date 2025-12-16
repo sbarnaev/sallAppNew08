@@ -197,10 +197,7 @@ export default function EditConsultationPage() {
           <label>Клиент *</label>
           <select
             value={clientId}
-            onChange={(e) => {
-              setClientId(e.target.value);
-              setProfileId(""); // Сбрасываем профиль при смене клиента
-            }}
+            onChange={(e) => setClientId(e.target.value)}
             className="w-full"
             required
           >

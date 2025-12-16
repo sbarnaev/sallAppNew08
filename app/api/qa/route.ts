@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { checkSubscriptionInAPI } from "@/lib/subscription-check";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
@@ -19,6 +20,12 @@ async function fetchProfileContext(profileId: number, token: string, baseUrl: st
 export async function POST(req: Request) {
   const dlog = (...args: any[]) => logger.debug(...args);
   const dwarn = (...args: any[]) => logger.warn(...args);
+
+  // Проверяем подписку
+  const subscriptionCheck = await checkSubscriptionInAPI();
+  if (subscriptionCheck) {
+    return subscriptionCheck;
+  }
 
   const token = cookies().get("directus_access_token")?.value;
   const directusUrl = getDirectusUrl();

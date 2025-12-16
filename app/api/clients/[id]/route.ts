@@ -1,8 +1,15 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
+import { checkSubscriptionInAPI } from "@/lib/subscription-check";
 
 export async function GET(_req: Request, ctx: { params: { id: string }}) {
+  // Проверяем подписку
+  const subscriptionCheck = await checkSubscriptionInAPI();
+  if (subscriptionCheck) {
+    return subscriptionCheck;
+  }
+
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ data: null }, { status: 401 });
@@ -28,6 +35,12 @@ export async function GET(_req: Request, ctx: { params: { id: string }}) {
 }
 
 export async function PATCH(req: Request, ctx: { params: { id: string }}) {
+  // Проверяем подписку
+  const subscriptionCheck = await checkSubscriptionInAPI();
+  if (subscriptionCheck) {
+    return subscriptionCheck;
+  }
+
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
@@ -60,6 +73,12 @@ export async function PATCH(req: Request, ctx: { params: { id: string }}) {
 }
 
 export async function DELETE(req: Request, ctx: { params: { id: string }}) {
+  // Проверяем подписку
+  const subscriptionCheck = await checkSubscriptionInAPI();
+  if (subscriptionCheck) {
+    return subscriptionCheck;
+  }
+
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });

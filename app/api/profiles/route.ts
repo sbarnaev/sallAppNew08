@@ -259,6 +259,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // Проверяем подписку
+  const subscriptionCheck = await checkSubscriptionInAPI();
+  if (subscriptionCheck) {
+    return subscriptionCheck;
+  }
+
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) {

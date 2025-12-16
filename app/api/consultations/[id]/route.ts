@@ -4,6 +4,12 @@ import { getDirectusUrl } from "@/lib/env";
 import { checkSubscriptionInAPI } from "@/lib/subscription-check";
 
 export async function GET(_req: Request, ctx: { params: { id: string } }) {
+  // Проверяем подписку
+  const subscriptionCheck = await checkSubscriptionInAPI();
+  if (subscriptionCheck) {
+    return subscriptionCheck;
+  }
+
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ data: null }, { status: 401 });
