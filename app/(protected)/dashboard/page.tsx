@@ -104,15 +104,15 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Статистика */}
+      {/* Статистика - Glassmorphism */}
       <div className="grid md:grid-cols-3 gap-4">
-        <Link href="/clients" className="card hover:scale-[1.01] transition-all duration-300 p-4 sm:p-5 bg-gradient-to-br from-white via-green-50/20 to-white border border-green-100/50 group">
+        <Link href="/clients" className="card hover:scale-[1.02] transition-all duration-300 p-4 sm:p-5 group" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(16,185,129,0.1) 100%)', borderColor: 'rgba(16,185,129,0.3)'}}>
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="text-xs text-gray-500 mb-1 font-semibold uppercase tracking-wider">Клиенты</div>
+              <div className="text-xs text-gray-600 mb-1 font-semibold uppercase tracking-wider">Клиенты</div>
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 group-hover:text-green-700 transition-colors leading-none">{stats.clients}</div>
             </div>
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-md shadow-green-500/20 group-hover:shadow-lg group-hover:shadow-green-500/30 group-hover:scale-105 transition-all duration-300">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-green-500/90 to-green-600/90 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30 shadow-[0_8px_24px_rgba(16,185,129,0.3)] group-hover:shadow-[0_12px_32px_rgba(16,185,129,0.4)] group-hover:scale-105 transition-all duration-300">
               <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
@@ -120,13 +120,13 @@ export default async function DashboardPage() {
           </div>
         </Link>
 
-        <Link href="/profiles" className="card hover:scale-[1.01] transition-all duration-300 p-4 sm:p-5 bg-gradient-to-br from-white via-brand-50/20 to-white border border-brand-100/50 group">
+        <Link href="/profiles" className="card hover:scale-[1.02] transition-all duration-300 p-4 sm:p-5 group" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(74,97,255,0.1) 100%)', borderColor: 'rgba(74,97,255,0.3)'}}>
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="text-xs text-gray-500 mb-1 font-semibold uppercase tracking-wider">Расчёты</div>
+              <div className="text-xs text-gray-600 mb-1 font-semibold uppercase tracking-wider">Расчёты</div>
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 group-hover:text-brand-700 transition-colors leading-none">{stats.profiles}</div>
             </div>
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center shadow-md shadow-brand-500/20 group-hover:shadow-lg group-hover:shadow-brand-500/30 group-hover:scale-105 transition-all duration-300">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-brand-500/90 to-brand-600/90 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30 shadow-[0_8px_24px_rgba(74,97,255,0.3)] group-hover:shadow-[0_12px_32px_rgba(74,97,255,0.4)] group-hover:scale-105 transition-all duration-300">
               <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
@@ -134,13 +134,13 @@ export default async function DashboardPage() {
           </div>
         </Link>
 
-        <Link href="/consultations" className="card hover:scale-[1.01] transition-all duration-300 p-4 sm:p-5 bg-gradient-to-br from-white via-blue-50/20 to-white border border-blue-100/50 group">
+        <Link href="/consultations" className="card hover:scale-[1.02] transition-all duration-300 p-4 sm:p-5 group" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(59,130,246,0.1) 100%)', borderColor: 'rgba(59,130,246,0.3)'}}>
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="text-xs text-gray-500 mb-1 font-semibold uppercase tracking-wider">Консультации</div>
+              <div className="text-xs text-gray-600 mb-1 font-semibold uppercase tracking-wider">Консультации</div>
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 group-hover:text-blue-700 transition-colors leading-none">{stats.consultations}</div>
             </div>
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:shadow-lg group-hover:shadow-blue-500/30 group-hover:scale-105 transition-all duration-300">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500/90 to-blue-600/90 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30 shadow-[0_8px_24px_rgba(59,130,246,0.3)] group-hover:shadow-[0_12px_32px_rgba(59,130,246,0.4)] group-hover:scale-105 transition-all duration-300">
               <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>

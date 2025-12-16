@@ -8,13 +8,13 @@ export function MobileMenu() {
 
   return (
     <>
-      {/* Мобильный top-bar (всегда виден на мобиле) */}
+      {/* Мобильный top-bar (всегда виден на мобиле) - Glassmorphism */}
       <header className="md:hidden fixed top-0 inset-x-0 z-[60]">
-        <div className="pt-[env(safe-area-inset-top)] bg-white/90 backdrop-blur-xl border-b border-gray-200/60">
+        <div className="pt-[env(safe-area-inset-top)] bg-white/30 backdrop-blur-2xl border-b border-white/30" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.2) 100%)', boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.5)'}}>
           <div className="h-14 px-3 flex items-center gap-2.5">
       <button
         onClick={() => setIsOpen(true)}
-              className="w-9 h-9 rounded-xl bg-white border border-gray-200/80 shadow-sm hover:shadow transition-all flex items-center justify-center"
+              className="w-9 h-9 rounded-xl bg-white/40 backdrop-blur-md border border-white/40 shadow-[0_4px_16px_rgba(31,38,135,0.1)] hover:bg-white/60 hover:shadow-[0_6px_20px_rgba(31,38,135,0.15)] transition-all flex items-center justify-center"
         aria-label="Открыть меню"
       >
               <svg className="w-5 h-5 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,20 +26,20 @@ export function MobileMenu() {
               <div className="truncate text-sm font-bold bg-gradient-to-r from-brand-700 via-gray-900 to-brand-700 bg-clip-text text-transparent">
                 САЛ ПРОФИ
               </div>
-              <div className="truncate text-[10px] text-gray-500">Панель • клиенты • расчёты</div>
+              <div className="truncate text-[10px] text-gray-600">Панель • клиенты • расчёты</div>
             </Link>
 
             <div className="flex items-center gap-1.5">
               <Link
                 href="/clients/new"
-                className="w-9 h-9 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-sm hover:shadow transition-all flex items-center justify-center"
+                className="w-9 h-9 rounded-xl bg-gradient-to-br from-green-500/90 to-green-600/90 backdrop-blur-md text-white border border-white/20 shadow-[0_4px_16px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] transition-all flex items-center justify-center"
                 aria-label="Новый клиент"
               >
                 <span className="text-[16px] leading-none">👤</span>
               </Link>
               <Link
                 href="/profiles/new"
-                className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-sm hover:shadow transition-all flex items-center justify-center"
+                className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/90 to-brand-600/90 backdrop-blur-md text-white border border-white/20 shadow-[0_4px_16px_rgba(74,97,255,0.3)] hover:shadow-[0_6px_20px_rgba(74,97,255,0.4)] transition-all flex items-center justify-center"
                 aria-label="Новый расчёт"
               >
                 <span className="text-[16px] leading-none">🧾</span>
@@ -57,11 +57,12 @@ export function MobileMenu() {
         />
       )}
 
-      {/* Мобильное меню */}
+      {/* Мобильное меню - Glassmorphism */}
       <aside
-        className={`md:hidden fixed top-0 left-0 h-full w-[75vw] max-w-[300px] bg-white/98 backdrop-blur-xl border-r border-gray-200/60 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
+        className={`md:hidden fixed top-0 left-0 h-full w-[75vw] max-w-[300px] backdrop-blur-2xl border-r border-white/30 z-50 transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
+        style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.3) 100%)', boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.5)'}}
       >
         <div className="flex flex-col h-full p-3 pt-[calc(12px+env(safe-area-inset-top))]">
           {/* Заголовок с кнопкой закрытия */}
@@ -71,7 +72,7 @@ export function MobileMenu() {
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/40 backdrop-blur-md border border-white/40 hover:bg-white/60 transition-all"
               aria-label="Закрыть меню"
             >
               <svg className="w-4.5 h-4.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,7 +86,7 @@ export function MobileMenu() {
             <Link
               href="/dashboard"
               onClick={() => setIsOpen(false)}
-              className="flex items-center px-3 py-2.5 rounded-xl hover:bg-gradient-to-r hover:from-brand-50 hover:to-transparent transition-all"
+              className="flex items-center px-3 py-2.5 rounded-xl hover:bg-white/30 hover:backdrop-blur-md transition-all"
             >
               <span className="inline-block w-5 text-center shrink-0 text-lg">📊</span>
               <span className="ml-2.5 font-semibold text-sm text-gray-800">Панель</span>
@@ -93,7 +94,7 @@ export function MobileMenu() {
             <Link
               href="/clients"
               onClick={() => setIsOpen(false)}
-              className="flex items-center px-3 py-2.5 rounded-xl hover:bg-gradient-to-r hover:from-green-50 hover:to-transparent transition-all"
+              className="flex items-center px-3 py-2.5 rounded-xl hover:bg-white/30 hover:backdrop-blur-md transition-all"
             >
               <span className="inline-block w-5 text-center shrink-0 text-lg">👥</span>
               <span className="ml-2.5 font-semibold text-sm text-gray-800">Клиенты</span>
@@ -101,7 +102,7 @@ export function MobileMenu() {
             <Link
               href="/profiles"
               onClick={() => setIsOpen(false)}
-              className="flex items-center px-3 py-2.5 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent transition-all"
+              className="flex items-center px-3 py-2.5 rounded-xl hover:bg-white/30 hover:backdrop-blur-md transition-all"
             >
               <span className="inline-block w-5 text-center shrink-0 text-lg">📈</span>
               <span className="ml-2.5 font-semibold text-sm text-gray-800">Расчёты</span>
@@ -109,7 +110,7 @@ export function MobileMenu() {
             <Link
               href="/tests"
               onClick={() => setIsOpen(false)}
-              className="flex items-center px-3 py-2.5 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent transition-all"
+              className="flex items-center px-3 py-2.5 rounded-xl hover:bg-white/30 hover:backdrop-blur-md transition-all"
             >
               <span className="inline-block w-5 text-center shrink-0 text-lg">🧪</span>
               <span className="ml-2.5 font-semibold text-sm text-gray-800">Тесты</span>
@@ -120,7 +121,7 @@ export function MobileMenu() {
           <form action="/api/logout" method="post" className="mt-auto">
             <button
               type="submit"
-              className="flex items-center w-full px-3 py-2.5 rounded-xl hover:bg-gradient-to-r hover:from-red-50 hover:to-transparent text-gray-600 hover:text-red-700 transition-all"
+              className="flex items-center w-full px-3 py-2.5 rounded-xl hover:bg-white/30 hover:backdrop-blur-md text-gray-600 hover:text-red-700 transition-all"
             >
               <span className="inline-block w-5 text-center shrink-0 text-lg">🚪</span>
               <span className="ml-2.5 font-semibold text-sm">Выйти</span>

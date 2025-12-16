@@ -120,10 +120,34 @@ export async function POST(req: NextRequest) {
 
   // Валидация опциональных полей
   if (body.scheduled_at) {
-    // Проверяем формат даты (YYYY-MM-DD или ISO 8601)
-    const dateRegex = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/;
-    if (typeof body.scheduled_at === 'string' && dateRegex.test(body.scheduled_at)) {
-      payload.scheduled_at = body.scheduled_at;
+    // Принимаем различные форматы даты и конвертируем в ISO
+    let scheduledDate: string | null = null;
+    
+    if (typeof body.scheduled_at === 'string') {
+      // Формат datetime-local: "YYYY-MM-DDTHH:mm" -> конвертируем в ISO
+      if (body.scheduled_at.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
+        // Добавляем секунды и миллисекунды если их нет
+        scheduledDate = body.scheduled_at + ':00.000Z';
+      }
+      // Формат ISO с секундами: "YYYY-MM-DDTHH:mm:ss" -> добавляем миллисекунды
+      else if (body.scheduled_at.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/)) {
+        scheduledDate = body.scheduled_at + '.000Z';
+      }
+      // Уже полный ISO формат
+      else if (body.scheduled_at.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/)) {
+        scheduledDate = body.scheduled_at.endsWith('Z') ? body.scheduled_at : body.scheduled_at + 'Z';
+      }
+      // Пробуем распарсить как Date
+      else {
+        const parsedDate = new Date(body.scheduled_at);
+        if (!isNaN(parsedDate.getTime())) {
+          scheduledDate = parsedDate.toISOString();
+        }
+      }
+    }
+    
+    if (scheduledDate) {
+      payload.scheduled_at = scheduledDate;
     } else {
       return NextResponse.json({ message: "scheduled_at must be a valid date string" }, { status: 400 });
     }

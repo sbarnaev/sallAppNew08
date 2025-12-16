@@ -66,14 +66,16 @@
 
 body {
   background:
-    radial-gradient(1200px circle at 20% -10%, rgba(74, 97, 255, 0.08), transparent 55%),
-    radial-gradient(1000px circle at 80% 5%, rgba(16, 185, 129, 0.06), transparent 52%),
-    radial-gradient(800px circle at 85% 95%, rgba(99, 102, 241, 0.05), transparent 58%),
-    linear-gradient(135deg, #fafbfc 0%, #ffffff 40%, #fafbfc 100%);
+    radial-gradient(1400px circle at 15% -8%, rgba(74, 97, 255, 0.15), transparent 50%),
+    radial-gradient(1200px circle at 85% 8%, rgba(139, 92, 246, 0.12), transparent 50%),
+    radial-gradient(1000px circle at 50% 100%, rgba(16, 185, 129, 0.10), transparent 55%),
+    radial-gradient(900px circle at 25% 50%, rgba(236, 72, 153, 0.08), transparent 50%),
+    linear-gradient(135deg, #f8fafc 0%, #ffffff 30%, #f1f5f9 70%, #ffffff 100%);
   @apply text-gray-900;
   font-feature-settings: "rlig" 1, "calt" 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-attachment: fixed;
 }
 
 @layer base {
@@ -85,10 +87,15 @@ body {
 
   /* Базовые поля ввода (классы всё равно могут переопределить) */
   input, select, textarea {
-    @apply rounded-xl border border-gray-300/80 bg-white px-3.5 py-2.5 text-sm text-gray-900;
-    @apply placeholder:text-gray-400;
-    @apply focus:border-brand-500 focus:ring-2 focus:ring-brand-200/60;
+    @apply rounded-xl border border-white/40 bg-white/30 backdrop-blur-md px-3.5 py-2.5 text-sm text-gray-900;
+    @apply placeholder:text-gray-500;
+    @apply focus:border-white/60 focus:ring-2 focus:ring-white/30 focus:bg-white/50;
     @apply transition-all duration-200 ease-out;
+    box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  }
+  
+  input:focus, select:focus, textarea:focus {
+    box-shadow: 0 6px 20px 0 rgba(31, 38, 135, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
   }
 
   label {
@@ -96,17 +103,19 @@ body {
   }
 }
 
-/* Премиальные карточки */
+/* Glassmorphism карточки */
 .card {
-  @apply bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl;
-  @apply shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] border border-gray-200/60;
+  @apply bg-white/40 backdrop-blur-xl rounded-2xl sm:rounded-3xl;
+  @apply shadow-[0_8px_32px_0_rgba(31,38,135,0.15),0_0_0_1px_rgba(255,255,255,0.5)] border border-white/30;
   @apply p-4 sm:p-6;
   @apply transition-all duration-300 ease-out;
+  background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.3) 100%);
 }
 
 .card:hover {
-  @apply shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.06)] border-gray-300/80;
-  transform: translateY(-1px);
+  @apply shadow-[0_12px_40px_0_rgba(31,38,135,0.2),0_0_0_1px_rgba(255,255,255,0.6)] border-white/50;
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.4) 100%);
 }
 
 /* Плавные переходы для всех интерактивных элементов */
@@ -188,34 +197,38 @@ h3, h4, h5, h6 {
   .btn-lg { @apply px-6 py-3 text-sm sm:text-base rounded-xl; }
 
   .btn-primary {
-    @apply bg-gradient-to-r from-brand-600 to-brand-700 text-white;
-    @apply shadow-md shadow-brand-500/25 hover:shadow-lg hover:shadow-brand-500/35;
-    @apply hover:from-brand-700 hover:to-brand-800;
+    @apply bg-gradient-to-r from-brand-600/90 to-brand-700/90 backdrop-blur-md text-white;
+    @apply shadow-[0_8px_24px_rgba(74,97,255,0.3)] border border-white/20;
+    @apply hover:shadow-[0_12px_32px_rgba(74,97,255,0.4)] hover:from-brand-600 hover:to-brand-700;
+    @apply hover:border-white/30;
   }
   .btn-neutral {
-    @apply bg-gradient-to-r from-gray-900 to-gray-800 text-white;
-    @apply shadow-md shadow-gray-900/20 hover:shadow-lg hover:shadow-gray-900/25;
-    @apply hover:from-gray-800 hover:to-gray-700;
+    @apply bg-gradient-to-r from-gray-900/90 to-gray-800/90 backdrop-blur-md text-white;
+    @apply shadow-[0_8px_24px_rgba(0,0,0,0.25)] border border-white/10;
+    @apply hover:shadow-[0_12px_32px_rgba(0,0,0,0.3)] hover:from-gray-800 hover:to-gray-700;
+    @apply hover:border-white/20;
   }
   .btn-success {
-    @apply bg-gradient-to-r from-green-500 to-green-600 text-white;
-    @apply shadow-md shadow-green-500/25 hover:shadow-lg hover:shadow-green-500/35;
-    @apply hover:from-green-600 hover:to-green-700;
+    @apply bg-gradient-to-r from-green-500/90 to-green-600/90 backdrop-blur-md text-white;
+    @apply shadow-[0_8px_24px_rgba(16,185,129,0.3)] border border-white/20;
+    @apply hover:shadow-[0_12px_32px_rgba(16,185,129,0.4)] hover:from-green-600 hover:to-green-700;
+    @apply hover:border-white/30;
   }
   .btn-danger {
-    @apply bg-gradient-to-r from-red-500 to-red-600 text-white;
-    @apply shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/35;
-    @apply hover:from-red-600 hover:to-red-700;
+    @apply bg-gradient-to-r from-red-500/90 to-red-600/90 backdrop-blur-md text-white;
+    @apply shadow-[0_8px_24px_rgba(239,68,68,0.3)] border border-white/20;
+    @apply hover:shadow-[0_12px_32px_rgba(239,68,68,0.4)] hover:from-red-600 hover:to-red-700;
+    @apply hover:border-white/30;
   }
   .btn-secondary {
-    @apply bg-white text-gray-900;
-    @apply border border-gray-300/80 hover:border-gray-400;
-    @apply hover:bg-gradient-to-br hover:from-gray-50 hover:to-white;
-    @apply shadow-sm hover:shadow;
+    @apply bg-white/40 backdrop-blur-md text-gray-900;
+    @apply border border-white/50 hover:border-white/70;
+    @apply hover:bg-white/60;
+    @apply shadow-[0_4px_16px_rgba(31,38,135,0.1)] hover:shadow-[0_8px_24px_rgba(31,38,135,0.15)];
   }
   .btn-ghost {
-    @apply bg-transparent text-gray-700 hover:text-gray-900;
-    @apply hover:bg-gray-100/70;
+    @apply bg-white/20 backdrop-blur-sm text-gray-700 hover:text-gray-900;
+    @apply hover:bg-white/40 border border-transparent hover:border-white/30;
   }
 
   /* Badges */
@@ -223,12 +236,24 @@ h3, h4, h5, h6 {
     @apply inline-flex items-center gap-1;
     @apply px-2.5 py-1 rounded-full;
     @apply text-[11px] sm:text-xs font-semibold;
-    @apply border;
+    @apply border backdrop-blur-md;
   }
-  .badge-blue { @apply bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 border-blue-200/60; }
-  .badge-brand { @apply bg-gradient-to-r from-brand-100 to-brand-50 text-brand-800 border-brand-200/60; }
-  .badge-green { @apply bg-gradient-to-r from-green-100 to-green-50 text-green-800 border-green-200/60; }
-  .badge-gray { @apply bg-gray-100/80 text-gray-700 border-gray-200/80; }
+  .badge-blue { 
+    @apply bg-blue-500/20 text-blue-800 border-blue-300/40; 
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+  }
+  .badge-brand { 
+    @apply bg-brand-500/20 text-brand-800 border-brand-300/40; 
+    box-shadow: 0 2px 8px rgba(74, 97, 255, 0.2);
+  }
+  .badge-green { 
+    @apply bg-green-500/20 text-green-800 border-green-300/40; 
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+  }
+  .badge-gray { 
+    @apply bg-gray-500/20 text-gray-700 border-gray-300/40; 
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
 
   /* Desktop nav items */
   .nav-item {

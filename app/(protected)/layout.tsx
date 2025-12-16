@@ -14,30 +14,30 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       {/* Мобильное меню */}
       <MobileMenu />
       
-      {/* Десктопное меню (скрыто на мобильных) */}
-        <aside className="hidden md:flex bg-white/80 backdrop-blur-xl border-r border-gray-200/60 p-3 transition-all duration-300 w-[56px] hover:w-[220px] group relative flex-col h-screen shadow-[0_1px_0_rgba(15,23,42,0.02),0_4px_20px_rgba(15,23,42,0.05)]">
+      {/* Десктопное меню (скрыто на мобильных) - Glassmorphism */}
+        <aside className="hidden md:flex bg-white/30 backdrop-blur-2xl border-r border-white/30 p-3 transition-all duration-300 w-[56px] hover:w-[220px] group relative flex-col h-screen shadow-[0_8px_32px_0_rgba(31,38,135,0.15),0_0_0_1px_rgba(255,255,255,0.5)]" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.2) 100%)'}}>
         <div className="font-bold mb-5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-base bg-gradient-to-r from-brand-600 to-brand-700 bg-clip-text text-transparent">САЛ ПРОФИ</div>
         <nav className="space-y-1.5 text-sm flex-1 flex flex-col">
           <div className="flex flex-col space-y-1.5">
-              <Link className="nav-item hover:bg-gradient-to-r hover:from-brand-50 hover:to-transparent" href="/dashboard">
+              <Link className="nav-item hover:bg-white/30 hover:backdrop-blur-md rounded-xl transition-all" href="/dashboard">
               <span className="inline-block w-5 text-center shrink-0 text-lg">📊</span>
                 <span className="nav-item-label text-sm">Панель</span>
             </Link>
-              <Link className="nav-item hover:bg-gradient-to-r hover:from-green-50 hover:to-transparent" href="/clients">
+              <Link className="nav-item hover:bg-white/30 hover:backdrop-blur-md rounded-xl transition-all" href="/clients">
               <span className="inline-block w-5 text-center shrink-0 text-lg">👥</span>
                 <span className="nav-item-label text-sm">Клиенты</span>
             </Link>
-              <Link className="nav-item hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent" href="/profiles">
+              <Link className="nav-item hover:bg-white/30 hover:backdrop-blur-md rounded-xl transition-all" href="/profiles">
               <span className="inline-block w-5 text-center shrink-0 text-lg">📈</span>
                 <span className="nav-item-label text-sm">Расчёты</span>
               </Link>
-              <Link className="nav-item hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent" href="/tests">
+              <Link className="nav-item hover:bg-white/30 hover:backdrop-blur-md rounded-xl transition-all" href="/tests">
                 <span className="inline-block w-5 text-center shrink-0 text-lg">🧪</span>
                 <span className="nav-item-label text-sm">Тесты</span>
             </Link>
           </div>
           <form action="/api/logout" method="post" className="mt-auto">
-              <button type="submit" className="nav-item w-full text-xs text-gray-600 hover:text-red-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-transparent">
+              <button type="submit" className="nav-item w-full text-xs text-gray-600 hover:text-red-700 hover:bg-white/30 hover:backdrop-blur-md rounded-xl transition-all">
               <span className="inline-block w-5 text-center shrink-0 text-lg">🚪</span>
                 <span className="nav-item-label font-medium text-sm">Выйти</span>
             </button>

@@ -56,7 +56,36 @@ export async function PATCH(req: NextRequest, ctx: { params: { id: string } }) {
   // Обновляем только переданные поля
   if (body.type !== undefined) payload.type = body.type;
   if (body.status !== undefined) payload.status = body.status;
-  if (body.scheduled_at !== undefined) payload.scheduled_at = body.scheduled_at || null;
+  if (body.scheduled_at !== undefined) {
+    if (body.scheduled_at) {
+      // Конвертируем datetime-local в ISO формат если нужно
+      let scheduledDate: string | null = null;
+      if (typeof body.scheduled_at === 'string') {
+        // Формат datetime-local: "YYYY-MM-DDTHH:mm"
+        if (body.scheduled_at.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
+          scheduledDate = body.scheduled_at + ':00.000Z';
+        }
+        // Формат с секундами
+        else if (body.scheduled_at.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/)) {
+          scheduledDate = body.scheduled_at + '.000Z';
+        }
+        // Уже ISO формат
+        else if (body.scheduled_at.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/)) {
+          scheduledDate = body.scheduled_at.endsWith('Z') ? body.scheduled_at : body.scheduled_at + 'Z';
+        }
+        // Пробуем распарсить
+        else {
+          const parsedDate = new Date(body.scheduled_at);
+          if (!isNaN(parsedDate.getTime())) {
+            scheduledDate = parsedDate.toISOString();
+          }
+        }
+      }
+      payload.scheduled_at = scheduledDate || null;
+    } else {
+      payload.scheduled_at = null;
+    }
+  }
   if (body.duration !== undefined) payload.duration = body.duration ? Number(body.duration) : null;
   if (body.base_cost !== undefined) payload.base_cost = body.base_cost ? Number(body.base_cost) : null;
   if (body.actual_cost !== undefined) payload.actual_cost = body.actual_cost ? Number(body.actual_cost) : null;
@@ -75,6 +104,37 @@ export async function PATCH(req: NextRequest, ctx: { params: { id: string } }) {
     body: JSON.stringify(payload),
     cache: "no-store",
   });
+
+  const data = await r.json().catch(() => ({}));
+  return NextResponse.json(data, { status: r.status });
+}
+
+export async function DELETE(_req: Request, ctx: { params: { id: string } }) {
+  // Проверяем подписку
+  const subscriptionCheck = await checkSubscriptionInAPI();
+  if (subscriptionCheck) {
+    return subscriptionCheck;
+  }
+
+  const token = cookies().get("directus_access_token")?.value;
+  const baseUrl = getDirectusUrl();
+  if (!token || !baseUrl) {
+    return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
+  }
+
+  const url = `${baseUrl}/items/consultations/${ctx.params.id}`;
+  const r = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+    cache: "no-store",
+  });
+
+  if (r.status === 204 || r.status === 200) {
+    return NextResponse.json({ message: "Консультация удалена" }, { status: 200 });
+  }
 
   const data = await r.json().catch(() => ({}));
   return NextResponse.json(data, { status: r.status });

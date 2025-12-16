@@ -96,7 +96,13 @@ export default function NewConsultationPage() {
         status,
       };
 
-      if (scheduledAt) payload.scheduled_at = scheduledAt;
+      if (scheduledAt) {
+        // Конвертируем datetime-local в ISO формат
+        const date = new Date(scheduledAt);
+        if (!isNaN(date.getTime())) {
+          payload.scheduled_at = date.toISOString();
+        }
+      }
       if (duration) payload.duration = Number(duration);
       if (baseCost) payload.base_cost = Number(baseCost);
       if (actualCost) payload.actual_cost = Number(actualCost);
@@ -240,13 +246,14 @@ export default function NewConsultationPage() {
         )}
 
         <div className="space-y-2">
-          <label>Дата и время</label>
+          <label>Дата и время (опционально)</label>
           <input
             type="datetime-local"
             value={scheduledAt}
             onChange={(e) => setScheduledAt(e.target.value)}
             className="w-full"
           />
+          <p className="text-xs text-gray-500">Оставьте пустым, если дата не определена</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

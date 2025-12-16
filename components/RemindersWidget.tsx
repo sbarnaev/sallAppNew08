@@ -32,9 +32,9 @@ export function RemindersWidget() {
         const clientsData = await clientsRes.json().catch(() => ({ data: [] }));
         const clients = clientsData?.data || [];
 
-        // Загружаем консультации на ближайшие 7 дней (все статусы для проверки)
+        // Загружаем консультации на ближайшие 7 дней (только запланированные)
         const consultationsRes = await fetch(
-          `/api/consultations?filter[scheduled_at][_gte]=${today.toISOString()}&filter[scheduled_at][_lte]=${in7Days.toISOString()}&limit=100`,
+          `/api/consultations?filter[scheduled_at][_gte]=${today.toISOString()}&filter[scheduled_at][_lte]=${in7Days.toISOString()}&filter[status][_eq]=scheduled&limit=100`,
           { cache: "no-store" }
         );
         const consultationsData = await consultationsRes.json().catch(() => ({ data: [] }));
@@ -76,18 +76,28 @@ export function RemindersWidget() {
           }
         });
 
-        // Проверяем предстоящие консультации
+        // Проверяем предстоящие консультации (только запланированные)
         consultations.forEach((consultation: any) => {
-          if (consultation.scheduled_at) {
+          // Показываем только запланированные консультации
+          if (consultation.scheduled_at && consultation.status === "scheduled") {
             const consultationDate = new Date(consultation.scheduled_at);
             const daysUntil = Math.ceil((consultationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
             
+            // Показываем консультации на ближайшие 7 дней (включая сегодня)
             if (daysUntil >= 0 && daysUntil <= 7) {
               const client = clients.find((c: any) => c.id === consultation.client_id);
+              const typeLabels: Record<string, string> = {
+                base: "Базовая",
+                extended: "Расширенная",
+                target: "Целевая",
+                partner: "Парная"
+              };
+              const typeLabel = typeLabels[consultation.type] || consultation.type || "Консультация";
+              
               remindersList.push({
                 id: `consultation-${consultation.id}`,
                 type: "consultation",
-                title: `Консультация: ${client?.name || `Клиент #${consultation.client_id}`}`,
+                title: `${typeLabel}: ${client?.name || `Клиент #${consultation.client_id}`}`,
                 date: consultation.scheduled_at,
                 daysUntil,
                 clientId: consultation.client_id,

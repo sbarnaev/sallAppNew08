@@ -313,12 +313,24 @@ export default function EditConsultationPage() {
 
         <div className="space-y-2">
           <label>Дата и время</label>
-          <input
-            type="datetime-local"
-            value={scheduledAt}
-            onChange={(e) => setScheduledAt(e.target.value)}
-            className="w-full"
-          />
+          <div className="flex gap-2">
+            <input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              className="w-full"
+            />
+            {scheduledAt && (
+              <button
+                type="button"
+                onClick={() => setScheduledAt("")}
+                className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm whitespace-nowrap"
+                title="Очистить дату"
+              >
+                Очистить
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

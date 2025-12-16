@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { internalApiFetch } from "@/lib/fetchers";
+import DeleteConsultation from "./DeleteConsultation";
 
 async function getConsultation(id: string) {
   const res = await internalApiFetch(`/api/consultations/${id}`);
@@ -82,6 +83,7 @@ export default async function ConsultationDetailPage({ params }: { params: { id:
             </svg>
             Редактировать
           </Link>
+          <DeleteConsultation id={params.id} />
           <Link href="/consultations" className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
             ← Назад
           </Link>
@@ -103,13 +105,19 @@ export default async function ConsultationDetailPage({ params }: { params: { id:
               <div className="space-y-2">
                 <div className="text-sm text-gray-500">Дата и время</div>
                 <div className="font-medium">
-                  {c.scheduled_at ? new Date(c.scheduled_at).toLocaleString("ru-RU", {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }) : "Не указана"}
+                  {c.scheduled_at ? (
+                    <time dateTime={c.scheduled_at}>
+                      {new Date(c.scheduled_at).toLocaleString("ru-RU", {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </time>
+                  ) : (
+                    <span className="text-gray-400">Не указана</span>
+                  )}
                 </div>
               </div>
               {c.duration && (
