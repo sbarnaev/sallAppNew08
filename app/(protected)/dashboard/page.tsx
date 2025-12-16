@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { internalApiFetch } from "@/lib/fetchers";
 import { RemindersWidget } from "@/components/RemindersWidget";
+import { SubscriptionStatus } from "@/components/SubscriptionStatus";
 
 async function getStats() {
   try {
