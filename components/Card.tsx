@@ -4,17 +4,19 @@ import { clsx } from "clsx";
 export function Card({ 
   children, 
   className,
-  hover = true 
+  hover = true,
+  muted = false
 }: { 
   children: ReactNode;
   className?: string;
   hover?: boolean;
+  muted?: boolean;
 }) {
   return (
     <div 
       className={clsx(
-        "card",
-        hover && "hover:shadow-soft-lg hover:-translate-y-0.5",
+        muted ? "card-muted" : "card",
+        hover && !muted && "hover:shadow-soft-lg hover:-translate-y-0.5",
         className
       )}
     >

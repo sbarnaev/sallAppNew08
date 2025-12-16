@@ -65,12 +65,11 @@
 }
 
 body {
-  background:
-    radial-gradient(1800px circle at 10% -3%, rgba(74, 97, 255, 0.12), transparent 55%),
-    radial-gradient(1600px circle at 90% 8%, rgba(139, 92, 246, 0.10), transparent 55%),
-    radial-gradient(1400px circle at 50% 105%, rgba(16, 185, 129, 0.08), transparent 60%),
-    radial-gradient(1200px circle at 30% 50%, rgba(236, 72, 153, 0.06), transparent 50%),
-    linear-gradient(180deg, #f8fafc 0%, #ffffff 40%, #f1f5f9 80%, #ffffff 100%);
+  /* Молочный тёплый фон с лёгким glassmorphism эффектом */
+  background: 
+    radial-gradient(2000px circle at 20% 30%, rgba(74, 111, 165, 0.03), transparent 50%),
+    radial-gradient(1800px circle at 80% 70%, rgba(91, 127, 184, 0.02), transparent 50%),
+    linear-gradient(180deg, #FAF9F7 0%, #F5F4F2 50%, #FAF9F7 100%);
   @apply text-gray-900;
   font-feature-settings: "rlig" 1, "calt" 1;
   -webkit-font-smoothing: antialiased;
@@ -82,38 +81,47 @@ body {
   /* Нормальный фокус (особенно на мобиле) */
   :focus-visible {
     outline: none;
-    box-shadow: 0 0 0 4px rgba(74, 97, 255, 0.20);
+    box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.15);
   }
 
-  /* Базовые поля ввода (классы всё равно могут переопределить) */
+  /* Базовые поля ввода с glassmorphism */
   input, select, textarea {
-    @apply rounded-lg border border-gray-200/80 bg-white/60 backdrop-blur-sm px-4 py-2.5 text-sm text-gray-900;
-    @apply placeholder:text-gray-400;
-    @apply focus:border-brand-500/60 focus:ring-1 focus:ring-brand-500/20 focus:bg-white/80;
+    @apply rounded-xl border border-white/60 bg-white/40 backdrop-blur-[20px] px-4 py-2.5 text-sm text-gray-900;
+    @apply placeholder:text-gray-500;
+    @apply focus:border-accent-500/50 focus:ring-1 focus:ring-accent-500/20 focus:bg-white/60;
     @apply transition-all duration-200 ease-out;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03), inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
   }
   
   input:focus, select:focus, textarea:focus {
-    box-shadow: 0 2px 6px 0 rgba(74, 97, 255, 0.12), inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 8px 0 rgba(74, 111, 165, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(25px);
   }
 
   label {
-    @apply text-sm font-semibold text-gray-700;
+    @apply text-sm font-medium text-gray-700;
   }
 }
 
-/* Премиальные карточки - прозрачные для градиентного фона */
+/* Premium Glassmorphism карточки */
 .card {
-  @apply bg-white/60 backdrop-blur-md rounded-lg;
-  @apply shadow-[0_1px_3px_0_rgba(0,0,0,0.08),0_1px_2px_0_rgba(0,0,0,0.04)] border border-white/50;
+  @apply bg-white/50 backdrop-blur-[25px] rounded-2xl;
+  @apply shadow-[0_2px_8px_0_rgba(0,0,0,0.04),0_0_0_1px_rgba(255,255,255,0.6)] border border-white/60;
   @apply p-5;
-  @apply transition-all duration-200 ease-out;
+  @apply transition-all duration-300 ease-out;
 }
 
 .card:hover {
-  @apply bg-white/75 shadow-[0_4px_12px_0_rgba(0,0,0,0.12),0_2px_4px_0_rgba(0,0,0,0.06)] border-white/70;
-  transform: translateY(-1px);
+  @apply bg-white/65 backdrop-blur-[30px] shadow-[0_4px_16px_0_rgba(0,0,0,0.06),0_0_0_1px_rgba(255,255,255,0.7)];
+  transform: translateY(-2px);
+}
+
+/* Вторичные карточки (более прозрачные, дальше) */
+.card-muted {
+  @apply bg-white/35 backdrop-blur-[20px] rounded-2xl;
+  @apply shadow-[0_1px_4px_0_rgba(0,0,0,0.03),0_0_0_1px_rgba(255,255,255,0.5)] border border-white/50;
+  @apply p-5;
+  @apply transition-all duration-300 ease-out;
 }
 
 /* Плавные переходы для всех интерактивных элементов */
@@ -121,37 +129,46 @@ a, button {
   @apply transition-all duration-300 ease-out;
 }
 
-/* Премиальная типографика */
+/* Premium типографика - минимум bold */
 h1 {
-  @apply font-bold tracking-tight leading-tight;
-  letter-spacing: -0.02em;
+  @apply font-semibold tracking-tight leading-tight;
+  letter-spacing: -0.025em;
+  font-weight: 600;
 }
 
 h2 {
   @apply font-semibold tracking-tight leading-tight;
+  letter-spacing: -0.015em;
+  font-weight: 600;
+}
+
+h3 {
+  @apply font-medium tracking-tight;
   letter-spacing: -0.01em;
+  font-weight: 500;
 }
 
-h3, h4, h5, h6 {
-  @apply font-semibold tracking-tight;
+h4, h5, h6 {
+  @apply font-medium tracking-tight;
+  font-weight: 500;
 }
 
-/* Стили для скроллбара */
+/* Стили для скроллбара - glassmorphism */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-50;
+  @apply bg-transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300/60 rounded-full;
+  @apply bg-white/40 backdrop-blur-sm rounded-full border border-white/30;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400/80;
+  @apply bg-white/60;
 }
 
 /* Мобильные улучшения касаний и типографики */
@@ -171,91 +188,107 @@ h3, h4, h5, h6 {
 @layer components {
   /* Unified page primitives */
   .page-title {
-    @apply text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight leading-[1.1] text-gray-900;
-    letter-spacing: -0.025em;
-    font-weight: 700;
+    @apply text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight leading-[1.1] text-gray-900;
+    letter-spacing: -0.03em;
+    font-weight: 600;
   }
   .page-subtitle {
-    @apply text-sm md:text-base text-gray-500 font-normal leading-relaxed;
+    @apply text-sm md:text-base text-gray-600 font-normal leading-relaxed;
     letter-spacing: -0.01em;
   }
 
   /* Surfaces */
   .surface { @apply card; }
-  .surface-muted { @apply card bg-gradient-to-br from-white via-gray-50/60 to-white; }
+  .surface-muted { @apply card-muted; }
 
-  /* Buttons - менее скругленные */
+  /* Glassmorphism Buttons */
   .btn {
     @apply inline-flex items-center justify-center gap-2;
-    @apply rounded-lg px-5 py-2.5;
+    @apply rounded-xl px-5 py-2.5;
     @apply text-sm font-medium;
-    @apply transition-all duration-200 ease-out;
+    @apply transition-all duration-300 ease-out;
     @apply active:scale-[0.98];
-    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
-    @apply focus-visible:ring-2 focus-visible:ring-brand-500/30;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100;
+    @apply focus-visible:ring-2 focus-visible:ring-accent-500/20;
     letter-spacing: -0.01em;
   }
-  .btn-sm { @apply px-4 py-2 text-xs rounded-md; }
-  .btn-lg { @apply px-6 py-3 text-base rounded-lg; }
+  .btn-sm { @apply px-4 py-2 text-xs rounded-lg; }
+  .btn-lg { @apply px-6 py-3 text-base rounded-xl; }
 
+  /* Primary - glassmorphism с акцентом */
   .btn-primary {
-    @apply bg-brand-600 text-white;
-    @apply shadow-[0_2px_8px_rgba(74,97,255,0.25)] border border-brand-700/20;
-    @apply hover:bg-brand-700 hover:shadow-[0_4px_12px_rgba(74,97,255,0.35)];
+    @apply bg-white/50 backdrop-blur-[20px] text-accent-700;
+    @apply border border-accent-500/30 shadow-[0_2px_8px_0_rgba(74,111,165,0.08)];
+    @apply hover:bg-white/65 hover:border-accent-500/50 hover:shadow-[0_4px_12px_0_rgba(74,111,165,0.12)];
+    @apply hover:text-accent-800;
   }
+  
+  /* Neutral - тёмный glass */
   .btn-neutral {
-    @apply bg-gray-900 text-white;
-    @apply shadow-[0_2px_8px_rgba(0,0,0,0.2)] border border-gray-800/30;
-    @apply hover:bg-gray-800 hover:shadow-[0_4px_12px_rgba(0,0,0,0.25)];
+    @apply bg-gray-900/80 backdrop-blur-[20px] text-white;
+    @apply border border-gray-800/50 shadow-[0_2px_8px_0_rgba(0,0,0,0.15)];
+    @apply hover:bg-gray-900/90 hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.2)];
   }
+  
+  /* Success - спокойный зелёный glass */
   .btn-success {
-    @apply bg-green-600 text-white;
-    @apply shadow-[0_2px_8px_rgba(16,185,129,0.25)] border border-green-700/20;
-    @apply hover:bg-green-700 hover:shadow-[0_4px_12px_rgba(16,185,129,0.35)];
+    @apply bg-white/50 backdrop-blur-[20px] text-gray-700;
+    @apply border border-gray-300/50 shadow-[0_2px_8px_0_rgba(0,0,0,0.04)];
+    @apply hover:bg-white/65 hover:border-gray-400/60 hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.06)];
   }
+  
+  /* Danger - спокойный красный glass */
   .btn-danger {
-    @apply bg-red-600 text-white;
-    @apply shadow-[0_2px_8px_rgba(239,68,68,0.25)] border border-red-700/20;
-    @apply hover:bg-red-700 hover:shadow-[0_4px_12px_rgba(239,68,68,0.35)];
+    @apply bg-white/50 backdrop-blur-[20px] text-gray-700;
+    @apply border border-gray-300/50 shadow-[0_2px_8px_0_rgba(0,0,0,0.04)];
+    @apply hover:bg-white/65 hover:border-red-300/60 hover:text-red-700 hover:shadow-[0_4px_12px_0_rgba(220,38,38,0.08)];
   }
+  
+  /* Secondary - светлый glass */
   .btn-secondary {
-    @apply bg-white text-gray-900;
-    @apply border border-gray-300/80 hover:border-gray-400;
-    @apply hover:bg-gray-50;
-    @apply shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.12)];
+    @apply bg-white/40 backdrop-blur-[20px] text-gray-700;
+    @apply border border-white/60 shadow-[0_1px_4px_0_rgba(0,0,0,0.03)];
+    @apply hover:bg-white/55 hover:border-white/70 hover:shadow-[0_2px_8px_0_rgba(0,0,0,0.05)];
   }
+  
+  /* Ghost - минимальный glass */
   .btn-ghost {
-    @apply bg-transparent text-gray-600 hover:text-gray-900;
-    @apply hover:bg-gray-100/80 border border-transparent;
+    @apply bg-transparent text-gray-600;
+    @apply border border-transparent;
+    @apply hover:bg-white/30 hover:text-gray-900 hover:border-white/40;
   }
 
-  /* Badges - менее скругленные */
+  /* Glassmorphism Badges */
   .badge {
     @apply inline-flex items-center gap-1.5;
-    @apply px-2.5 py-1 rounded-md;
+    @apply px-2.5 py-1 rounded-lg;
     @apply text-xs font-medium;
-    @apply border;
+    @apply border backdrop-blur-[15px];
   }
   .badge-blue { 
-    @apply bg-blue-50 text-blue-700 border-blue-200/60; 
+    @apply bg-white/40 text-gray-700 border-white/50; 
   }
   .badge-brand { 
-    @apply bg-brand-50 text-brand-700 border-brand-200/60; 
+    @apply bg-accent-100/50 text-accent-700 border-accent-300/40; 
   }
   .badge-green { 
-    @apply bg-green-50 text-green-700 border-green-200/60; 
+    @apply bg-white/40 text-gray-700 border-white/50; 
   }
   .badge-gray { 
-    @apply bg-gray-100 text-gray-700 border-gray-200/80; 
+    @apply bg-white/35 text-gray-600 border-white/50; 
   }
 
-  /* Desktop nav items */
+  /* Desktop nav items - glassmorphism */
   .nav-item {
-    @apply flex items-center px-3 py-2.5 rounded-lg whitespace-nowrap;
-    @apply transition-all duration-150;
-    @apply hover:bg-gray-100;
+    @apply flex items-center px-3 py-2.5 rounded-xl whitespace-nowrap;
+    @apply transition-all duration-300;
+    @apply hover:bg-white/40 hover:backdrop-blur-[15px];
+  }
+  .nav-item.active {
+    @apply bg-white/50 backdrop-blur-[20px] text-accent-700;
+    @apply border border-white/60 shadow-[0_1px_4px_0_rgba(0,0,0,0.04)];
   }
   .nav-item-label {
-    @apply ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-medium text-gray-700;
+    @apply ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-medium text-gray-700;
   }
 }

@@ -123,20 +123,20 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
         )}
         
         {data.map((c: any) => (
-          <div key={c.id} className="card p-5 hover:shadow-md transition-all duration-200 border border-gray-200 group">
+          <div key={c.id} className="card p-5 group">
             {/* Заголовок с аватаром и именем */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-brand-500 to-brand-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shrink-0">
+              <div className="w-12 h-12 bg-white/60 backdrop-blur-[15px] rounded-xl border border-white/60 flex items-center justify-center text-gray-700 font-semibold text-lg shrink-0">
                 {c.name ? c.name.charAt(0).toUpperCase() : '?'}
               </div>
               <div className="flex-1 min-w-0">
                 <Link href={`/clients/${c.id}`} className="block">
-                  <h3 className="text-base font-bold text-gray-900 truncate hover:text-brand-600 transition-colors leading-tight">
+                  <h3 className="text-base font-semibold text-gray-900 truncate hover:text-accent-700 transition-colors leading-tight">
                     {c.name || 'Без имени'}
                   </h3>
                 </Link>
                 {c.birth_date && (
-                  <span className="inline-block mt-1 text-xs text-gray-600 bg-gray-100 px-2.5 py-0.5 rounded-md whitespace-nowrap font-medium">
+                  <span className="inline-block mt-1 text-xs text-gray-600 bg-white/40 backdrop-blur-[10px] px-2.5 py-0.5 rounded-lg whitespace-nowrap font-medium border border-white/50">
                     {new Date(c.birth_date).toLocaleDateString('ru-RU')}
                   </span>
                 )}
@@ -150,7 +150,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
                   <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  <a href={`mailto:${c.email}`} className="hover:text-brand-600 truncate">{c.email}</a>
+                  <a href={`mailto:${c.email}`} className="hover:text-accent-700 truncate">{c.email}</a>
                 </div>
               )}
               {c.phone && (
@@ -158,7 +158,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
-                  <a href={`tel:${c.phone}`} className="hover:text-brand-600">{c.phone}</a>
+                  <a href={`tel:${c.phone}`} className="hover:text-accent-700">{c.phone}</a>
                 </div>
               )}
               {c.source && (
@@ -179,18 +179,18 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
               )}
             </div>
             
-            {/* Действия */}
+            {/* Действия - Glassmorphism */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5">
-              <Link href={`/clients/${c.id}`} className="px-3 py-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs sm:text-xs font-medium transition-colors text-center min-h-[36px] flex items-center justify-center">
+              <Link href={`/clients/${c.id}`} className="px-3 py-2.5 rounded-xl bg-white/40 backdrop-blur-[15px] border border-white/60 hover:bg-white/55 text-xs font-medium transition-all duration-300 text-center min-h-[36px] flex items-center justify-center text-gray-700">
                 Открыть
               </Link>
-              <Link href={`/forecast/${c.id}`} className="px-3 py-2.5 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 text-xs sm:text-xs font-medium transition-colors text-center min-h-[36px] flex items-center justify-center">
+              <Link href={`/forecast/${c.id}`} className="px-3 py-2.5 rounded-xl bg-white/40 backdrop-blur-[15px] border border-white/60 hover:bg-white/55 text-xs font-medium transition-all duration-300 text-center min-h-[36px] flex items-center justify-center text-gray-700">
                 Прогноз
               </Link>
-              <Link href={`/profiles?filter[client_id][_eq]=${c.id}`} className="px-3 py-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs sm:text-xs font-medium transition-colors text-center min-h-[36px] flex items-center justify-center">
+              <Link href={`/profiles?filter[client_id][_eq]=${c.id}`} className="px-3 py-2.5 rounded-xl bg-white/40 backdrop-blur-[15px] border border-white/60 hover:bg-white/55 text-xs font-medium transition-all duration-300 text-center min-h-[36px] flex items-center justify-center text-gray-700">
                 Расчёты
               </Link>
-              <Link href={`/profiles/new?clientId=${c.id}`} className="px-3 py-2.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs sm:text-xs font-medium transition-colors text-center min-h-[36px] flex items-center justify-center">
+              <Link href={`/profiles/new?clientId=${c.id}`} className="px-3 py-2.5 rounded-xl bg-white/50 backdrop-blur-[15px] border border-accent-500/30 hover:bg-white/60 hover:border-accent-500/50 text-xs font-medium transition-all duration-300 text-center min-h-[36px] flex items-center justify-center text-accent-700">
                 Расчёт
               </Link>
             </div>
