@@ -234,17 +234,17 @@ export default function NewConsultationPage() {
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-2">
           <button
             type="submit"
             disabled={loading}
-            className="btn btn-primary flex-1"
+            className="btn btn-primary w-full sm:w-auto"
           >
             {loading ? "Создание..." : "Создать консультацию"}
           </button>
           <Link
             href="/consultations"
-            className="btn btn-secondary"
+            className="btn btn-secondary w-full sm:w-auto"
           >
             Отмена
           </Link>

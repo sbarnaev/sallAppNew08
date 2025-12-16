@@ -162,10 +162,10 @@ export default async function DashboardPage() {
       {/* Быстрые действия */}
       <div className="card p-5">
         <h2 className="text-base font-bold mb-4 text-gray-900">Быстрые действия</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <Link href="/clients/new" className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:bg-green-50/50 transition-all duration-200 group">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
-              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <Link href="/clients/new" className="flex items-center gap-3 p-3.5 rounded-lg border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all duration-200 group">
+            <div className="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors shrink-0">
+              <svg className="w-4.5 h-4.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
             </div>
@@ -175,9 +175,9 @@ export default async function DashboardPage() {
             </div>
           </Link>
 
-          <Link href="/profiles/new" className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:border-brand-300 hover:bg-brand-50/50 transition-all duration-200 group">
-            <div className="w-10 h-10 bg-brand-100 rounded-lg flex items-center justify-center group-hover:bg-brand-200 transition-colors">
-              <svg className="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <Link href="/profiles/new" className="flex items-center gap-3 p-3.5 rounded-lg border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition-all duration-200 group">
+            <div className="w-9 h-9 bg-brand-100 rounded-lg flex items-center justify-center group-hover:bg-brand-200 transition-colors shrink-0">
+              <svg className="w-4.5 h-4.5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>

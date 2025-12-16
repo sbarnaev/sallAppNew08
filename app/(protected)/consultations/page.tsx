@@ -53,15 +53,15 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
   const hasPrev = page > 1;
 
   return (
-    <div className="space-y-8 md:space-y-10">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4">
         <div className="space-y-2">
           <h1 className="page-title">Консультации</h1>
           <p className="page-subtitle">Всего: <span className="font-bold text-gray-900">{total}</span></p>
         </div>
-        <div className="flex gap-3 flex-wrap">
-          <Link href="/consultations/new" className="btn btn-primary">Новая консультация</Link>
-          <Link href="/profiles/new" className="btn btn-secondary">Новый расчёт</Link>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Link href="/consultations/new" className="btn btn-primary w-full sm:w-auto">Новая консультация</Link>
+          <Link href="/profiles/new" className="btn btn-secondary w-full sm:w-auto">Новый расчёт</Link>
         </div>
       </div>
 
@@ -98,9 +98,9 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
             <label>По</label>
             <input type="datetime-local" name="dateTo" defaultValue={(searchParams.dateTo as string) || ""} className="w-full" />
         </div>
-          <div className="md:col-span-5 flex gap-3">
-            <button className="btn btn-neutral" type="submit">Фильтровать</button>
-            <Link href="/consultations" className="btn btn-secondary">Сбросить</Link>
+          <div className="md:col-span-5 flex flex-col sm:flex-row gap-2">
+            <button className="btn btn-neutral w-full sm:w-auto" type="submit">Фильтровать</button>
+            <Link href="/consultations" className="btn btn-secondary w-full sm:w-auto">Сбросить</Link>
         </div>
       </form>
       </div>
@@ -128,7 +128,7 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
           const partnerName = c.partner_client_id ? (clientsMap[c.partner_client_id] || `Клиент #${c.partner_client_id}`) : null;
           
           return (
-            <Link key={c.id} href={`/consultations/${c.id}`} className="surface hover:shadow-soft-lg hover:-translate-y-0.5 transition-all duration-300 p-5">
+            <Link key={c.id} href={`/consultations/${c.id}`} className="card hover:shadow-md transition-all duration-200 p-5">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-3 flex-wrap">
@@ -183,12 +183,12 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
       </div>
 
       {(hasPrev || hasNext) && (
-        <div className="flex items-center justify-between gap-6 pt-2">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             {hasPrev && (
               <Link
                 href={`/consultations?${new URLSearchParams({ ...Object.fromEntries(Object.entries(searchParams).map(([k,v])=>[k,String(v||"")])) as any, page: String(page-1), limit: String(limit) }).toString()}`}
-                className="btn btn-secondary btn-sm"
+                className="btn btn-secondary flex-1 sm:flex-none"
               >
                 ← Назад
               </Link>
@@ -196,13 +196,13 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
             {hasNext && (
               <Link
                 href={`/consultations?${new URLSearchParams({ ...Object.fromEntries(Object.entries(searchParams).map(([k,v])=>[k,String(v||"")])) as any, page: String(page+1), limit: String(limit) }).toString()}`}
-                className="btn btn-secondary btn-sm"
+                className="btn btn-secondary flex-1 sm:flex-none"
               >
                 Вперёд →
               </Link>
             )}
           </div>
-          <div className="text-sm text-gray-600 font-medium">
+          <div className="text-sm text-gray-600 font-medium text-center sm:text-left">
             Стр. <span className="font-bold text-gray-900">{page}</span>
             {total ? ` · всего ${total}` : ""}
           </div>

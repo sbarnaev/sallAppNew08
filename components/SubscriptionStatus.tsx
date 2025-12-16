@@ -51,37 +51,12 @@ export function SubscriptionStatus() {
           
           setSubscription(sub);
         } else if (data?.data) {
-          // Если нет subscription в ответе, но есть data.data - проверяем subscription_expires_at напрямую
-          const expiresAt = data.data.subscription_expires_at;
-          
-          if (expiresAt) {
-            // Если expiresAt установлен - создаем объект подписки с расчетом
-            const expiresDate = new Date(expiresAt);
-            const now = new Date();
-            const hasAccess = expiresDate > now;
-            const diff = expiresDate.getTime() - now.getTime();
-            const daysRemaining = hasAccess 
-              ? Math.ceil(diff / (1000 * 60 * 60 * 24))
-              : 0;
-            
-            const hours = diff > 0 ? Math.floor(diff / (1000 * 60 * 60)) : 0;
-            const minutes = diff > 0 ? Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)) : 0;
-            
-            setSubscription({
-              expiresAt,
-              hasAccess,
-              daysRemaining,
-              hoursRemaining: hours,
-              minutesRemaining: minutes
-            });
-          } else {
-            // Если expiresAt не установлен - безлимит
-            setSubscription({
-              expiresAt: null,
-              hasAccess: true,
-              daysRemaining: null
-            });
-          }
+          // Если нет данных о подписке, но есть data.data - создаем объект подписки (безлимит)
+          setSubscription({
+            expiresAt: null,
+            hasAccess: true,
+            daysRemaining: null
+          });
         } else {
           setSubscription(null);
         }

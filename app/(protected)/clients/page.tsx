@@ -123,20 +123,20 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
         )}
         
         {data.map((c: any) => (
-          <div key={c.id} className="card p-6 hover:shadow-soft-lg hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 border border-gray-200/80 group bg-gradient-to-br from-white via-gray-50/30 to-white">
+          <div key={c.id} className="card p-5 hover:shadow-md transition-all duration-200 border border-gray-200 group">
             {/* Заголовок с аватаром и именем */}
-            <div className="flex items-center gap-4 mb-5">
-              <div className="w-14 h-14 bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 rounded-3xl flex items-center justify-center text-white font-bold text-xl shrink-0 shadow-lg shadow-brand-500/20 group-hover:shadow-xl group-hover:shadow-brand-500/30 group-hover:scale-110 transition-all duration-300">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-brand-500 to-brand-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shrink-0">
                 {c.name ? c.name.charAt(0).toUpperCase() : '?'}
               </div>
               <div className="flex-1 min-w-0">
                 <Link href={`/clients/${c.id}`} className="block">
-                  <h3 className="text-lg font-bold text-gray-900 truncate hover:text-brand-600 transition-colors leading-tight">
+                  <h3 className="text-base font-bold text-gray-900 truncate hover:text-brand-600 transition-colors leading-tight">
                     {c.name || 'Без имени'}
                   </h3>
                 </Link>
                 {c.birth_date && (
-                  <span className="inline-block mt-1.5 text-xs text-gray-600 bg-gray-100/80 px-3 py-1 rounded-full whitespace-nowrap font-medium">
+                  <span className="inline-block mt-1 text-xs text-gray-600 bg-gray-100 px-2.5 py-0.5 rounded-md whitespace-nowrap font-medium">
                     {new Date(c.birth_date).toLocaleDateString('ru-RU')}
                   </span>
                 )}
@@ -144,7 +144,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
             </div>
             
             {/* Контакты */}
-            <div className="flex flex-wrap gap-2.5 text-xs text-gray-600 mb-5">
+            <div className="flex flex-wrap gap-2 text-xs text-gray-600 mb-4">
               {c.email && (
                 <div className="flex items-center gap-1 min-w-0">
                   <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,17 +180,17 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
             </div>
             
             {/* Действия */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-5">
-              <Link href={`/clients/${c.id}`} className="px-4 py-2.5 rounded-xl border border-gray-300/80 hover:bg-gradient-to-r hover:from-gray-50 hover:to-white text-xs font-bold transition-all duration-300 text-center hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5">
+              <Link href={`/clients/${c.id}`} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs font-medium transition-colors text-center">
                 Открыть
               </Link>
-              <Link href={`/forecast/${c.id}`} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-100 to-purple-50 text-purple-700 hover:from-purple-200 hover:to-purple-100 border border-purple-200/60 text-xs font-bold transition-all duration-300 text-center hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]">
+              <Link href={`/forecast/${c.id}`} className="px-3 py-2 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 text-xs font-medium transition-colors text-center">
                 Прогноз
               </Link>
-              <Link href={`/profiles?filter[client_id][_eq]=${c.id}`} className="px-4 py-2.5 rounded-xl border border-gray-300/80 hover:bg-gradient-to-r hover:from-gray-50 hover:to-white text-xs font-bold transition-all duration-300 text-center hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]">
+              <Link href={`/profiles?filter[client_id][_eq]=${c.id}`} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs font-medium transition-colors text-center">
                 Расчёты
               </Link>
-              <Link href={`/profiles/new?clientId=${c.id}`} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 hover:from-blue-200 hover:to-blue-100 border border-blue-200/60 text-xs font-bold transition-all duration-300 text-center hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]">
+              <Link href={`/profiles/new?clientId=${c.id}`} className="px-3 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs font-medium transition-colors text-center">
                 Расчёт
               </Link>
             </div>
@@ -200,12 +200,12 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
 
       {/* Пагинация */}
       {(hasPrev || hasNext) && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             {hasPrev && (
               <Link
                 href={`/clients?search=${encodeURIComponent(searchTerm)}&page=${page-1}&limit=${limit}`}
-                className="px-5 py-2.5 rounded-xl border border-gray-300/80 hover:bg-gray-50 hover:border-gray-400 text-sm font-bold transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
+                className="btn btn-secondary flex-1 sm:flex-none"
               >
                 ← Назад
               </Link>
@@ -213,7 +213,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Reco
             {hasNext && (
               <Link
                 href={`/clients?search=${encodeURIComponent(searchTerm)}&page=${page+1}&limit=${limit}`}
-                className="px-5 py-2.5 rounded-xl border border-gray-300/80 hover:bg-gray-50 hover:border-gray-400 text-sm font-bold transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
+                className="btn btn-secondary flex-1 sm:flex-none"
               >
                 Вперёд →
               </Link>

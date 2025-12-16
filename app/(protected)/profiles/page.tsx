@@ -115,10 +115,12 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
   const hasPrev = page > 1;
 
   return (
-    <div className="space-y-8 md:space-y-10">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4">
         <h1 className="page-title">Расчёты</h1>
-        <ClientSearchButton />
+        <div className="flex">
+          <ClientSearchButton />
+        </div>
       </div>
 
       <div className="surface-muted">
@@ -137,10 +139,10 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
           />
         </div>
           </div>
-          <div className="flex gap-3 sm:flex-col sm:justify-end">
-            <button type="submit" className="btn btn-neutral flex-1 sm:flex-none">Искать</button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button type="submit" className="btn btn-neutral w-full sm:w-auto">Искать</button>
           {(searchParams.search as string) && (
-              <Link href="/profiles" className="btn btn-secondary flex-1 sm:flex-none">
+              <Link href="/profiles" className="btn btn-secondary w-full sm:w-auto">
               Сбросить
             </Link>
           )}
@@ -179,9 +181,9 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
           const birthDateStr = client?.birth_date ? new Date(client.birth_date).toLocaleDateString("ru-RU") : null;
           
           return (
-            <div key={p.id} className="bg-white rounded-3xl border border-gray-200/80 p-6 shadow-sm hover:shadow-soft-lg hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 hover:border-blue-300 relative group bg-gradient-to-br from-white via-gray-50/30 to-white">
-              <Link href={`/profiles/${p.id}`} className="block space-y-4">
-                <div className="font-bold text-lg text-gray-900 break-words group-hover:text-blue-700 transition-colors leading-tight">{clientName}</div>
+            <div key={p.id} className="card p-5 hover:shadow-md transition-all duration-200 border border-gray-200 relative group">
+              <Link href={`/profiles/${p.id}`} className="block space-y-3">
+                <div className="font-bold text-base text-gray-900 break-words group-hover:text-brand-600 transition-colors leading-tight">{clientName}</div>
                 <div className="space-y-2 text-sm text-gray-600">
                   <div className="flex items-center gap-2.5">
                     <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,7 +201,7 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
                   )}
                 </div>
                 <div className="flex items-center gap-2 pt-1">
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 border border-blue-200/60">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
                     {consultationType}
                   </span>
                 </div>
@@ -213,12 +215,12 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
       </div>
 
       {(hasPrev || hasNext) && (
-        <div className="flex items-center justify-between gap-6 pt-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             {hasPrev && (
               <Link 
                 href={`/profiles?${new URLSearchParams({ ...Object.fromEntries(Object.entries(searchParams).map(([k,v])=>[k,String(v||"")])) as any, page: String(page-1), limit: String(limit) }).toString()}`} 
-                className="px-5 py-2.5 rounded-xl border border-gray-300/80 hover:bg-gray-50 hover:border-gray-400 text-sm font-bold transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
+                className="btn btn-secondary flex-1 sm:flex-none"
               >
                 Назад
               </Link>
@@ -226,13 +228,13 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
             {hasNext && (
               <Link 
                 href={`/profiles?${new URLSearchParams({ ...Object.fromEntries(Object.entries(searchParams).map(([k,v])=>[k,String(v||"")])) as any, page: String(page+1), limit: String(limit) }).toString()}`} 
-                className="px-5 py-2.5 rounded-xl border border-gray-300/80 hover:bg-gray-50 hover:border-gray-400 text-sm font-bold transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]"
+                className="btn btn-secondary flex-1 sm:flex-none"
               >
                 Вперёд
               </Link>
             )}
           </div>
-          <div className="text-sm text-gray-600 font-medium">
+          <div className="text-sm text-gray-600 font-medium text-center sm:text-left">
             Стр. <span className="font-bold text-gray-900">{page}</span>{total ? ` · всего <span className="font-bold text-gray-900">${total}</span>` : ""}
           </div>
         </div>

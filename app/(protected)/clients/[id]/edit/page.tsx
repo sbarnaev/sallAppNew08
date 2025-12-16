@@ -147,9 +147,9 @@ export default function EditClientPage() {
 
         {error && <div className="p-3 rounded-xl border border-red-200 bg-red-50 text-sm text-red-700">{error}</div>}
 
-        <div className="flex gap-3">
-          <button type="button" onClick={() => router.back()} className="rounded-2xl border px-4 py-2">Отмена</button>
-          <button disabled={saving} className="rounded-2xl bg-brand-600 text-white px-4 py-2 hover:bg-brand-700 disabled:opacity-60">{saving ? "Сохраняю..." : "Сохранить"}</button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button type="button" onClick={() => router.back()} className="btn btn-secondary w-full sm:w-auto">Отмена</button>
+          <button type="submit" disabled={saving} className="btn btn-primary w-full sm:w-auto">{saving ? "Сохраняю..." : "Сохранить"}</button>
         </div>
       </form>
     </div>

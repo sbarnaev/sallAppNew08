@@ -297,17 +297,17 @@ export default function EditConsultationPage() {
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-2">
           <button
             type="submit"
             disabled={saving}
-            className="btn btn-primary flex-1"
+            className="btn btn-primary w-full sm:w-auto"
           >
             {saving ? "Сохранение..." : "Сохранить изменения"}
           </button>
           <Link
             href={`/consultations/${id}`}
-            className="btn btn-secondary"
+            className="btn btn-secondary w-full sm:w-auto"
           >
             Отмена
           </Link>

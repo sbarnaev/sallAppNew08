@@ -79,13 +79,13 @@ export default async function ClientDetailPage({ params, searchParams }: { param
   return (
     <div className="space-y-6">
       {/* Заголовок с быстрыми действиями */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold">
             {client.name ? client.name.charAt(0).toUpperCase() : '?'}
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               {client.name || 'Без имени'}
             </h1>
             <div className="text-sm text-gray-500 mt-1">
@@ -93,47 +93,14 @@ export default async function ClientDetailPage({ params, searchParams }: { param
             </div>
           </div>
         </div>
-        <div className="flex gap-3">
-          <Link href={`/clients/${params.id}/edit`} className="rounded-xl border border-gray-300 text-gray-700 px-4 py-2 hover:bg-gray-50 flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Link href={`/clients/${params.id}/edit`} className="btn btn-secondary w-full sm:w-auto">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             Редактировать
           </Link>
           <DeleteClient id={params.id} />
-          <Link href={`/forecast/${params.id}`} className="rounded-xl bg-purple-100 text-purple-700 px-4 md:px-6 py-2 hover:bg-purple-200 border border-purple-200 flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <span className="hidden sm:inline">Прогностика</span>
-            <span className="sm:hidden">Прогноз</span>
-          </Link>
-          <Link href={`/profiles/new?clientId=${params.id}`} className="rounded-xl bg-blue-100 text-blue-700 px-4 md:px-6 py-2 hover:bg-blue-200 border border-blue-200 flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <span className="hidden sm:inline">Новый расчёт</span>
-            <span className="sm:hidden">Расчёт</span>
-          </Link>
-          <Link href={`/consultations/new?clientId=${params.id}`} className="rounded-xl bg-green-100 text-green-700 px-4 md:px-6 py-2 hover:bg-green-200 border border-green-200 flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            <span className="hidden sm:inline">Новая консультация</span>
-            <span className="sm:hidden">Консультация</span>
-          </Link>
-          <Link href={`/consultations/express/${params.id}`} className="rounded-xl bg-emerald-100 text-emerald-700 px-4 md:px-6 py-2 hover:bg-emerald-200 border border-emerald-200 flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            <span className="hidden sm:inline">Экспресс-консультация</span>
-            <span className="sm:hidden">Экспресс</span>
-          </Link>
-              <Link href={`/tests?clientId=${params.id}`} className="rounded-xl bg-purple-100 text-purple-700 px-4 md:px-6 py-2 hover:bg-purple-200 border border-purple-200 flex items-center gap-2">
-                <span className="text-lg">🧪</span>
-                <span className="hidden sm:inline">Тестирование</span>
-                <span className="sm:hidden">Тест</span>
-              </Link>
         </div>
       </div>
 

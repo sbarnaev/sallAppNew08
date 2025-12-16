@@ -269,18 +269,18 @@ export default function NewClientPage() {
           </div>
         )}
 
-        <div className="flex gap-3 pt-4">
+        <div className="flex flex-col sm:flex-row gap-2 pt-4">
           <button
             type="button"
             onClick={() => router.back()}
-            className="btn btn-secondary flex-1"
+            className="btn btn-secondary w-full sm:w-auto"
           >
             Отмена
           </button>
           <button
             type="submit"
             disabled={loading || !firstName.trim() || !lastName.trim() || !birthDate.trim() || !gender}
-            className="btn btn-success flex-1"
+            className="btn btn-success w-full sm:w-auto"
           >
             {loading ? "Создание..." : "Создать клиента"}
           </button>
