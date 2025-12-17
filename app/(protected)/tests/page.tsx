@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { TESTS } from "@/lib/test-types";
 import { TestClientSelector } from "@/components/TestClientSelector";
+import { TestLinkGenerator } from "@/components/TestLinkGenerator";
 
 export default function TestsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
   const tests = Object.values(TESTS);
@@ -35,9 +36,8 @@ export default function TestsPage({ searchParams }: { searchParams: Record<strin
           };
 
           return (
-            <Link
+            <div
               key={test.id}
-              href={`/tests/${test.id}${clientId ? `?clientId=${clientId}` : ""}`}
               className="card hover:shadow-soft-lg hover:scale-[1.01] hover:-translate-y-0.5 transition-all duration-300 group bg-gradient-to-br from-white via-gray-50/30 to-white"
             >
               <div className="space-y-4">
@@ -54,16 +54,24 @@ export default function TestsPage({ searchParams }: { searchParams: Record<strin
                 <p className="text-gray-600 text-sm leading-relaxed">
                   {test.description}
                 </p>
-                <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                  <span className="text-xs text-gray-500">
-                    {test.questions.length} вопросов
-                  </span>
-                  <span className="text-sm font-semibold text-brand-600 group-hover:text-brand-700">
-                    Пройти тест →
-                  </span>
+                <div className="pt-2 border-t border-gray-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">
+                      {test.questions.length} вопросов
+                    </span>
+                    <Link
+                      href={`/tests/${test.id}${clientId ? `?clientId=${clientId}` : ""}`}
+                      className="text-sm font-semibold text-brand-600 hover:text-brand-700"
+                    >
+                      Пройти тест →
+                    </Link>
+                  </div>
+                  {clientId && (
+                    <TestLinkGenerator clientId={Number(clientId)} testId={test.id} />
+                  )}
                 </div>
               </div>
-            </Link>
+            </div>
           );
         })}
       </div>

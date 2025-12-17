@@ -181,3 +181,4 @@ node scripts/setup-directus-permissions.mjs
 - [ ] `owner_user` в консультации совпадает с ID текущего пользователя
 - [ ] Роль пользователя имеет правильные permissions
 
+

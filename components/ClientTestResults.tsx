@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { TESTS, TestId, ClientTestData, TestResult } from "@/lib/test-types";
+import { TestLinkGenerator } from "./TestLinkGenerator";
 
 interface Props {
   clientId: number;
@@ -70,6 +71,14 @@ export function ClientTestResults({ clientId }: Props) {
             Пройти тест →
           </Link>
         </div>
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-900 mb-2">
+            💡 <strong>Отправьте ссылку клиенту</strong> - он сможет пройти тест без авторизации
+          </p>
+          <p className="text-xs text-blue-700">
+            Выберите тест ниже и нажмите "Получить ссылку для клиента" чтобы создать одноразовую ссылку
+          </p>
+        </div>
         <div className="text-center py-8 text-gray-500">
           <p>Пока нет результатов тестирования</p>
           <Link
@@ -132,12 +141,15 @@ export function ClientTestResults({ clientId }: Props) {
                     </p>
                   </div>
                 </div>
-                <Link
-                  href={`/tests/${testId}?clientId=${clientId}`}
-                  className="text-sm text-brand-600 hover:text-brand-700 font-semibold"
-                >
-                  Пройти снова →
-                </Link>
+                <div className="flex flex-col items-end gap-2">
+                  <Link
+                    href={`/tests/${testId}?clientId=${clientId}`}
+                    className="text-sm text-brand-600 hover:text-brand-700 font-semibold"
+                  >
+                    Пройти снова →
+                  </Link>
+                  <TestLinkGenerator clientId={clientId} testId={testId as TestId} />
+                </div>
               </div>
 
               {/* Последний результат */}
