@@ -99,18 +99,33 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
 
     async function authorizedFetch(url: string, init: RequestInit = {}) {
     const doFetch = async (tkn: string) => {
-      const headers: HeadersInit = {
-        ...(init.headers||{}), 
-        Authorization: `Bearer ${tkn}`, 
-        Accept: "application/json"
-      };
-      // Если есть body и Content-Type не указан явно, добавляем его
-      if (init.body && !headers['Content-Type'] && !(init.headers && 'Content-Type' in init.headers)) {
-        headers['Content-Type'] = 'application/json';
+      // Преобразуем headers в объект для удобной работы
+      const headersObj: Record<string, string> = {};
+      if (init.headers) {
+        if (init.headers instanceof Headers) {
+          init.headers.forEach((value, key) => {
+            headersObj[key] = value;
+          });
+        } else if (Array.isArray(init.headers)) {
+          init.headers.forEach(([key, value]) => {
+            headersObj[key] = value;
+          });
+        } else {
+          Object.assign(headersObj, init.headers);
+        }
       }
+      
+      headersObj['Authorization'] = `Bearer ${tkn}`;
+      headersObj['Accept'] = 'application/json';
+      
+      // Если есть body и Content-Type не указан явно, добавляем его
+      if (init.body && !headersObj['Content-Type']) {
+        headersObj['Content-Type'] = 'application/json';
+      }
+      
       return fetch(url, { 
         ...init, 
-        headers,
+        headers: headersObj,
         cache: "no-store" 
       });
     };
