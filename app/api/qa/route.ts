@@ -60,9 +60,7 @@ export async function POST(req: Request) {
     questionLength: question?.length
   });
 
-
   // Приоритет: OpenAI напрямую (основной способ), n8n только как fallback если нет OpenAI ключа
-  // If OpenAI key provided, answer via OpenAI. Otherwise fallback to n8n as раньше
   if (openaiKey) {
     try {
       const ctx = profileId && directusUrl ? await fetchProfileContext(Number(profileId), token, directusUrl) : {};
