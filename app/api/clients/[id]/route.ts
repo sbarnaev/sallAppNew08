@@ -98,16 +98,22 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
   }
 
     async function authorizedFetch(url: string, init: RequestInit = {}) {
-    const doFetch = async (tkn: string) => fetch(url, { 
-      ...init, 
-      headers: { 
+    const doFetch = async (tkn: string) => {
+      const headers: HeadersInit = {
         ...(init.headers||{}), 
         Authorization: `Bearer ${tkn}`, 
-        Accept: "application/json",
-        ...(init.body ? { 'Content-Type': 'application/json' } : {})
-      }, 
-      cache: "no-store" 
-    });
+        Accept: "application/json"
+      };
+      // Если есть body и Content-Type не указан явно, добавляем его
+      if (init.body && !headers['Content-Type'] && !(init.headers && 'Content-Type' in init.headers)) {
+        headers['Content-Type'] = 'application/json';
+      }
+      return fetch(url, { 
+        ...init, 
+        headers,
+        cache: "no-store" 
+      });
+    };
     const initialToken = cookies().get("directus_access_token")?.value || token || "";
     let r = await doFetch(initialToken);
     if (r.status === 401) {
@@ -132,7 +138,6 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
         // Directus требует JSON body с полем "keys" для batch deletion
         const r = await authorizedFetch(`${baseUrl}/items/${collection}`, { 
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ keys: batch })
         });
         if (!r.ok && r.status !== 404) {
