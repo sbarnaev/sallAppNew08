@@ -97,8 +97,17 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
     return r.json().catch(()=>({}));
   }
 
-  async function authorizedFetch(url: string, init: RequestInit = {}) {
-    const doFetch = async (tkn: string) => fetch(url, { ...init, headers: { ...(init.headers||{}), Authorization: `Bearer ${tkn}`, Accept: "application/json" }, cache: "no-store" });
+    async function authorizedFetch(url: string, init: RequestInit = {}) {
+    const doFetch = async (tkn: string) => fetch(url, { 
+      ...init, 
+      headers: { 
+        ...(init.headers||{}), 
+        Authorization: `Bearer ${tkn}`, 
+        Accept: "application/json",
+        ...(init.body ? { 'Content-Type': 'application/json' } : {})
+      }, 
+      cache: "no-store" 
+    });
     const initialToken = cookies().get("directus_access_token")?.value || token || "";
     let r = await doFetch(initialToken);
     if (r.status === 401) {
@@ -120,12 +129,18 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
     for (let i = 0; i < ids.length; i += 100) batches.push(ids.slice(i, i + 100));
     for (const batch of batches) {
       try {
-        const r = await authorizedFetch(`${baseUrl}/items/${collection}?ids=${batch.join(',')}`, { method: 'DELETE' });
+        // Directus требует JSON body с полем "keys" для batch deletion
+        const r = await authorizedFetch(`${baseUrl}/items/${collection}`, { 
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keys: batch })
+        });
         if (!r.ok && r.status !== 404) {
           const err = await safeJson(r);
           logger.error(`[DELETE CLIENT] Failed to delete batch from ${collection}`, { 
             collection, 
-            batchSize: batch.length, 
+            batchSize: batch.length,
+            batchIds: batch,
             status: r.status, 
             error: err 
           });
@@ -134,7 +149,8 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
       } catch (e) {
         logger.error(`[DELETE CLIENT] Exception deleting batch from ${collection}`, { 
           collection, 
-          batchSize: batch.length, 
+          batchSize: batch.length,
+          batchIds: batch,
           error: String(e) 
         });
         return { ok: false as const, status: 500, err: { message: String(e) } };
@@ -184,8 +200,8 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
 
     // 2.1) Попробовать удалить QA, если коллекция существует (best-effort)
     if (profileIds.length > 0) {
-      // Для фильтра _in нужно использовать правильный формат массива в URL
-      const profileIdsFilter = profileIds.map(id => `filter[profile_id][_in][]=${id}`).join('&');
+      // Для фильтра _in используем формат с индексами массива: filter[field][_in][0]=value1&filter[field][_in][1]=value2
+      const profileIdsFilter = profileIds.map((id, idx) => `filter[profile_id][_in][${idx}]=${id}`).join('&');
       try {
         const qaListRes = await authorizedFetch(`${baseUrl}/items/qa?${profileIdsFilter}&fields=id&limit=5000`);
         if (qaListRes.ok) {
