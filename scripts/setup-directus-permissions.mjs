@@ -310,6 +310,25 @@ async function main() {
     fields: '*'
   });
 
+  console.log('\n📝 Настройка permissions для коллекции "test_tokens":');
+  await setupCollectionPermissions(token, masterRoleId, 'test_tokens', {
+    permissions: {
+      // Пользователь видит только токены для своих клиентов
+      // Используем фильтр через связанную коллекцию clients
+      client_id: {
+        owner_user: { _eq: '$CURRENT_USER' }
+      }
+    },
+    validation: {
+      // Проверяем, что клиент принадлежит текущему пользователю
+      client_id: {
+        owner_user: { _eq: '$CURRENT_USER' }
+      }
+    },
+    presets: null,
+    fields: '*'
+  });
+
   // 3) Проверяем настройки токенов
   await checkTokenSettings(token);
 
