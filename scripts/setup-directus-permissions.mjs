@@ -11,7 +11,7 @@
  *
  * Что делает:
  * - Создаёт роль "master" (если не существует)
- * - Настраивает permissions для коллекций: clients, profiles, qa, profile_chunks, consultations, consultation_details
+ * - Настраивает permissions для коллекций: clients, profiles, qa, profile_chunks, consultations, consultation_details, test_tokens
  * - Устанавливает фильтры по owner_user для изоляции данных пользователей
  * - Проверяет настройки токенов (AUTH_TOKEN_TTL, AUTH_REFRESH_TOKEN_TTL)
  */
@@ -345,6 +345,7 @@ async function main() {
   console.log('   ✓ consultations - только свои консультации');
   console.log('   ✓ consultation_details - только детали своих консультаций');
   console.log('   ✓ images_id - только изображения своих профилей');
+  console.log('   ✓ test_tokens - только токены для своих клиентов');
   console.log('\n⚠️  Системные коллекции (directus_*) не настроены - они доступны только админам');
 }
 

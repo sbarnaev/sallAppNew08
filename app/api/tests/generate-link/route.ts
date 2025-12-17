@@ -52,6 +52,15 @@ export async function POST(req: NextRequest) {
     const testToken = randomUUID();
 
     // Создаем запись в test_tokens
+    const tokenData = {
+      token: testToken,
+      client_id: clientIdNum, // M2O поле - передаем ID как число
+      test_id: testId,
+      used: false
+    };
+
+    logger.debug("Creating test token:", { tokenData, clientIdNum, testId });
+
     const tokenRes = await fetch(`${baseUrl}/items/test_tokens`, {
       method: "POST",
       headers: {
@@ -59,17 +68,12 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
         Accept: "application/json"
       },
-      body: JSON.stringify({
-        token: testToken,
-        client_id: clientIdNum,
-        test_id: testId,
-        used: false
-      })
+      body: JSON.stringify(tokenData)
     });
 
     if (!tokenRes.ok) {
       const error = await tokenRes.json().catch(() => ({}));
-      logger.error("Failed to create test token:", error);
+      logger.error("Failed to create test token:", { error, tokenData, status: tokenRes.status });
       return NextResponse.json({ message: "Failed to create test token", error }, { status: tokenRes.status });
     }
 
