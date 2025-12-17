@@ -60,21 +60,8 @@ export async function POST(req: Request) {
     questionLength: question?.length
   });
 
-  // Если настроен n8n — используем его (это стабильнее и соответствует текущему курсу “через n8n”)
-  if (n8nUrl) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25_000);
-    const r = await fetch(n8nUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ profileId, question, history: Array.isArray(history) ? history.slice(-10) : [] }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    const data = await r.json().catch(() => ({}));
-    return NextResponse.json(data, { status: r.ok ? 200 : (r.status >= 500 ? 502 : r.status) });
-  }
 
+  // Приоритет: OpenAI напрямую (основной способ), n8n только как fallback если нет OpenAI ключа
   // If OpenAI key provided, answer via OpenAI. Otherwise fallback to n8n as раньше
   if (openaiKey) {
     try {
