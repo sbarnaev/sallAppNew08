@@ -350,8 +350,43 @@ export async function POST(req: Request) {
     }
   }
 
-    return NextResponse.json(
-      { message: "Не настроен N8N_QA_URL и отсутствует OPENAI_API_KEY" },
-      { status: 400 }
-    );
+  // Fallback: если нет OpenAI ключа, но есть n8n — используем n8n
+  if (n8nUrl) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25_000);
+    try {
+      const r = await fetch(n8nUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ profileId, question, history: Array.isArray(history) ? history.slice(-10) : [] }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      
+      if (!r.ok) {
+        const errorData = await r.json().catch(() => ({}));
+        logger.error("[QA] n8n error:", { status: r.status, error: errorData });
+        return NextResponse.json({
+          message: errorData?.message || `Ошибка n8n workflow: ${r.status} ${r.statusText}`,
+          error: errorData
+        }, { status: r.status >= 500 ? 502 : r.status });
+      }
+      
+      const data = await r.json().catch(() => ({}));
+      const answer = data?.answer || data?.message || data?.content || "";
+      return NextResponse.json({ answer }, { status: 200 });
+    } catch (error: any) {
+      clearTimeout(timeout);
+      logger.error("[QA] n8n fetch error:", error);
+      return NextResponse.json({
+        message: "Ошибка подключения к n8n workflow",
+        error: error?.message || String(error)
+      }, { status: 502 });
+    }
+  }
+
+  return NextResponse.json(
+    { message: "Не настроен OPENAI_API_KEY и отсутствует N8N_QA_URL" },
+    { status: 400 }
+  );
 }

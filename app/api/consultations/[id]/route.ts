@@ -215,7 +215,7 @@ export async function PATCH(req: NextRequest, ctx: { params: { id: string } }) {
   return NextResponse.json(data, { status: r.status });
 }
 
-export async function DELETE(_req: Request, ctx: { params: { id: string } }) {
+export async function DELETE(req: Request, ctx: { params: { id: string } }) {
   // Проверяем подписку
   const subscriptionCheck = await checkSubscriptionInAPI();
   if (subscriptionCheck) {
@@ -228,20 +228,69 @@ export async function DELETE(_req: Request, ctx: { params: { id: string } }) {
     return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
   }
 
-  const url = `${baseUrl}/items/consultations/${ctx.params.id}`;
-  const r = await fetch(url, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-    },
-    cache: "no-store",
-  });
-
-  if (r.status === 204 || r.status === 200) {
-    return NextResponse.json({ message: "Консультация удалена" }, { status: 200 });
+  const { id } = ctx.params;
+  
+  // Валидация ID
+  if (!id || isNaN(Number(id)) || Number(id) <= 0) {
+    return NextResponse.json({ message: "Invalid consultation ID" }, { status: 400 });
   }
 
-  const data = await r.json().catch(() => ({}));
-  return NextResponse.json(data, { status: r.status });
+  const { confirm } = await req.json().catch(()=>({ confirm: false }));
+  if (!confirm) return NextResponse.json({ message: "Deletion not confirmed" }, { status: 400 });
+
+  async function safeJson(r: Response) {
+    return r.json().catch(()=>({}));
+  }
+
+  async function authorizedFetch(url: string, init: RequestInit = {}) {
+    const doFetch = async (tkn: string) => fetch(url, { ...init, headers: { ...(init.headers||{}), Authorization: `Bearer ${tkn}`, Accept: "application/json" }, cache: "no-store" });
+    const initialToken = cookies().get("directus_access_token")?.value || token || "";
+    let r = await doFetch(initialToken);
+    if (r.status === 401) {
+      try {
+        const origin = new URL(req.url).origin;
+        const refresh = await fetch(`${origin}/api/refresh`, { method: 'POST', headers: { 'Content-Type': 'application/json' }});
+        if (refresh.ok) {
+          const newToken = cookies().get("directus_access_token")?.value || token || "";
+          r = await doFetch(newToken);
+        }
+      } catch {}
+    }
+    return r;
+  }
+
+  async function deleteByIds(collection: string, ids: number[]) {
+    if (ids.length === 0) return { ok: true } as const;
+    const batches: number[][] = [];
+    for (let i = 0; i < ids.length; i += 100) batches.push(ids.slice(i, i + 100));
+    for (const batch of batches) {
+      const r = await authorizedFetch(`${baseUrl}/items/${collection}?ids=${batch.join(',')}`, { method: 'DELETE' });
+      if (!r.ok && r.status !== 404) {
+        const err = await r.json().catch(()=>({}));
+        return { ok: false as const, status: r.status, err };
+      }
+    }
+    return { ok: true } as const;
+  }
+
+  try {
+    // Удаляем детали консультации, если есть
+    const detListRes = await authorizedFetch(`${baseUrl}/items/consultation_details?filter[consultation_id][_eq]=${id}&fields=id&limit=5000`);
+    const detList = await safeJson(detListRes);
+    const detailIds: number[] = Array.isArray(detList?.data) ? detList.data.map((x: any)=>x.id) : [];
+    if (detailIds.length > 0) {
+      const delDet = await deleteByIds('consultation_details', detailIds);
+      if (!delDet.ok) return NextResponse.json(delDet.err || { message: 'Failed to delete consultation_details' }, { status: delDet.status || 500 });
+    }
+
+    // Удаляем консультацию
+    const r = await authorizedFetch(`${baseUrl}/items/consultations/${id}`, { method: 'DELETE' });
+    if (!r.ok && r.status !== 404) {
+      const err = await safeJson(r);
+      return NextResponse.json(err || { message: 'Delete failed' }, { status: r.status });
+    }
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json({ message: 'Delete failed', error: String(error) }, { status: 500 });
+  }
 } 

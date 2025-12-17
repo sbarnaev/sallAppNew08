@@ -182,6 +182,18 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
       if (!delProf.ok) return NextResponse.json(delProf.err || { message: 'Failed to delete profiles' }, { status: delProf.status || 500 });
     }
 
+    // 2.2) Удалить test_tokens для клиента (best-effort)
+    try {
+      const tokensRes = await authorizedFetch(`${baseUrl}/items/test_tokens?filter[client_id][_eq]=${id}&fields=id&limit=5000`);
+      if (tokensRes.ok) {
+        const tokens = await safeJson(tokensRes);
+        const tokenIds: number[] = Array.isArray(tokens?.data) ? tokens.data.map((x: any)=>x.id) : [];
+        if (tokenIds.length > 0) {
+          await deleteByIds('test_tokens', tokenIds);
+        }
+      }
+    } catch {}
+
     // 3) Удалить клиента
     const r = await authorizedFetch(`${baseUrl}/items/clients/${id}`, { method: 'DELETE' });
     if (!r.ok) {
