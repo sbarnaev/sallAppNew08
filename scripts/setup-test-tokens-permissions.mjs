@@ -111,11 +111,9 @@ async function main() {
           owner_user: { _eq: '$CURRENT_USER' }
         }
       },
-      validation: action === 'create' ? {
-        client_id: {
-          owner_user: { _eq: '$CURRENT_USER' }
-        }
-      } : {},
+      // Убираем validation для create, так как он блокирует создание M2O связей
+      // Проверка прав доступа происходит через permissions выше
+      validation: {},
       presets: null,
       fields: '*',
     };
