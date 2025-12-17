@@ -135,61 +135,25 @@ export default function PublicTestPage() {
   }
 
   if (result) {
-    const levelColors: Record<string, string> = {
-      low: "bg-green-100 border-green-300 text-green-800",
-      medium: "bg-yellow-100 border-yellow-300 text-yellow-800",
-      high: "bg-orange-100 border-orange-300 text-orange-800",
-      critical: "bg-red-100 border-red-300 text-red-800"
-    };
-
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-3xl mx-auto px-4">
           <div className="space-y-6">
             <div className="card p-8 text-center">
-              <div className={`w-20 h-20 mx-auto mb-6 rounded-full border-4 ${levelColors[result.level]} flex items-center justify-center text-4xl`}>
-                {currentTest.icon}
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full border-4 bg-green-100 border-green-300 flex items-center justify-center text-4xl">
+                ✅
               </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Результат теста</h2>
-              {clientName && (
-                <p className="text-gray-600 mb-6">Клиент: <span className="font-semibold">{clientName}</span></p>
-              )}
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Спасибо!</h2>
 
               <div className="space-y-6">
-                <div>
-                  <div className="text-5xl font-bold text-gray-900 mb-2">{result.score}</div>
-                  <div className="text-sm text-gray-500">Баллов</div>
+                <div className="p-6 bg-green-50 border border-green-200 rounded-2xl">
+                  <p className="text-lg text-green-900 font-semibold mb-2">
+                    Ваши ответы успешно отправлены
+                  </p>
+                  <p className="text-gray-700">
+                    Результаты теста переданы вашему специалисту. Он свяжется с вами при необходимости.
+                  </p>
                 </div>
-
-                <div className={`inline-block px-6 py-3 rounded-2xl border-2 ${levelColors[result.level]} font-bold text-lg`}>
-                  {result.interpretation}
-                </div>
-
-                {/* Детальная расшифровка результата */}
-                {result.detailedInterpretation && (
-                  <div className="card p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 text-left">
-                    <h3 className="font-bold text-gray-900 mb-3 text-lg">Расшифровка результата</h3>
-                    <div className="text-gray-700 leading-relaxed whitespace-pre-line">
-                      {result.detailedInterpretation}
-                    </div>
-                  </div>
-                )}
-
-                {/* Дополнительное предупреждение для критических результатов */}
-                {result.level === "critical" && (currentTest.id === "depression" || currentTest.id === "anxiety") && (
-                  <div className="p-4 bg-red-50 border-2 border-red-300 rounded-2xl">
-                    <p className="text-sm font-semibold text-red-800 mb-2">⚠️ Рекомендуется срочная консультация специалиста</p>
-                    <p className="text-xs text-red-700">
-                      При наличии суицидальных мыслей или намерений немедленно обратитесь за помощью к специалисту (психиатр, психотерапевт) или в службу экстренной помощи.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-2xl">
-                <p className="text-sm text-green-800">
-                  ✅ Результат успешно сохранен и отправлен вашему специалисту.
-                </p>
               </div>
             </div>
           </div>
@@ -205,9 +169,6 @@ export default function PublicTestPage() {
           {/* Заголовок */}
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{currentTest.name}</h1>
-            {clientName && (
-              <p className="text-gray-600">Для: <span className="font-semibold">{clientName}</span></p>
-            )}
           </div>
 
           {/* Важное предупреждение для клинических тестов */}

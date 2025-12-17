@@ -278,14 +278,6 @@ export function ClientTimeline({ clientId }: Props) {
                       })}
                     </time>
                   </div>
-                  {event.link && (
-                    <Link
-                      href={event.link}
-                      className="shrink-0 px-3 py-1.5 rounded-xl border border-gray-300/80 hover:bg-gray-50 text-xs font-semibold text-gray-700 transition-colors"
-                    >
-                      Открыть →
-                    </Link>
-                  )}
                 </div>
               </div>
             </div>

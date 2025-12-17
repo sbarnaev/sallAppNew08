@@ -172,26 +172,34 @@ export function ClientTestResults({ clientId }: Props) {
               {results.length > 1 && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="text-xs font-semibold text-gray-600 mb-2">Динамика:</div>
-                  <div className="flex items-end gap-2 h-20">
+                  <div className="flex items-end gap-2 h-24">
                     {sortedResults.slice(0, 5).map((r, idx) => {
                       const maxScore = Math.max(...results.map((res) => res.score));
-                      const height = (r.score / maxScore) * 100;
+                      const minScore = Math.min(...results.map((res) => res.score));
+                      const scoreRange = maxScore - minScore || 1; // Избегаем деления на ноль
+                      const normalizedScore = r.score - minScore;
+                      const height = (normalizedScore / scoreRange) * 100;
+                      const minHeight = 10; // Минимальная высота для видимости
+                      const finalHeight = Math.max(height, minHeight);
+                      
                       return (
                         <div key={idx} className="flex-1 flex flex-col items-center gap-1">
-                          <div
-                            className={`w-full rounded-t-lg transition-all ${
-                              r.level === "low"
-                                ? "bg-green-500"
-                                : r.level === "medium"
-                                ? "bg-yellow-500"
-                                : r.level === "high"
-                                ? "bg-orange-500"
-                                : "bg-red-500"
-                            }`}
-                            style={{ height: `${height}%` }}
-                            title={`${r.score} баллов - ${new Date(r.date).toLocaleDateString("ru-RU")}`}
-                          />
-                          <div className="text-xs text-gray-500 text-center">
+                          <div className="relative w-full h-20 flex items-end">
+                            <div
+                              className={`w-full rounded-t-lg transition-all ${
+                                r.level === "low"
+                                  ? "bg-green-500"
+                                  : r.level === "medium"
+                                  ? "bg-yellow-500"
+                                  : r.level === "high"
+                                  ? "bg-orange-500"
+                                  : "bg-red-500"
+                              }`}
+                              style={{ height: `${finalHeight}%`, minHeight: '8px' }}
+                              title={`${r.score} баллов - ${new Date(r.date).toLocaleDateString("ru-RU")}`}
+                            />
+                          </div>
+                          <div className="text-xs text-gray-500 text-center mt-1">
                             {new Date(r.date).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}
                           </div>
                         </div>
