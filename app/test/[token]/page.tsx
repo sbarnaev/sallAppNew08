@@ -81,6 +81,10 @@ export default function PublicTestPage() {
     );
   }
 
+  if (!test) {
+    return null; // This should never happen due to early return above, but TypeScript needs it
+  }
+
   const question = test.questions[currentQuestion];
   const progress = ((currentQuestion + 1) / test.questions.length) * 100;
   const allAnswered = test.questions.every((q) => answers[q.id] !== undefined);
