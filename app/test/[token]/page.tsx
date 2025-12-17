@@ -81,20 +81,19 @@ export default function PublicTestPage() {
     );
   }
 
-  if (!test) {
-    return null; // This should never happen due to early return above, but TypeScript needs it
-  }
-
-  const question = test.questions[currentQuestion];
-  const progress = ((currentQuestion + 1) / test.questions.length) * 100;
-  const allAnswered = test.questions.every((q) => answers[q.id] !== undefined);
+  // TypeScript guard: test is definitely not null here
+  const currentTest = test;
+  
+  const question = currentTest.questions[currentQuestion];
+  const progress = ((currentQuestion + 1) / currentTest.questions.length) * 100;
+  const allAnswered = currentTest.questions.every((q) => answers[q.id] !== undefined);
 
   function handleAnswer(value: number | string) {
     setAnswers({ ...answers, [question.id]: value });
   }
 
   function handleNext() {
-    if (currentQuestion < test.questions.length - 1) {
+    if (currentQuestion < currentTest.questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else if (allAnswered) {
       handleSubmit();
@@ -108,7 +107,7 @@ export default function PublicTestPage() {
   }
 
   async function handleSubmit() {
-    const testResult = calculateTestResult(test, answers);
+    const testResult = calculateTestResult(currentTest, answers);
     setResult(testResult);
 
     // Сохраняем результат через токен
@@ -149,7 +148,7 @@ export default function PublicTestPage() {
           <div className="space-y-6">
             <div className="card p-8 text-center">
               <div className={`w-20 h-20 mx-auto mb-6 rounded-full border-4 ${levelColors[result.level]} flex items-center justify-center text-4xl`}>
-                {test.icon}
+                {currentTest.icon}
               </div>
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Результат теста</h2>
               {clientName && (
@@ -177,7 +176,7 @@ export default function PublicTestPage() {
                 )}
 
                 {/* Дополнительное предупреждение для критических результатов */}
-                {result.level === "critical" && (test.id === "depression" || test.id === "anxiety") && (
+                {result.level === "critical" && (currentTest.id === "depression" || currentTest.id === "anxiety") && (
                   <div className="p-4 bg-red-50 border-2 border-red-300 rounded-2xl">
                     <p className="text-sm font-semibold text-red-800 mb-2">⚠️ Рекомендуется срочная консультация специалиста</p>
                     <p className="text-xs text-red-700">
@@ -205,14 +204,14 @@ export default function PublicTestPage() {
         <div className="space-y-6">
           {/* Заголовок */}
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{test.name}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{currentTest.name}</h1>
             {clientName && (
               <p className="text-gray-600">Для: <span className="font-semibold">{clientName}</span></p>
             )}
           </div>
 
           {/* Важное предупреждение для клинических тестов */}
-          {(test.id === "depression" || test.id === "anxiety") && (
+          {(currentTest.id === "depression" || currentTest.id === "anxiety") && (
             <div className="card p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-xl shrink-0">
@@ -234,7 +233,7 @@ export default function PublicTestPage() {
           <div className="card p-6">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-semibold text-gray-700">
-                Вопрос {currentQuestion + 1} из {test.questions.length}
+                Вопрос {currentQuestion + 1} из {currentTest.questions.length}
               </span>
               <span className="text-sm text-gray-500">
                 {Math.round(progress)}%
@@ -294,7 +293,7 @@ export default function PublicTestPage() {
                 disabled={answers[question.id] === undefined || saving}
                 className="rounded-2xl bg-gradient-to-r from-brand-600 to-brand-700 text-white px-6 py-3 font-semibold hover:from-brand-700 hover:to-brand-800 shadow-lg shadow-brand-500/20 hover:shadow-xl hover:shadow-brand-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {saving ? "Сохранение..." : currentQuestion === test.questions.length - 1 ? "Завершить" : "Далее →"}
+                {saving ? "Сохранение..." : currentQuestion === currentTest.questions.length - 1 ? "Завершить" : "Далее →"}
               </button>
             </div>
           </div>
