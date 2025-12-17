@@ -119,10 +119,25 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
     const batches: number[][] = [];
     for (let i = 0; i < ids.length; i += 100) batches.push(ids.slice(i, i + 100));
     for (const batch of batches) {
-      const r = await authorizedFetch(`${baseUrl}/items/${collection}?ids=${batch.join(',')}`, { method: 'DELETE' });
-      if (!r.ok && r.status !== 404) {
-        const err = await r.json().catch(()=>({}));
-        return { ok: false as const, status: r.status, err };
+      try {
+        const r = await authorizedFetch(`${baseUrl}/items/${collection}?ids=${batch.join(',')}`, { method: 'DELETE' });
+        if (!r.ok && r.status !== 404) {
+          const err = await safeJson(r);
+          logger.error(`[DELETE CLIENT] Failed to delete batch from ${collection}`, { 
+            collection, 
+            batchSize: batch.length, 
+            status: r.status, 
+            error: err 
+          });
+          return { ok: false as const, status: r.status, err };
+        }
+      } catch (e) {
+        logger.error(`[DELETE CLIENT] Exception deleting batch from ${collection}`, { 
+          collection, 
+          batchSize: batch.length, 
+          error: String(e) 
+        });
+        return { ok: false as const, status: 500, err: { message: String(e) } };
       }
     }
     return { ok: true } as const;
@@ -139,9 +154,10 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
 
     // 1.1) Удалить детали консультаций, если есть
     if (consultationIds.length > 0) {
-      const idsStr = consultationIds.join(',');
+      // Для фильтра _in нужно использовать правильный формат массива в URL
+      const idsFilter = consultationIds.map(id => `filter[consultation_id][_in][]=${id}`).join('&');
       // Получить детали
-      const detListRes = await authorizedFetch(`${baseUrl}/items/consultation_details?filter[consultation_id][_in]=${idsStr}&fields=id&limit=5000`);
+      const detListRes = await authorizedFetch(`${baseUrl}/items/consultation_details?${idsFilter}&fields=id&limit=5000`);
       const detList = await safeJson(detListRes);
       const detailIds: number[] = Array.isArray(detList?.data) ? detList.data.map((x: any)=>x.id) : [];
       logger.log("[DELETE CLIENT] Found consultation details", { count: detailIds.length });
@@ -168,9 +184,10 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
 
     // 2.1) Попробовать удалить QA, если коллекция существует (best-effort)
     if (profileIds.length > 0) {
-      const idsStr = profileIds.join(',');
+      // Для фильтра _in нужно использовать правильный формат массива в URL
+      const profileIdsFilter = profileIds.map(id => `filter[profile_id][_in][]=${id}`).join('&');
       try {
-        const qaListRes = await authorizedFetch(`${baseUrl}/items/qa?filter[profile_id][_in]=${idsStr}&fields=id&limit=5000`);
+        const qaListRes = await authorizedFetch(`${baseUrl}/items/qa?${profileIdsFilter}&fields=id&limit=5000`);
         if (qaListRes.ok) {
           const qaList = await safeJson(qaListRes);
           const qaIds: number[] = Array.isArray(qaList?.data) ? qaList.data.map((x: any)=>x.id) : [];
@@ -185,7 +202,7 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
 
       // Удалить связанные таблицы, если существуют (best-effort)
       try {
-        const chunksRes = await authorizedFetch(`${baseUrl}/items/profile_chunks?filter[profile_id][_in]=${idsStr}&fields=id&limit=5000`);
+        const chunksRes = await authorizedFetch(`${baseUrl}/items/profile_chunks?${profileIdsFilter}&fields=id&limit=5000`);
         if (chunksRes.ok) {
           const chunks = await safeJson(chunksRes);
           const chunkIds: number[] = Array.isArray(chunks?.data) ? chunks.data.map((x: any)=>x.id) : [];
