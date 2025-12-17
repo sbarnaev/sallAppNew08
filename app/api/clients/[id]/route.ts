@@ -154,8 +154,8 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
 
     // 1.1) Удалить детали консультаций, если есть
     if (consultationIds.length > 0) {
-      // Для фильтра _in нужно использовать правильный формат массива в URL
-      const idsFilter = consultationIds.map(id => `filter[consultation_id][_in][]=${id}`).join('&');
+      // Для фильтра _in используем формат с индексами массива: filter[field][_in][0]=value1&filter[field][_in][1]=value2
+      const idsFilter = consultationIds.map((id, idx) => `filter[consultation_id][_in][${idx}]=${id}`).join('&');
       // Получить детали
       const detListRes = await authorizedFetch(`${baseUrl}/items/consultation_details?${idsFilter}&fields=id&limit=5000`);
       const detList = await safeJson(detListRes);
