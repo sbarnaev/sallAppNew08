@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 import { checkSubscriptionInAPI } from "@/lib/subscription-check";
+import { logger } from "@/lib/logger";
 
 export async function GET(_req: Request, ctx: { params: { id: string }}) {
   // Проверяем подписку
@@ -128,10 +129,13 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
   }
 
   try {
+    logger.log("[DELETE CLIENT] Starting deletion process", { clientId: id });
+
     // 1) Найти консультации клиента
     const consListRes = await authorizedFetch(`${baseUrl}/items/consultations?filter[client_id][_eq]=${id}&fields=id&limit=5000`);
     const consList = await safeJson(consListRes);
     const consultationIds: number[] = Array.isArray(consList?.data) ? consList.data.map((x: any)=>x.id) : [];
+    logger.log("[DELETE CLIENT] Found consultations", { count: consultationIds.length, ids: consultationIds });
 
     // 1.1) Удалить детали консультаций, если есть
     if (consultationIds.length > 0) {
@@ -140,18 +144,27 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
       const detListRes = await authorizedFetch(`${baseUrl}/items/consultation_details?filter[consultation_id][_in]=${idsStr}&fields=id&limit=5000`);
       const detList = await safeJson(detListRes);
       const detailIds: number[] = Array.isArray(detList?.data) ? detList.data.map((x: any)=>x.id) : [];
+      logger.log("[DELETE CLIENT] Found consultation details", { count: detailIds.length });
       if (detailIds.length > 0) {
         const delDet = await deleteByIds('consultation_details', detailIds);
-        if (!delDet.ok) return NextResponse.json(delDet.err || { message: 'Failed to delete consultation_details' }, { status: delDet.status || 500 });
+        if (!delDet.ok) {
+          logger.error("[DELETE CLIENT] Failed to delete consultation_details", { error: delDet.err, status: delDet.status });
+          return NextResponse.json(delDet.err || { message: 'Failed to delete consultation_details' }, { status: delDet.status || 500 });
+        }
       }
       const delCons = await deleteByIds('consultations', consultationIds);
-      if (!delCons.ok) return NextResponse.json(delCons.err || { message: 'Failed to delete consultations' }, { status: delCons.status || 500 });
+      if (!delCons.ok) {
+        logger.error("[DELETE CLIENT] Failed to delete consultations", { error: delCons.err, status: delCons.status });
+        return NextResponse.json(delCons.err || { message: 'Failed to delete consultations' }, { status: delCons.status || 500 });
+      }
+      logger.log("[DELETE CLIENT] Successfully deleted consultations");
     }
 
     // 2) Найти профили клиента
     const profListRes = await authorizedFetch(`${baseUrl}/items/profiles?filter[client_id][_eq]=${id}&fields=id&limit=5000`);
     const profList = await safeJson(profListRes);
     const profileIds: number[] = Array.isArray(profList?.data) ? profList.data.map((x: any)=>x.id) : [];
+    logger.log("[DELETE CLIENT] Found profiles", { count: profileIds.length, ids: profileIds });
 
     // 2.1) Попробовать удалить QA, если коллекция существует (best-effort)
     if (profileIds.length > 0) {
@@ -162,10 +175,13 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
           const qaList = await safeJson(qaListRes);
           const qaIds: number[] = Array.isArray(qaList?.data) ? qaList.data.map((x: any)=>x.id) : [];
           if (qaIds.length > 0) {
+            logger.log("[DELETE CLIENT] Deleting QA records", { count: qaIds.length });
             await deleteByIds('qa', qaIds);
           }
         }
-      } catch {}
+      } catch (e) {
+        logger.warn("[DELETE CLIENT] Error deleting QA (best-effort)", { error: String(e) });
+      }
 
       // Удалить связанные таблицы, если существуют (best-effort)
       try {
@@ -173,13 +189,23 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
         if (chunksRes.ok) {
           const chunks = await safeJson(chunksRes);
           const chunkIds: number[] = Array.isArray(chunks?.data) ? chunks.data.map((x: any)=>x.id) : [];
-          if (chunkIds.length > 0) await deleteByIds('profile_chunks', chunkIds);
+          if (chunkIds.length > 0) {
+            logger.log("[DELETE CLIENT] Deleting profile_chunks", { count: chunkIds.length });
+            await deleteByIds('profile_chunks', chunkIds);
+          }
         }
-      } catch {}
+      } catch (e) {
+        logger.warn("[DELETE CLIENT] Error deleting profile_chunks (best-effort)", { error: String(e) });
+      }
 
       // Удалить профили
+      logger.log("[DELETE CLIENT] Deleting profiles");
       const delProf = await deleteByIds('profiles', profileIds);
-      if (!delProf.ok) return NextResponse.json(delProf.err || { message: 'Failed to delete profiles' }, { status: delProf.status || 500 });
+      if (!delProf.ok) {
+        logger.error("[DELETE CLIENT] Failed to delete profiles", { error: delProf.err, status: delProf.status });
+        return NextResponse.json(delProf.err || { message: 'Failed to delete profiles' }, { status: delProf.status || 500 });
+      }
+      logger.log("[DELETE CLIENT] Successfully deleted profiles");
     }
 
     // 2.2) Удалить test_tokens для клиента (best-effort)
@@ -189,20 +215,27 @@ export async function DELETE(req: Request, ctx: { params: { id: string }}) {
         const tokens = await safeJson(tokensRes);
         const tokenIds: number[] = Array.isArray(tokens?.data) ? tokens.data.map((x: any)=>x.id) : [];
         if (tokenIds.length > 0) {
+          logger.log("[DELETE CLIENT] Deleting test_tokens", { count: tokenIds.length });
           await deleteByIds('test_tokens', tokenIds);
         }
       }
-    } catch {}
+    } catch (e) {
+      logger.warn("[DELETE CLIENT] Error deleting test_tokens (best-effort)", { error: String(e) });
+    }
 
     // 3) Удалить клиента
+    logger.log("[DELETE CLIENT] Deleting client", { clientId: id });
     const r = await authorizedFetch(`${baseUrl}/items/clients/${id}`, { method: 'DELETE' });
-    if (!r.ok) {
+    if (!r.ok && r.status !== 404) {
       const err = await safeJson(r);
-      return NextResponse.json(err || { message: 'Delete failed' }, { status: r.status });
+      logger.error("[DELETE CLIENT] Failed to delete client", { status: r.status, error: err, clientId: id });
+      return NextResponse.json(err || { message: 'Не удалось удалить клиента', details: `Status: ${r.status}` }, { status: r.status });
     }
-    return NextResponse.json({ ok: true });
+    logger.log("[DELETE CLIENT] Successfully deleted client", { clientId: id });
+    return NextResponse.json({ ok: true, message: 'Клиент успешно удален' });
   } catch (error) {
-    return NextResponse.json({ message: 'Delete failed', error: String(error) }, { status: 500 });
+    logger.error("[DELETE CLIENT] Exception during deletion", { error: String(error), stack: error instanceof Error ? error.stack : undefined, clientId: id });
+    return NextResponse.json({ message: 'Не удалось удалить клиента', error: String(error) }, { status: 500 });
   }
 }
 
