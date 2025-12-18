@@ -110,6 +110,7 @@ export default function TakeTestPage() {
       high: "bg-orange-100 border-orange-300 text-orange-800",
       critical: "bg-red-100 border-red-300 text-red-800"
     };
+    const scoring = [...(test.scoring || [])].sort((a, b) => a.min - b.min);
 
     return (
       <div className="space-y-6 max-w-3xl mx-auto">
@@ -131,6 +132,38 @@ export default function TakeTestPage() {
             <div className={`inline-block px-6 py-3 rounded-2xl border-2 ${levelColors[result.level]} font-bold text-lg`}>
               {result.interpretation}
             </div>
+
+            {/* Границы уровней по баллам */}
+            {scoring.length > 0 && (
+              <div className="card p-6 bg-gray-50 border border-gray-200 text-left">
+                <h3 className="font-bold text-gray-900 mb-3">Границы уровней по баллам</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {scoring.map((r, idx) => {
+                    const isCurrent = result.score >= r.min && result.score <= r.max;
+                    return (
+                      <div
+                        key={`${r.level}-${idx}`}
+                        className={`rounded-xl border p-3 ${
+                          isCurrent ? "border-brand-400 bg-brand-50" : "border-gray-200 bg-white"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-semibold text-gray-900">{r.label}</span>
+                          <span className="text-gray-600">
+                            {r.min}–{r.max}
+                          </span>
+                        </div>
+                        {isCurrent && (
+                          <div className="mt-1 text-xs text-brand-700 font-semibold">
+                            Текущий уровень
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Детальная расшифровка результата */}
             {result.detailedInterpretation && (

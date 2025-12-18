@@ -334,6 +334,21 @@ export default function PublicTestPage() {
           {/* Заголовок */}
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{currentTest.name}</h1>
+            {currentTest.description && (
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                {currentTest.description}
+              </p>
+            )}
+            {/* Короткая вводная для клиента (без подробных предупреждений) */}
+            {(currentTest.id === "stress" ||
+              currentTest.id === "depression" ||
+              currentTest.id === "anxiety" ||
+              currentTest.id === "bdi-ii" ||
+              currentTest.id === "stai") && (
+              <p className="text-xs text-gray-500 mt-2 max-w-2xl mx-auto">
+                Внимание: это скрининговый опросник и он не заменяет профессиональную диагностику.
+              </p>
+            )}
           </div>
 
 

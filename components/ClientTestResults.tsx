@@ -13,6 +13,24 @@ export function ClientTestResults({ clientId }: Props) {
   const [testData, setTestData] = useState<ClientTestData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  function formatAnswer(test: (typeof TESTS)[TestId], result: TestResult, questionId: number) {
+    const q = test.questions.find((qq) => qq.id === questionId);
+    const a = result.answers?.[questionId];
+    if (!q) return String(a ?? "—");
+    if (a === undefined || a === null) return "—";
+
+    if (q.type === "multiple-choice") {
+      if (typeof a === "number" && Array.isArray(q.options)) {
+        return q.options[a] ?? String(a);
+      }
+      return String(a);
+    }
+
+    // scale
+    if (typeof a === "number") return String(a);
+    return String(a);
+  }
+
   useEffect(() => {
     async function loadTestData() {
       setLoading(true);
@@ -120,6 +138,7 @@ export function ClientTestResults({ clientId }: Props) {
             (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
           );
           const latestResult = sortedResults[0];
+          const scoring = [...(test.scoring || [])].sort((a, b) => a.min - b.min);
 
           return (
             <div key={testId} className="border-2 border-gray-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
@@ -195,7 +214,76 @@ export function ClientTestResults({ clientId }: Props) {
                 {latestResult.interpretation && (
                   <div className="text-sm text-gray-700 mt-2">{latestResult.interpretation}</div>
                 )}
+
+                {/* Границы уровней по баллам */}
+                {scoring.length > 0 && (
+                  <div className="mt-4">
+                    <details className="group">
+                      <summary className="cursor-pointer text-sm font-semibold text-gray-700 hover:text-gray-900">
+                        Границы уровней по баллам
+                      </summary>
+                      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {scoring.map((r, idx) => {
+                          const isCurrent = latestResult.score >= r.min && latestResult.score <= r.max;
+                          return (
+                            <div
+                              key={`${r.level}-${idx}`}
+                              className={`rounded-xl border p-3 text-sm ${
+                                isCurrent ? "border-brand-400 bg-brand-50" : "border-gray-200 bg-white"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="font-semibold text-gray-900">{r.label}</span>
+                                <span className="text-gray-600">
+                                  {r.min}–{r.max}
+                                </span>
+                              </div>
+                              {isCurrent && (
+                                <div className="mt-1 text-xs text-brand-700 font-semibold">
+                                  Текущий уровень
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </details>
+                  </div>
+                )}
               </div>
+
+              {/* Ответы на вопросы (для мастеров) */}
+              {latestResult?.answers && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <details className="group">
+                    <summary className="cursor-pointer text-sm font-semibold text-gray-700 hover:text-gray-900">
+                      Ответы по вопросам
+                    </summary>
+                    <div className="mt-3 space-y-3">
+                      {test.questions.map((q) => {
+                        const ans = latestResult.answers?.[q.id];
+                        const isAnswered = ans !== undefined && ans !== null && ans !== "";
+                        return (
+                          <div key={q.id} className="rounded-xl border border-gray-200 bg-white p-4">
+                            <div className="text-sm font-semibold text-gray-900 mb-2">
+                              {q.id}. {q.text}
+                            </div>
+                            <div className="text-sm text-gray-700">
+                              <span className="font-semibold">Ответ:</span>{" "}
+                              {isAnswered ? formatAnswer(test, latestResult, q.id) : "—"}
+                            </div>
+                            {q.type === "scale" && q.labels && (
+                              <div className="mt-1 text-xs text-gray-500">
+                                Шкала: {q.labels.min} → {q.labels.max}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </details>
+                </div>
+              )}
 
               {/* График динамики (если есть несколько результатов) */}
               {results.length > 1 && (
