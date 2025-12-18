@@ -6,9 +6,10 @@ import { TESTS, TestId } from "@/lib/test-types";
 interface Props {
   clientId: number;
   testId: TestId;
+  showBirthDateCheckbox?: boolean; // Показывать ли чекбокс запроса даты рождения
 }
 
-export function TestLinkGenerator({ clientId, testId }: Props) {
+export function TestLinkGenerator({ clientId, testId, showBirthDateCheckbox = true }: Props) {
   const [loading, setLoading] = useState(false);
   const [link, setLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -93,16 +94,18 @@ export function TestLinkGenerator({ clientId, testId }: Props) {
 
   return (
     <div className="mt-2 space-y-2">
-      {/* НОВОЕ: Чекбокс для запроса даты рождения */}
-      <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 hover:text-gray-900">
-        <input
-          type="checkbox"
-          checked={requestBirthDate}
-          onChange={(e) => setRequestBirthDate(e.target.checked)}
-          className="w-4 h-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500"
-        />
-        <span>Запросить дату рождения</span>
-      </label>
+      {/* Чекбокс для запроса даты рождения - только на странице опросов */}
+      {showBirthDateCheckbox && (
+        <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 hover:text-gray-900">
+          <input
+            type="checkbox"
+            checked={requestBirthDate}
+            onChange={(e) => setRequestBirthDate(e.target.checked)}
+            className="w-4 h-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500"
+          />
+          <span>Запросить дату рождения</span>
+        </label>
+      )}
       
       <button
         onClick={generateLink}

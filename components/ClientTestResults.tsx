@@ -148,7 +148,7 @@ export function ClientTestResults({ clientId }: Props) {
                   >
                     Пройти снова →
                   </Link>
-                  <TestLinkGenerator clientId={clientId} testId={testId as TestId} />
+                  <TestLinkGenerator clientId={clientId} testId={testId as TestId} showBirthDateCheckbox={false} />
                 </div>
               </div>
 

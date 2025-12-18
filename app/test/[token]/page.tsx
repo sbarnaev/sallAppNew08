@@ -262,11 +262,11 @@ export default function PublicTestPage() {
                   Назад
                 </button>
                 <button
-                  onClick={handleSubmitWithBirthDate}
+                  onClick={handleSubmitBirthDateForm}
                   disabled={saving}
                   className="px-6 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 font-medium"
                 >
-                  {saving ? "Отправка..." : "Отправить"}
+                  {saving ? "Продолжить..." : "Продолжить"}
                 </button>
               </div>
             </div>
@@ -293,7 +293,7 @@ export default function PublicTestPage() {
                     Ваши ответы успешно отправлены
                   </p>
                   <p className="text-gray-700">
-                    Результаты теста переданы вашему специалисту. Он свяжется с вами при необходимости.
+                    Результаты теста переданы вашему специалисту.
                   </p>
                 </div>
               </div>
