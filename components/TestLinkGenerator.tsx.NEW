@@ -12,7 +12,7 @@ export function TestLinkGenerator({ clientId, testId }: Props) {
   const [loading, setLoading] = useState(false);
   const [link, setLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [requestBirthDate, setRequestBirthDate] = useState(false); // НОВОЕ: состояние чекбокса
+  const [requestBirthDate, setRequestBirthDate] = useState(false); // НОВОЕ
   const test = TESTS[testId];
 
   async function generateLink() {
@@ -25,7 +25,7 @@ export function TestLinkGenerator({ clientId, testId }: Props) {
         body: JSON.stringify({ 
           clientId, 
           testId,
-          requestBirthDate // НОВОЕ: передаем флаг
+          requestBirthDate // НОВОЕ
         }),
       });
 
@@ -81,29 +81,43 @@ export function TestLinkGenerator({ clientId, testId }: Props) {
         </div>
         <p className="text-xs text-blue-700 mt-2">
           Отправьте эту ссылку клиенту. Ссылка одноразовая и будет работать до прохождения теста.
-          {requestBirthDate && (
-            <span className="block mt-1 font-semibold">
-              ℹ️ У клиента будет запрошена дата рождения перед завершением теста.
-            </span>
-          )}
         </p>
+        {requestBirthDate && (
+          <p className="text-xs text-amber-700 mt-2 font-medium">
+            ⚠️ Клиент будет запрошен на указание имени и даты рождения перед завершением теста.
+          </p>
+        )}
+        <button
+          onClick={() => {
+            setLink(null);
+            setRequestBirthDate(false);
+          }}
+          className="mt-2 text-xs text-gray-600 hover:text-gray-800 underline"
+        >
+          Создать новую ссылку
+        </button>
       </div>
     );
   }
 
   return (
     <div className="mt-2 space-y-2">
-      {/* НОВОЕ: Чекбокс для запроса даты рождения */}
-      <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 hover:text-gray-900">
+      {/* НОВОЕ: Checkbox для запроса даты рождения */}
+      <label className="flex items-center gap-2 cursor-pointer">
         <input
           type="checkbox"
           checked={requestBirthDate}
           onChange={(e) => setRequestBirthDate(e.target.checked)}
           className="w-4 h-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500"
         />
-        <span>Запросить дату рождения</span>
+        <span className="text-sm text-gray-700">
+          Запросить дату рождения
+        </span>
       </label>
-      
+      <p className="text-xs text-gray-500 ml-6">
+        Перед завершением теста клиент будет запрошен на указание имени и даты рождения для информированного согласия
+      </p>
+
       <button
         onClick={generateLink}
         disabled={loading}

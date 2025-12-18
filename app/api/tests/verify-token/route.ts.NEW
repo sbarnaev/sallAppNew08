@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: "Invalid token format" }, { status: 400 });
     }
 
-    // Проверяем токен в test_tokens (добавлено поле request_birth_date)
+    // НОВОЕ: Запрашиваем также request_birth_date
     const tokenRes = await fetch(`${baseUrl}/items/test_tokens?filter[token][_eq]=${testToken}&fields=id,token,client_id,test_id,used,expires_at,request_birth_date`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       cache: "no-store"
@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
       testId: tokenRecord.test_id,
       clientId: tokenRecord.client_id,
       clientName,
-      requestBirthDate: Boolean(tokenRecord.request_birth_date) // НОВОЕ: возвращаем флаг
+      requestBirthDate: Boolean(tokenRecord.request_birth_date) // НОВОЕ
     });
   } catch (error) {
     logger.error("Error verifying token:", error);

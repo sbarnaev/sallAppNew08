@@ -8,14 +8,28 @@ import { logger } from "@/lib/logger";
  * Использует сервисный токен для публичных операций или токен из cookies для авторизованных
  */
 function getDirectusToken(): string | null {
-  // Сначала пытаемся использовать сервисный токен (для публичных операций)
   const serviceToken = process.env.DIRECTUS_SERVICE_TOKEN;
   if (serviceToken) {
     return serviceToken;
   }
-  // Fallback - для разработки можно использовать обычный токен, но это не рекомендуется для production
   logger.warn("DIRECTUS_SERVICE_TOKEN not set, using fallback");
   return null;
+}
+
+/**
+ * Валидация даты рождения
+ */
+function isValidBirthDate(dateString: string): boolean {
+  if (!dateString || typeof dateString !== 'string') return false;
+  
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return false;
+  
+  const now = new Date();
+  const minDate = new Date(1900, 0, 1);
+  const maxDate = new Date(); // не в будущем
+  
+  return date >= minDate && date <= maxDate;
 }
 
 export async function POST(req: NextRequest) {
@@ -76,60 +90,45 @@ export async function POST(req: NextRequest) {
     const testId = tokenRecord.test_id;
     const requestBirthDate = Boolean(tokenRecord.request_birth_date);
 
-    // НОВОЕ: Если запрошена дата рождения, данные обязательны
+    // НОВОЕ: Если требуется дата рождения, проверяем что данные переданы
     if (requestBirthDate) {
-      if (!clientName || !birthDate) {
-        return NextResponse.json({ 
-          message: "Имя и дата рождения обязательны для заполнения" 
-        }, { status: 400 });
+      if (!clientName || typeof clientName !== 'string' || !clientName.trim()) {
+        return NextResponse.json({ message: "clientName is required when requestBirthDate is true" }, { status: 400 });
       }
-      // Валидация даты рождения
+      if (!birthDate || !isValidBirthDate(birthDate)) {
+        return NextResponse.json({ message: "Valid birthDate is required when requestBirthDate is true" }, { status: 400 });
+      }
+    }
+
+    // НОВОЕ: Обновляем данные клиента если переданы
+    if (requestBirthDate && clientName && birthDate) {
+      const updateData: any = {
+        name: clientName.trim()
+      };
+      
+      // Преобразуем дату в формат YYYY-MM-DD для Directus
       const birthDateObj = new Date(birthDate);
-      if (isNaN(birthDateObj.getTime())) {
-        return NextResponse.json({ message: "Invalid birth date format" }, { status: 400 });
-      }
+      const formattedDate = birthDateObj.toISOString().split('T')[0];
+      updateData.birth_date = formattedDate;
 
-      // Проверяем, что дата не в будущем
-      if (birthDateObj > new Date()) {
-        return NextResponse.json({ message: "Birth date cannot be in the future" }, { status: 400 });
-      }
-
-      // Проверяем разумность даты (не старше 150 лет)
-      const maxAge = new Date();
-      maxAge.setFullYear(maxAge.getFullYear() - 150);
-      if (birthDateObj < maxAge) {
-        return NextResponse.json({ message: "Invalid birth date" }, { status: 400 });
-      }
-
-      // Форматируем дату в ISO формат (только дата, без времени)
-      const formattedBirthDate = birthDate.split('T')[0]; // YYYY-MM-DD
-
-      // Обновляем данные клиента
-      const updateClientRes = await fetch(`${baseUrl}/items/clients/${clientId}`, {
+      const clientUpdateRes = await fetch(`${baseUrl}/items/clients/${clientId}`, {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
           Accept: "application/json"
         },
-        body: JSON.stringify({
-          name: String(clientName).trim(),
-          birth_date: formattedBirthDate
-        })
+        body: JSON.stringify(updateData),
+        cache: "no-store"
       });
 
-      if (!updateClientRes.ok) {
-        const error = await updateClientRes.json().catch(() => ({}));
+      if (!clientUpdateRes.ok) {
+        const error = await clientUpdateRes.json().catch(() => ({}));
         logger.error("Failed to update client data:", error);
-        return NextResponse.json({ message: "Failed to update client data", error }, { status: updateClientRes.status });
+        // Не блокируем сохранение результата теста, только логируем ошибку
+      } else {
+        logger.log("Client data updated successfully:", { clientId, name: clientName, birthDate: formattedDate });
       }
-
-      logger.log("Client data updated:", { clientId, name: clientName, birthDate: formattedBirthDate });
-    } else if (requestBirthDate) {
-      // Это не должно произойти из-за проверки выше, но на всякий случай
-      return NextResponse.json({ 
-        message: "Ошибка обновления данных клиента" 
-      }, { status: 500 });
     }
 
     // Получаем текущие данные клиента

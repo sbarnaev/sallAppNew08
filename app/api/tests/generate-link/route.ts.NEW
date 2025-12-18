@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { clientId, testId, requestBirthDate } = body;
+    const { clientId, testId, requestBirthDate } = body; // НОВОЕ: requestBirthDate
 
     if (!clientId || !testId) {
       return NextResponse.json({ message: "clientId and testId are required" }, { status: 400 });
@@ -52,13 +52,17 @@ export async function POST(req: NextRequest) {
     const testToken = randomUUID();
 
     // Создаем запись в test_tokens
-    const tokenData = {
+    const tokenData: any = {
       token: testToken,
-      client_id: clientIdNum, // M2O поле - передаем ID как число
+      client_id: clientIdNum,
       test_id: testId,
-      used: false,
-      request_birth_date: Boolean(requestBirthDate) // НОВОЕ: сохраняем флаг запроса даты рождения
+      used: false
     };
+
+    // НОВОЕ: Добавляем request_birth_date если указано
+    if (typeof requestBirthDate === 'boolean') {
+      tokenData.request_birth_date = requestBirthDate;
+    }
 
     logger.debug("Creating test token:", { tokenData, clientIdNum, testId, requestBirthDate });
 
@@ -79,14 +83,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Формируем публичную ссылку
-    // Используем NEXT_PUBLIC_APP_URL если доступен, иначе определяем из запроса
     const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL;
     let testLink: string;
     
     if (appBaseUrl) {
       testLink = `${appBaseUrl.replace(/\/+$/, "")}/test/${testToken}`;
     } else {
-      // Fallback: определяем из запроса
       const url = new URL(req.url);
       const protocol = req.headers.get("x-forwarded-proto") || url.protocol.replace(":", "");
       const host = req.headers.get("host") || url.host;
