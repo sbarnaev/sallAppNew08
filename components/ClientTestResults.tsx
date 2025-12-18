@@ -162,6 +162,23 @@ export function ClientTestResults({ clientId }: Props) {
                     {latestResult.level === "low" ? "Низкий" : latestResult.level === "medium" ? "Средний" : latestResult.level === "high" ? "Высокий" : "Критический"}
                   </span>
                 </div>
+                
+                {/* Имя и дата рождения, если есть */}
+                {(latestResult.clientName || latestResult.birthDate) && (
+                  <div className="mb-3 pb-3 border-b border-gray-200">
+                    {latestResult.clientName && (
+                      <div className="text-sm text-gray-700 mb-1">
+                        <span className="font-semibold">Имя:</span> {latestResult.clientName}
+                      </div>
+                    )}
+                    {latestResult.birthDate && (
+                      <div className="text-sm text-gray-700">
+                        <span className="font-semibold">Дата рождения:</span> {new Date(latestResult.birthDate).toLocaleDateString("ru-RU")}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <div className="text-2xl font-bold text-gray-900">{latestResult.score} баллов</div>
                 {latestResult.interpretation && (
                   <div className="text-sm text-gray-700 mt-2">{latestResult.interpretation}</div>
