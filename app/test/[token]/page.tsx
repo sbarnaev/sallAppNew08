@@ -167,16 +167,8 @@ export default function PublicTestPage() {
     if (!validateBirthDateForm()) {
       return;
     }
-    
-    // Конвертируем DD.MM.YYYY в YYYY-MM-DD для сохранения
-    const dateMatch = birthDateForm.birthDate.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-    if (dateMatch) {
-      const [, dd, mm, yyyy] = dateMatch;
-      // Сохраняем в формате YYYY-MM-DD для API
-      birthDateForm.birthDate = `${yyyy}-${mm}-${dd}`;
-    }
-    
     // Закрываем форму и переходим к вопросам теста
+    // Данные остаются в birthDateForm и будут конвертированы при сохранении результата
     setShowBirthDateForm(false);
   }
 
@@ -196,7 +188,16 @@ export default function PublicTestPage() {
           // НОВОЕ: Если была форма в начале, передаем данные из нее
           ...(requestBirthDate && birthDateForm.name && birthDateForm.birthDate ? {
             clientName: birthDateForm.name.trim(),
-            birthDate: birthDateForm.birthDate
+            birthDate: (() => {
+              // Конвертируем DD.MM.YYYY в YYYY-MM-DD для API
+              const dateMatch = birthDateForm.birthDate.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+              if (dateMatch) {
+                const [, dd, mm, yyyy] = dateMatch;
+                return `${yyyy}-${mm}-${dd}`;
+              }
+              // Если формат уже YYYY-MM-DD, возвращаем как есть
+              return birthDateForm.birthDate;
+            })()
           } : {})
         })
       });
