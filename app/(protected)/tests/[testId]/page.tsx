@@ -127,6 +127,15 @@ export default function TakeTestPage() {
             <div>
               <div className="text-5xl font-bold text-gray-900 mb-2">{result.score}</div>
               <div className="text-sm text-gray-500">Баллов</div>
+              {result.subScores && (
+                <div className="mt-3 text-sm text-gray-700">
+                  {Object.entries(result.subScores).map(([k, v]) => (
+                    <div key={k}>
+                      <span className="font-semibold">{k}:</span> {v}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className={`inline-block px-6 py-3 rounded-2xl border-2 ${levelColors[result.level]} font-bold text-lg`}>
@@ -299,6 +308,7 @@ export default function TakeTestPage() {
               {Array.from({ length: (question.max || 5) - (question.min || 1) + 1 }, (_, i) => {
                 const value = (question.min || 1) + i;
                 const isSelected = answers[question.id] === value;
+                const valueLabel = question.valueLabels?.[value];
                 return (
                   <button
                     key={value}
@@ -309,7 +319,14 @@ export default function TakeTestPage() {
                         : "bg-white text-gray-700 border-gray-300 hover:border-brand-400 hover:bg-brand-50"
                     }`}
                   >
-                    {value}
+                    <div className="flex flex-col items-center leading-tight">
+                      <div>{value}</div>
+                      {valueLabel && (
+                        <div className={`mt-1 text-xs ${isSelected ? "text-white/90" : "text-gray-500"} font-semibold`}>
+                          {valueLabel}
+                        </div>
+                      )}
+                    </div>
                   </button>
                 );
               })}

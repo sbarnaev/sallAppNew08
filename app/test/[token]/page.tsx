@@ -399,6 +399,7 @@ export default function PublicTestPage() {
                   {Array.from({ length: (question.max || 5) - (question.min || 1) + 1 }, (_, i) => {
                     const value = (question.min || 1) + i;
                     const isSelected = answers[question.id] === value;
+                    const valueLabel = question.valueLabels?.[value];
                     return (
                       <button
                         key={value}
@@ -409,7 +410,14 @@ export default function PublicTestPage() {
                             : "bg-white text-gray-700 border-gray-300 hover:border-brand-400 hover:bg-brand-50"
                         }`}
                       >
-                        {value}
+                        <div className="flex flex-col items-center leading-tight">
+                          <div>{value}</div>
+                          {valueLabel && (
+                            <div className={`mt-1 text-xs ${isSelected ? "text-white/90" : "text-gray-500"} font-semibold`}>
+                              {valueLabel}
+                            </div>
+                          )}
+                        </div>
                       </button>
                     );
                   })}

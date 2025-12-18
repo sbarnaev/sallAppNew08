@@ -177,9 +177,19 @@ export function ClientTestResults({ clientId }: Props) {
                   <span className="text-sm text-gray-600">
                     Последний результат: {new Date(latestResult.date).toLocaleDateString("ru-RU")}
                   </span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold border ${levelColors[latestResult.level]}`}>
-                    {latestResult.level === "low" ? "Низкий" : latestResult.level === "medium" ? "Средний" : latestResult.level === "high" ? "Высокий" : "Критический"}
-                  </span>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                        levelColors[latestResult.level] || levelColors.medium
+                      }`}
+                    >
+                      {latestResult.level === "low"
+                        ? "Низкий"
+                        : latestResult.level === "medium"
+                        ? "Средний"
+                        : latestResult.level === "high"
+                        ? "Высокий"
+                        : "Критический"}
+                    </span>
                 </div>
                 
                 {/* Имя и дата рождения, если есть */}
@@ -211,6 +221,15 @@ export function ClientTestResults({ clientId }: Props) {
                 )}
                 
                 <div className="text-2xl font-bold text-gray-900">{latestResult.score} баллов</div>
+                {latestResult.subScores && (
+                  <div className="mt-2 text-sm text-gray-700">
+                    {Object.entries(latestResult.subScores).map(([k, v]) => (
+                      <div key={k}>
+                        <span className="font-semibold">{k}:</span> {v}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {latestResult.interpretation && (
                   <div className="text-sm text-gray-700 mt-2">{latestResult.interpretation}</div>
                 )}
