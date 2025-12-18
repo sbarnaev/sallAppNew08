@@ -164,7 +164,17 @@ export async function POST(req: NextRequest) {
     if (!currentTestData[testId]) {
       currentTestData[testId] = [];
     }
-    currentTestData[testId].push(result as TestResult);
+    
+    // Добавляем имя и дату рождения в результат, если они были переданы
+    const resultWithClientData: TestResult = {
+      ...(result as TestResult),
+      ...(clientName && birthDate ? {
+        clientName: String(clientName).trim(),
+        birthDate: birthDate.split('T')[0] // Сохраняем только дату (YYYY-MM-DD)
+      } : {})
+    };
+    
+    currentTestData[testId].push(resultWithClientData);
 
     // Обновляем клиента
     const updateRes = await fetch(`${baseUrl}/items/clients/${clientId}`, {

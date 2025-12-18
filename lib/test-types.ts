@@ -39,6 +39,8 @@ export interface TestResult {
   answers: Record<number, number | string>; // questionId -> answer
   interpretation?: string;
   detailedInterpretation?: string; // Детальная расшифровка результата
+  clientName?: string; // Имя клиента (если было запрошено)
+  birthDate?: string; // Дата рождения клиента (если была запрошена)
 }
 
 export interface ClientTestData {
