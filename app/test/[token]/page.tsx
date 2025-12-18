@@ -167,6 +167,15 @@ export default function PublicTestPage() {
     if (!validateBirthDateForm()) {
       return;
     }
+    
+    // Конвертируем DD.MM.YYYY в YYYY-MM-DD для сохранения
+    const dateMatch = birthDateForm.birthDate.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (dateMatch) {
+      const [, dd, mm, yyyy] = dateMatch;
+      // Сохраняем в формате YYYY-MM-DD для API
+      birthDateForm.birthDate = `${yyyy}-${mm}-${dd}`;
+    }
+    
     // Закрываем форму и переходим к вопросам теста
     setShowBirthDateForm(false);
   }
@@ -326,24 +335,6 @@ export default function PublicTestPage() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{currentTest.name}</h1>
           </div>
 
-          {/* Важное предупреждение для клинических тестов */}
-          {(currentTest.id === "depression" || currentTest.id === "anxiety") && (
-            <div className="card p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-xl shrink-0">
-                  ⚠️
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-gray-900 mb-2">Важная информация</h3>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    Этот опросник является <strong>скрининговым инструментом</strong> и не заменяет профессиональную диагностику. 
-                    Результаты предназначены для предварительной оценки и не являются медицинским диагнозом. 
-                    При высоких баллах или наличии суицидальных мыслей необходимо обратиться к специалисту (психолог, психотерапевт, психиатр).
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Прогресс */}
           <div className="card p-6">
