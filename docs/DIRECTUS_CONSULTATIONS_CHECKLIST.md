@@ -182,3 +182,4 @@ node scripts/setup-directus-permissions.mjs
 - [ ] Роль пользователя имеет правильные permissions
 
 
+

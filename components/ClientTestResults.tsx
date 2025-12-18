@@ -173,7 +173,19 @@ export function ClientTestResults({ clientId }: Props) {
                     )}
                     {latestResult.birthDate && (
                       <div className="text-sm text-gray-700">
-                        <span className="font-semibold">Дата рождения:</span> {new Date(latestResult.birthDate).toLocaleDateString("ru-RU")}
+                        <span className="font-semibold">Дата рождения:</span> {
+                          (() => {
+                            try {
+                              const date = new Date(latestResult.birthDate);
+                              if (!isNaN(date.getTime())) {
+                                return date.toLocaleDateString("ru-RU");
+                              }
+                              return latestResult.birthDate; // Fallback на исходное значение
+                            } catch {
+                              return latestResult.birthDate;
+                            }
+                          })()
+                        }
                       </div>
                     )}
                   </div>

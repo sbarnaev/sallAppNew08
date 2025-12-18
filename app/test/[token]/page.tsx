@@ -119,7 +119,7 @@ export default function PublicTestPage() {
     }
   }
 
-  // НОВОЕ: Валидация формы даты рождения
+  // Валидация формы даты рождения
   function validateBirthDateForm() {
     const errors: { name?: string; birthDate?: string } = {};
     
@@ -130,16 +130,30 @@ export default function PublicTestPage() {
     if (!birthDateForm.birthDate) {
       errors.birthDate = "Пожалуйста, укажите дату рождения";
     } else {
-      const date = new Date(birthDateForm.birthDate);
-      if (isNaN(date.getTime())) {
-        errors.birthDate = "Неверный формат даты";
-      } else if (date > new Date()) {
-        errors.birthDate = "Дата рождения не может быть в будущем";
+      // Проверяем формат дд.мм.гггг
+      const dateRegex = /^(\d{2})\.(\d{2})\.(\d{4})$/;
+      const match = birthDateForm.birthDate.match(dateRegex);
+      
+      if (!match) {
+        errors.birthDate = "Неверный формат даты. Используйте формат дд.мм.гггг";
       } else {
-        const maxAge = new Date();
-        maxAge.setFullYear(maxAge.getFullYear() - 150);
-        if (date < maxAge) {
-          errors.birthDate = "Неверная дата рождения";
+        const [, dd, mm, yyyy] = match;
+        const day = parseInt(dd, 10);
+        const month = parseInt(mm, 10);
+        const year = parseInt(yyyy, 10);
+        
+        // Проверяем валидность даты
+        const date = new Date(year, month - 1, day);
+        if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+          errors.birthDate = "Неверная дата";
+        } else if (date > new Date()) {
+          errors.birthDate = "Дата рождения не может быть в будущем";
+        } else {
+          const maxAge = new Date();
+          maxAge.setFullYear(maxAge.getFullYear() - 150);
+          if (date < maxAge) {
+            errors.birthDate = "Неверная дата рождения";
+          }
         }
       }
     }
@@ -237,13 +251,18 @@ export default function PublicTestPage() {
                 </label>
                 <input
                   id="birth-date"
-                  type="date"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="дд.мм.гггг"
                   value={birthDateForm.birthDate}
                   onChange={(e) => {
-                    setBirthDateForm({ ...birthDateForm, birthDate: e.target.value });
+                    // Маска: DD.MM.YYYY (ввод подряд цифр)
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+                    const parts = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)].filter(Boolean);
+                    const masked = parts.join(".");
+                    setBirthDateForm({ ...birthDateForm, birthDate: masked });
                     if (formErrors.birthDate) setFormErrors({ ...formErrors, birthDate: undefined });
                   }}
-                  max={new Date().toISOString().split('T')[0]} // Нельзя выбрать будущую дату
                   className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 ${
                     formErrors.birthDate ? "border-red-500" : "border-gray-300"
                   }`}
@@ -251,16 +270,10 @@ export default function PublicTestPage() {
                 {formErrors.birthDate && (
                   <p className="mt-1 text-sm text-red-600">{formErrors.birthDate}</p>
                 )}
+                <p className="mt-1 text-xs text-gray-500">Формат: дд.мм.гггг (например: 15.05.1990)</p>
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => setShowBirthDateForm(false)}
-                  disabled={saving}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-                >
-                  Назад
-                </button>
+              <div className="flex justify-end pt-4 border-t border-gray-200">
                 <button
                   onClick={handleSubmitBirthDateForm}
                   disabled={saving}
