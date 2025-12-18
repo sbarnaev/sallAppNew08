@@ -279,11 +279,23 @@ export default function TakeTestPage() {
 
         {question.type === "scale" && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between text-sm text-gray-600 mb-6">
-              {question.labels?.min && <span>{question.labels.min}</span>}
-              {question.labels?.max && <span>{question.labels.max}</span>}
-            </div>
-            <div className="flex items-center justify-between gap-4">
+            {(question.labels?.min || question.labels?.max) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600 mb-4">
+                {question.labels?.min && (
+                  <div className="rounded-xl bg-gray-50 border border-gray-200 p-3">
+                    <div className="text-xs font-semibold text-gray-500 mb-1">Минимум</div>
+                    <div className="leading-snug">{question.labels.min}</div>
+                  </div>
+                )}
+                {question.labels?.max && (
+                  <div className="rounded-xl bg-gray-50 border border-gray-200 p-3 sm:text-right">
+                    <div className="text-xs font-semibold text-gray-500 mb-1">Максимум</div>
+                    <div className="leading-snug">{question.labels.max}</div>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {Array.from({ length: (question.max || 5) - (question.min || 1) + 1 }, (_, i) => {
                 const value = (question.min || 1) + i;
                 const isSelected = answers[question.id] === value;
