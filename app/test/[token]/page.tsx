@@ -53,7 +53,12 @@ export default function PublicTestPage() {
 
         setTest(testData);
         setClientName(data.clientName || "");
-        setRequestBirthDate(Boolean(data.requestBirthDate)); // НОВОЕ: сохраняем флаг
+        const shouldRequestBirthDate = Boolean(data.requestBirthDate);
+        setRequestBirthDate(shouldRequestBirthDate);
+        // НОВОЕ: Если нужно запросить дату рождения, показываем форму в начале
+        if (shouldRequestBirthDate) {
+          setShowBirthDateForm(true);
+        }
         setLoading(false);
       })
       .catch((err) => {
@@ -104,12 +109,7 @@ export default function PublicTestPage() {
     if (currentQuestion < currentTest.questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else if (allAnswered) {
-      // НОВОЕ: Если нужно запросить дату рождения, показываем форму, иначе сохраняем сразу
-      if (requestBirthDate) {
-        setShowBirthDateForm(true);
-      } else {
-        handleSubmit();
-      }
+      handleSubmit();
     }
   }
 
@@ -148,41 +148,13 @@ export default function PublicTestPage() {
     return Object.keys(errors).length === 0;
   }
 
-  // НОВОЕ: Отправка формы с данными о рождении
-  async function handleSubmitWithBirthDate() {
+  // НОВОЕ: Отправка формы с данными о рождении (в начале опроса)
+  function handleSubmitBirthDateForm() {
     if (!validateBirthDateForm()) {
       return;
     }
-
-    const testResult = calculateTestResult(currentTest, answers);
-    setResult(testResult);
-
-    // Сохраняем результат через токен вместе с данными о рождении
-    setSaving(true);
-    try {
-      const res = await fetch("/api/tests/submit-by-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          testToken: token,
-          result: testResult,
-          clientName: birthDateForm.name.trim(), // НОВОЕ
-          birthDate: birthDateForm.birthDate // НОВОЕ
-        })
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to save result");
-      }
-      // Успешно сохранено - result уже установлен, форма закроется автоматически
-    } catch (error: any) {
-      console.error("Error saving result:", error);
-      // При ошибке оставляем форму открытой, чтобы пользователь мог попробовать снова
-      setSaving(false);
-      setResult(null); // Сбрасываем result, чтобы форма осталась видимой
-      alert(error?.message || "Ошибка при сохранении результата. Пожалуйста, попробуйте еще раз.");
-    }
+    // Закрываем форму и переходим к вопросам теста
+    setShowBirthDateForm(false);
   }
 
   async function handleSubmit() {
@@ -197,7 +169,12 @@ export default function PublicTestPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           testToken: token,
-          result: testResult
+          result: testResult,
+          // НОВОЕ: Если была форма в начале, передаем данные из нее
+          ...(requestBirthDate && birthDateForm.name && birthDateForm.birthDate ? {
+            clientName: birthDateForm.name.trim(),
+            birthDate: birthDateForm.birthDate
+          } : {})
         })
       });
 
@@ -208,6 +185,8 @@ export default function PublicTestPage() {
     } catch (error) {
       console.error("Error saving result:", error);
       alert("Ошибка при сохранении результата. Пожалуйста, попробуйте еще раз.");
+      setSaving(false);
+      setResult(null);
     } finally {
       setSaving(false);
     }
