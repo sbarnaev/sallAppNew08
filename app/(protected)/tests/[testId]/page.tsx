@@ -76,6 +76,18 @@ export default function TakeTestPage() {
   }
 
   async function handleSubmit() {
+    // Валидация: проверяем, что все вопросы отвечены
+    const unansweredQuestions = test.questions.filter(q => answers[q.id] === undefined);
+    if (unansweredQuestions.length > 0) {
+      alert(`Пожалуйста, ответьте на все вопросы. Не отвечены вопросы: ${unansweredQuestions.map(q => q.id).join(", ")}`);
+      // Переходим к первому неотвеченному вопросу
+      const firstUnanswered = test.questions.findIndex(q => answers[q.id] === undefined);
+      if (firstUnanswered >= 0) {
+        setCurrentQuestion(firstUnanswered);
+      }
+      return;
+    }
+
     const testResult = calculateTestResult(test, answers);
     setResult(testResult);
 

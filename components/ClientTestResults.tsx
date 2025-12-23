@@ -27,7 +27,13 @@ export function ClientTestResults({ clientId }: Props) {
     }
 
     // scale
-    if (typeof a === "number") return String(a);
+    if (typeof a === "number") {
+      // Если есть valueLabels, показываем текстовое значение
+      if (q.valueLabels && q.valueLabels[a] !== undefined) {
+        return `${a} (${q.valueLabels[a]})`;
+      }
+      return String(a);
+    }
     return String(a);
   }
 

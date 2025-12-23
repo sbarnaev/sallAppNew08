@@ -90,13 +90,19 @@ export default function NewCalculationPage() {
       };
       if (clientIdParam) payload.clientId = Number(clientIdParam);
       if (type === "target") {
-        // Объединяем все поля в одну строку без переносов и спецсимволов
+        // Сохраняем данные запроса отдельно для отображения на странице расчета
+        payload.targetRequest = {
+          current: cleanText(targetCurrent),
+          want: cleanText(targetWant),
+          additional: cleanText(targetAdditional) || null,
+        };
+        // Также сохраняем объединенную версию для промпта
         const parts = [
-          `Что есть сейчас: ${cleanText(targetCurrent)}`,
-          `Что клиент хочет: ${cleanText(targetWant)}`
+          `Что есть сейчас: ${payload.targetRequest.current}`,
+          `Что клиент хочет: ${payload.targetRequest.want}`
         ];
-        if (targetAdditional.trim()) {
-          parts.push(`Дополнительная информация: ${cleanText(targetAdditional)}`);
+        if (payload.targetRequest.additional) {
+          parts.push(`Дополнительная информация: ${payload.targetRequest.additional}`);
         }
         payload.request = parts.join(" ");
       }

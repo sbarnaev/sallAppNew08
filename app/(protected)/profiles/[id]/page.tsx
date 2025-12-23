@@ -2068,6 +2068,17 @@ export default function ProfileDetail() {
       <div className="space-y-6">
         {items.map((item, idx) => (
           <div key={idx} className="space-y-6">
+            {/* Запрос родителей */}
+            {(profile as any)?.child_request && (
+              <section id="child-request" className="rounded-2xl border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-pink-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">📝</span>
+                  Запрос родителей
+                </h2>
+                <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).child_request}</p>
+              </section>
+            )}
+            
             {/* Скажите родителям */}
             {item.opener && (
               <section id="opener" className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow relative group">
@@ -2273,8 +2284,38 @@ export default function ProfileDetail() {
       <div className="space-y-6">
         {items.map((item, idx) => (
           <div key={idx} className="space-y-6">
-            {/* Цель клиента */}
-            {item.request && (
+            {/* Данные запроса для целевого расчета */}
+            {(profile as any)?.target_request && (
+              <section id="target-request" className="rounded-2xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">📝</span>
+                  Запрос клиента
+                </h2>
+                <div className="space-y-4">
+                  {(profile as any).target_request.current && (
+                    <div>
+                      <div className="text-sm font-semibold text-purple-700 mb-2">Что есть сейчас:</div>
+                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_request.current}</p>
+                    </div>
+                  )}
+                  {(profile as any).target_request.want && (
+                    <div>
+                      <div className="text-sm font-semibold text-purple-700 mb-2">Что клиент хочет:</div>
+                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_request.want}</p>
+                    </div>
+                  )}
+                  {(profile as any).target_request.additional && (
+                    <div>
+                      <div className="text-sm font-semibold text-purple-700 mb-2">Дополнительная информация:</div>
+                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_request.additional}</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+            
+            {/* Старый формат: цель клиента (для обратной совместимости) */}
+            {!((profile as any)?.target_request) && item.request && (
               <section id="goal" className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 shadow-sm">
                 <h2 className="m-0 text-base font-bold text-gray-800 mb-3">🎯 Цель клиента</h2>
                 <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.request}</p>
@@ -2606,12 +2647,20 @@ export default function ProfileDetail() {
         {items.map((item, idx) => (
           <div key={idx} className="space-y-6">
             {/* Цель консультации */}
-            {item.goal && (
+            {(profile as any)?.partner_goal ? (
+              <section id="goal" className="rounded-2xl border-2 border-pink-200 bg-gradient-to-br from-pink-50 to-rose-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">🎯</span>
+                  Цель расчета
+                </h2>
+                <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).partner_goal}</p>
+              </section>
+            ) : item.goal ? (
               <section id="goal" className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 shadow-sm">
                 <h2 className="m-0 text-base font-bold text-gray-800 mb-3">🎯 Цель консультации</h2>
                 <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.goal}</p>
               </section>
-            )}
+            ) : null}
 
             {/* Предупреждения */}
             {Array.isArray(item.warnings) && item.warnings.length > 0 && (

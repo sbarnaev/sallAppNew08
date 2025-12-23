@@ -89,7 +89,7 @@ export async function POST(req: Request) {
     payload = {};
   }
 
-  const { clientId, name, birthday, type, request, clientRequest, query, prompt, partnerName, partnerBirthday, goal } = payload || {};
+  const { clientId, name, birthday, type, request, clientRequest, query, prompt, partnerName, partnerBirthday, goal, targetRequest } = payload || {};
   const publicCode = generatePublicCode();
   const calculationType = type || "base";
 
@@ -150,6 +150,30 @@ export async function POST(req: Request) {
         }
       } catch { }
 
+      // Подготавливаем данные для сохранения в профиль
+      const profileData: any = {
+        client_id: clientId ? Number(clientId) : null,
+        ...(ownerUserId ? { owner_user: ownerUserId } : {}),
+      };
+      
+      // Сохраняем данные запроса для целевого расчета
+      if (type === "target" && payload.targetRequest) {
+        profileData.target_request = payload.targetRequest;
+      }
+      
+      // Сохраняем цель для партнерского расчета
+      if (type === "partner" && goal) {
+        profileData.partner_goal = cleanText(goal);
+      }
+      
+      // Сохраняем запрос родителей для детского расчета
+      if (type === "child") {
+        const childReq = cleanText(request ?? clientRequest ?? query ?? prompt ?? null);
+        if (childReq) {
+          profileData.child_request = childReq;
+        }
+      }
+      
       const createRes = await fetch(`${directusUrl}/items/profiles`, {
         method: "POST",
         headers: {
@@ -157,10 +181,7 @@ export async function POST(req: Request) {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({
-          client_id: clientId ? Number(clientId) : null,
-          ...(ownerUserId ? { owner_user: ownerUserId } : {}),
-        }),
+        body: JSON.stringify(profileData),
       });
       const createData = await createRes.json().catch(() => ({}));
       if (createRes.ok && createData?.data?.id) {
