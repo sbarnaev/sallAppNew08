@@ -217,14 +217,21 @@ export function validateTargetConsultation(data: any): ValidationResult {
 
   // Проверка currentDiagnostics структуры
   if (data.currentDiagnostics) {
-    if (!Array.isArray(data.currentDiagnostics.resourceStates)) {
-      errors.push("currentDiagnostics.resourceStates должен быть массивом");
+    if (!Array.isArray(data.currentDiagnostics.inPlus)) {
+      errors.push("currentDiagnostics.inPlus должен быть массивом");
     }
-    if (!data.currentDiagnostics.readiness || typeof data.currentDiagnostics.readiness !== "object") {
-      errors.push("currentDiagnostics.readiness должен быть объектом");
+    if (!Array.isArray(data.currentDiagnostics.inMinus)) {
+      errors.push("currentDiagnostics.inMinus должен быть массивом");
     }
-    if (!Array.isArray(data.currentDiagnostics.questions)) {
-      errors.push("currentDiagnostics.questions должен быть массивом");
+    if (!Array.isArray(data.currentDiagnostics.diagnosticQuestions)) {
+      errors.push("currentDiagnostics.diagnosticQuestions должен быть массивом");
+    }
+    // Проверка количества вопросов (3-4)
+    if (Array.isArray(data.currentDiagnostics.diagnosticQuestions)) {
+      const qCount = data.currentDiagnostics.diagnosticQuestions.length;
+      if (qCount < 3 || qCount > 4) {
+        errors.push(`currentDiagnostics.diagnosticQuestions должен содержать 3-4 вопроса, получено: ${qCount}`);
+      }
     }
   }
 
