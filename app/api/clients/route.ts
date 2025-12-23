@@ -382,7 +382,7 @@ export async function POST(req: NextRequest) {
       const newToken = await getValidToken();
       
       if (newToken) {
-        logger.info("[CLIENTS] Token refreshed, retrying client creation");
+        logger.log("[CLIENTS] Token refreshed, retrying client creation");
         // Повторим запрос с новым токеном
         const retryRes = await fetch(url, {
           method: "POST",
