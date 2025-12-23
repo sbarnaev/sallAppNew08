@@ -142,6 +142,9 @@ export async function POST(req: Request) {
       const consultationResult = await generateBaseConsultation(input);
 
       // 4. Сохраняем в профиль
+      if (!token || !directusUrl) {
+        throw new Error("Token or directusUrl is missing");
+      }
       await saveConsultationToProfile(
         profileId,
         consultationResult,

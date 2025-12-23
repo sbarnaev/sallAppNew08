@@ -249,6 +249,9 @@ export async function POST(req: Request) {
 
     // 4. Сохраняем результат в профиль
     try {
+      if (!token || !directusUrl) {
+        throw new Error("Token or directusUrl is missing");
+      }
       await saveConsultationToProfile(
         profileId,
         consultationResult,
