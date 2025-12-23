@@ -2080,14 +2080,17 @@ export default function ProfileDetail() {
 
             {/* Потенциал ребенка */}
             {Array.isArray(item.childPotential) && item.childPotential.length > 0 && (
-              <section id="childPotential" className="rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+              <section id="childPotential" className="rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 via-purple-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
                 <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
                   <span className="text-2xl">⭐</span>
                   Потенциал ребенка
                 </h2>
                 <div className="space-y-5">
                   {item.childPotential.map((t: string, i: number) => (
-                    <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg">{t}</p>
+                    <div key={i} className="relative pl-6">
+                      <div className="absolute left-0 top-2 w-1.5 h-1.5 rounded-full bg-indigo-400"></div>
+                      <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg">{t}</p>
+                    </div>
                   ))}
                 </div>
               </section>
@@ -2100,9 +2103,14 @@ export default function ProfileDetail() {
                   <span className="text-2xl">🌱</span>
                   Особенности развития
                 </h2>
-                <div className="mt-3">
-                  <CheckList list={item.developmentFeatures} section="developmentFeatures" />
-                </div>
+                <ul className="space-y-3">
+                  {item.developmentFeatures.map((text: string, i: number) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-2 h-2 rounded-full bg-purple-500 mt-2.5"></span>
+                      <p className="text-base md:text-lg leading-relaxed text-gray-800 flex-1">{text}</p>
+                    </li>
+                  ))}
+                </ul>
               </section>
             )}
 
@@ -2113,9 +2121,14 @@ export default function ProfileDetail() {
                   <span className="text-2xl">💚</span>
                   Рекомендации по воспитанию
                 </h2>
-                <div className="mt-3">
-                  <CheckList list={item.upbringingRecommendations} section="upbringingRecommendations" />
-                </div>
+                <ul className="space-y-3">
+                  {item.upbringingRecommendations.map((text: string, i: number) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-2 h-2 rounded-full bg-green-500 mt-2.5"></span>
+                      <p className="text-base md:text-lg leading-relaxed text-gray-800 flex-1">{text}</p>
+                    </li>
+                  ))}
+                </ul>
               </section>
             )}
 
@@ -2126,9 +2139,14 @@ export default function ProfileDetail() {
                   <span className="text-2xl">📚</span>
                   Подход к обучению
                 </h2>
-                <div className="mt-3">
-                  <CheckList list={item.educationalApproach} section="educationalApproach" />
-                </div>
+                <ul className="space-y-3">
+                  {item.educationalApproach.map((text: string, i: number) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-2.5"></span>
+                      <p className="text-base md:text-lg leading-relaxed text-gray-800 flex-1">{text}</p>
+                    </li>
+                  ))}
+                </ul>
               </section>
             )}
 
@@ -2139,9 +2157,14 @@ export default function ProfileDetail() {
                   <span className="text-2xl">💬</span>
                   Стиль общения
                 </h2>
-                <div className="mt-3">
-                  <CheckList list={item.communicationStyle} section="communicationStyle" />
-                </div>
+                <ul className="space-y-3">
+                  {item.communicationStyle.map((text: string, i: number) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-2 h-2 rounded-full bg-amber-500 mt-2.5"></span>
+                      <p className="text-base md:text-lg leading-relaxed text-gray-800 flex-1">{text}</p>
+                    </li>
+                  ))}
+                </ul>
               </section>
             )}
 
@@ -2152,9 +2175,14 @@ export default function ProfileDetail() {
                   <span className="text-2xl">⚡</span>
                   Вызовы и решения
                 </h2>
-                <div className="mt-3">
-                  <CheckList list={item.challengesAndSolutions} section="challengesAndSolutions" />
-                </div>
+                <ul className="space-y-3">
+                  {item.challengesAndSolutions.map((text: string, i: number) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-2 h-2 rounded-full bg-orange-500 mt-2.5"></span>
+                      <p className="text-base md:text-lg leading-relaxed text-gray-800 flex-1">{text}</p>
+                    </li>
+                  ))}
+                </ul>
               </section>
             )}
 
@@ -2165,22 +2193,30 @@ export default function ProfileDetail() {
                   <span className="text-2xl">🎨</span>
                   Активности и хобби
                 </h2>
-                <div className="mt-3">
-                  <CheckList list={item.activitiesAndHobbies} section="activitiesAndHobbies" />
-                </div>
+                <ul className="space-y-3">
+                  {item.activitiesAndHobbies.map((text: string, i: number) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="flex-shrink-0 w-2 h-2 rounded-full bg-pink-500 mt-2.5"></span>
+                      <p className="text-base md:text-lg leading-relaxed text-gray-800 flex-1">{text}</p>
+                    </li>
+                  ))}
+                </ul>
               </section>
             )}
 
             {/* Взаимодействие родитель-ребенок */}
             {Array.isArray(item.parentChildInteraction) && item.parentChildInteraction.length > 0 && (
-              <section id="parentChildInteraction" className="rounded-2xl border-2 border-teal-200 bg-gradient-to-br from-teal-50 to-cyan-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+              <section id="parentChildInteraction" className="rounded-2xl border-2 border-teal-200 bg-gradient-to-br from-teal-50 via-cyan-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
                 <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
                   <span className="text-2xl">👨‍👩‍👧</span>
                   Взаимодействие родитель-ребенок
                 </h2>
                 <div className="space-y-5">
                   {item.parentChildInteraction.map((t: string, i: number) => (
-                    <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg">{t}</p>
+                    <div key={i} className="relative pl-6">
+                      <div className="absolute left-0 top-2 w-1.5 h-1.5 rounded-full bg-teal-400"></div>
+                      <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg">{t}</p>
+                    </div>
                   ))}
                 </div>
               </section>
@@ -2188,14 +2224,17 @@ export default function ProfileDetail() {
 
             {/* Перспективы будущего */}
             {Array.isArray(item.futureProspects) && item.futureProspects.length > 0 && (
-              <section id="futureProspects" className="rounded-2xl border-2 border-violet-200 bg-gradient-to-br from-violet-50 to-purple-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+              <section id="futureProspects" className="rounded-2xl border-2 border-violet-200 bg-gradient-to-br from-violet-50 via-purple-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
                 <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
                   <span className="text-2xl">🔮</span>
                   Перспективы будущего
                 </h2>
                 <div className="space-y-5">
                   {item.futureProspects.map((t: string, i: number) => (
-                    <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg">{t}</p>
+                    <div key={i} className="relative pl-6">
+                      <div className="absolute left-0 top-2 w-1.5 h-1.5 rounded-full bg-violet-400"></div>
+                      <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg">{t}</p>
+                    </div>
                   ))}
                 </div>
               </section>
@@ -3247,8 +3286,8 @@ export default function ProfileDetail() {
         );
       })()}
 
-      {/* Пять изображений (только для базового расчета) */}
-      {consultationType === "base" && (() => {
+      {/* Пять изображений (для базового и детского расчета) */}
+      {(consultationType === "base" || consultationType === "child") && (() => {
         const images = (profile as any)?.images;
         let imageArray: any[] = [];
         
