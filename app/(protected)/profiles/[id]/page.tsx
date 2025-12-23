@@ -2069,15 +2069,24 @@ export default function ProfileDetail() {
         {items.map((item, idx) => (
           <div key={idx} className="space-y-6">
             {/* Запрос родителей */}
-            {(profile as any)?.target_json && (profile as any).target_json.type === "child" && (profile as any).target_json.request && (
-              <section id="child-request" className="rounded-2xl border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-pink-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
-                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
-                  <span className="text-2xl">📝</span>
-                  Запрос родителей
-                </h2>
-                <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_json.request}</p>
-              </section>
-            )}
+            {(() => {
+              const targetJson = (profile as any)?.target_json;
+              if (targetJson) {
+                const parsed = typeof targetJson === 'string' ? JSON.parse(targetJson) : targetJson;
+                if (parsed?.type === "child" && parsed.request) {
+                  return (
+                    <section id="child-request" className="rounded-2xl border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-pink-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                      <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                        <span className="text-2xl">📝</span>
+                        Запрос родителей
+                      </h2>
+                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{parsed.request}</p>
+                    </section>
+                  );
+                }
+              }
+              return null;
+            })()}
             
             {/* Скажите родителям */}
             {item.opener && (
@@ -2285,34 +2294,42 @@ export default function ProfileDetail() {
         {items.map((item, idx) => (
           <div key={idx} className="space-y-6">
             {/* Данные запроса для целевого расчета */}
-            {(profile as any)?.target_json && (profile as any).target_json.type === "target" && (
-              <section id="target-request" className="rounded-2xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
-                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
-                  <span className="text-2xl">📝</span>
-                  Запрос клиента
-                </h2>
-                <div className="space-y-4">
-                  {(profile as any).target_json.current && (
-                    <div>
-                      <div className="text-sm font-semibold text-purple-700 mb-2">Что есть сейчас:</div>
-                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_json.current}</p>
+            {(() => {
+              const targetJson = (profile as any)?.target_json;
+              if (!targetJson) return null;
+              const parsed = typeof targetJson === 'string' ? JSON.parse(targetJson) : targetJson;
+              if (parsed?.type === "target") {
+                return (
+                  <section id="target-request" className="rounded-2xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                    <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                      <span className="text-2xl">📝</span>
+                      Запрос клиента
+                    </h2>
+                    <div className="space-y-4">
+                      {parsed.current && (
+                        <div>
+                          <div className="text-sm font-semibold text-purple-700 mb-2">Что есть сейчас:</div>
+                          <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{parsed.current}</p>
+                        </div>
+                      )}
+                      {parsed.want && (
+                        <div>
+                          <div className="text-sm font-semibold text-purple-700 mb-2">Что клиент хочет:</div>
+                          <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{parsed.want}</p>
+                        </div>
+                      )}
+                      {parsed.additional && (
+                        <div>
+                          <div className="text-sm font-semibold text-purple-700 mb-2">Дополнительная информация:</div>
+                          <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{parsed.additional}</p>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {(profile as any).target_json.want && (
-                    <div>
-                      <div className="text-sm font-semibold text-purple-700 mb-2">Что клиент хочет:</div>
-                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_json.want}</p>
-                    </div>
-                  )}
-                  {(profile as any).target_json.additional && (
-                    <div>
-                      <div className="text-sm font-semibold text-purple-700 mb-2">Дополнительная информация:</div>
-                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_json.additional}</p>
-                    </div>
-                  )}
-                </div>
-              </section>
-            )}
+                  </section>
+                );
+              }
+              return null;
+            })()}
             
             {/* Старый формат: цель клиента (для обратной совместимости) */}
             {!((profile as any)?.target_request) && item.request && (
@@ -2647,20 +2664,32 @@ export default function ProfileDetail() {
         {items.map((item, idx) => (
           <div key={idx} className="space-y-6">
             {/* Цель консультации */}
-            {(profile as any)?.target_json && (profile as any).target_json.type === "partner" && (profile as any).target_json.goal ? (
-              <section id="goal" className="rounded-2xl border-2 border-pink-200 bg-gradient-to-br from-pink-50 to-rose-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
-                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
-                  <span className="text-2xl">🎯</span>
-                  Цель расчета
-                </h2>
-                <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_json.goal}</p>
-              </section>
-            ) : item.goal ? (
-              <section id="goal" className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 shadow-sm">
-                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">🎯 Цель консультации</h2>
-                <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.goal}</p>
-              </section>
-            ) : null}
+            {(() => {
+              const targetJson = (profile as any)?.target_json;
+              if (targetJson) {
+                const parsed = typeof targetJson === 'string' ? JSON.parse(targetJson) : targetJson;
+                if (parsed?.type === "partner" && parsed.goal) {
+                  return (
+                    <section id="goal" className="rounded-2xl border-2 border-pink-200 bg-gradient-to-br from-pink-50 to-rose-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                      <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                        <span className="text-2xl">🎯</span>
+                        Цель расчета
+                      </h2>
+                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{parsed.goal}</p>
+                    </section>
+                  );
+                }
+              }
+              if (item.goal) {
+                return (
+                  <section id="goal" className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 shadow-sm">
+                    <h2 className="m-0 text-base font-bold text-gray-800 mb-3">🎯 Цель консультации</h2>
+                    <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.goal}</p>
+                  </section>
+                );
+              }
+              return null;
+            })()}
 
             {/* Предупреждения */}
             {Array.isArray(item.warnings) && item.warnings.length > 0 && (
