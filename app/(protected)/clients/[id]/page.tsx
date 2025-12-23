@@ -623,6 +623,7 @@ function getCommunicationLabel(method: string): string {
     email: 'Email',
     telegram: 'Telegram',
     whatsapp: 'WhatsApp',
+    max: 'MAX',
     instagram: 'Instagram',
     vk: 'VK',
     in_person: 'Лично',

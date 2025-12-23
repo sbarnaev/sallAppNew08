@@ -256,6 +256,7 @@ export default function NewClientPage() {
                 <option value="email">Email</option>
                 <option value="telegram">Telegram</option>
                 <option value="whatsapp">WhatsApp</option>
+                <option value="max">MAX</option>
                 <option value="instagram">Instagram</option>
                 <option value="vk">VK</option>
                 <option value="in_person">Лично</option>
