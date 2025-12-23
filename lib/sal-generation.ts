@@ -564,18 +564,18 @@ export async function generatePartnerConsultation(
 
   // Добавляем коды обоих участников в результат для сохранения
   const firstCodesArray = [
-    firstProfileCodes.personality,
-    firstProfileCodes.connector,
-    firstProfileCodes.realization,
-    firstProfileCodes.generator,
-    firstProfileCodes.mission,
+    firstProfileCodes.codes.personality,
+    firstProfileCodes.codes.connector,
+    firstProfileCodes.codes.realization,
+    firstProfileCodes.codes.generator,
+    firstProfileCodes.codes.mission,
   ];
   const secondCodesArray = [
-    secondProfileCodes.personality,
-    secondProfileCodes.connector,
-    secondProfileCodes.realization,
-    secondProfileCodes.generator,
-    secondProfileCodes.mission,
+    secondProfileCodes.codes.personality,
+    secondProfileCodes.codes.connector,
+    secondProfileCodes.codes.realization,
+    secondProfileCodes.codes.generator,
+    secondProfileCodes.codes.mission,
   ];
   
   // Сохраняем коды в результат
