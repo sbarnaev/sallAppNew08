@@ -3520,6 +3520,7 @@ export default function ProfileDetail() {
           );
         } else if (consultationType === "target") {
           menuItems.push(
+            { id: "target-request", label: "Запрос клиента", icon: "📝" },
             { id: "goal", label: "Цель клиента", icon: "🎯" },
             { id: "goal-decomposition", label: "Декомпозиция цели", icon: "📋" },
             { id: "warnings", label: "Предупреждения", icon: "⚠️" },
@@ -3534,7 +3535,7 @@ export default function ProfileDetail() {
           );
         } else if (consultationType === "partner") {
           menuItems.push(
-            { id: "goal", label: "Цель консультации", icon: "🎯" },
+            { id: "goal", label: "Цель расчета", icon: "🎯" },
             { id: "goal-decomposition", label: "Декомпозиция цели пары", icon: "📋" },
             { id: "warnings", label: "Предупреждения", icon: "⚠️" },
             { id: "compatibility", label: "Совместимость ресурсов", icon: "🤝" },
@@ -3551,6 +3552,7 @@ export default function ProfileDetail() {
           );
         } else if (consultationType === "child") {
           menuItems.push(
+            { id: "child-request", label: "Запрос родителей", icon: "📝" },
             { id: "opener", label: "Скажите родителям", icon: "👶" },
             { id: "childPotential", label: "Потенциал ребенка", icon: "🌟" },
             { id: "developmentFeatures", label: "Особенности развития", icon: "🌱" },
