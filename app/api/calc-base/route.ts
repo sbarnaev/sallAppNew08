@@ -20,7 +20,7 @@ function generatePublicCode(): string {
 }
 
 export async function POST(req: Request) {
-  logger.debug("[CALC-BASE] POST /api/calc-base");
+  logger.log("[CALC-BASE] POST /api/calc-base - Starting base calculation");
   
   let token = cookies().get("directus_access_token")?.value;
   const refreshToken = cookies().get("directus_refresh_token")?.value;
@@ -35,7 +35,8 @@ export async function POST(req: Request) {
     hasRefreshToken: !!refreshToken,
     hasDirectusUrl: !!directusUrl,
     hasN8nUrl: !!n8nUrl,
-    n8nUrl: n8nUrl ? "configured" : "NOT SET"
+    n8nUrl: n8nUrl ? "configured" : "NOT SET",
+    useServerGeneration,
   });
 
   if (!token && !refreshToken) {
@@ -52,7 +53,17 @@ export async function POST(req: Request) {
 
   const { clientId, name, birthday } = payload || {};
   const publicCode = generatePublicCode();
+  
+  logger.log("[CALC-BASE] Calculation request:", {
+    name,
+    birthday,
+    clientId: clientId || null,
+    publicCode,
+    useServerGeneration,
+  });
+  
   if (!name || !birthday) {
+    logger.error("[CALC-BASE] Missing required fields:", { name: !!name, birthday: !!birthday });
     return NextResponse.json({ message: "Нужны name и birthday" }, { status: 400 });
   }
 
@@ -140,11 +151,22 @@ export async function POST(req: Request) {
       };
       
       const consultationResult = await generateBaseConsultation(input);
+      
+      logger.log("[CALC-BASE] Consultation generated successfully:", {
+        profileId,
+        hasOpener: !!consultationResult?.opener,
+        hasStrengths: !!consultationResult?.strengths,
+        hasWeaknesses: !!consultationResult?.weaknesses,
+        codes: codesArray,
+      });
 
       // 4. Сохраняем в профиль
       if (!token || !directusUrl) {
+        logger.error("[CALC-BASE] Token or directusUrl missing before save");
         throw new Error("Token or directusUrl is missing");
       }
+      
+      logger.log("[CALC-BASE] Saving consultation to profile:", { profileId });
       await saveConsultationToProfile(
         profileId,
         consultationResult,
@@ -154,17 +176,26 @@ export async function POST(req: Request) {
         directusUrl
       );
 
-      logger.debug("[CALC-BASE] Server generation completed successfully");
+      logger.log("[CALC-BASE] Base calculation completed successfully:", {
+        profileId,
+        publicCode,
+        clientId: clientId || null,
+      });
+      
       return NextResponse.json({ profileId, public_code: publicCode });
     } catch (error: any) {
       logger.error("[CALC-BASE] Server generation error:", {
         message: error?.message || String(error),
         stack: error?.stack?.substring(0, 500),
+        name,
+        birthday,
+        clientId: clientId || null,
       });
       // Fallback на n8n если настроен
       if (n8nUrl) {
-        logger.debug("[CALC-BASE] Falling back to n8n after error");
+        logger.warn("[CALC-BASE] Falling back to n8n after server generation error");
       } else {
+        logger.error("[CALC-BASE] No n8n fallback available, returning error");
         return NextResponse.json(
           { message: "Server generation failed", error: error?.message || String(error) },
           { status: 500 }

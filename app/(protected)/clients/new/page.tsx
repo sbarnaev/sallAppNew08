@@ -53,12 +53,17 @@ export default function NewClientPage() {
       const responseData = await res.json().catch(() => ({}));
 
       if (res.ok) {
-        // Используем startTransition для правильной обработки навигации и обновления
-        // Это гарантирует, что router.refresh() вызовется после завершения навигации
-        startTransition(() => {
+        // Получаем ID созданного клиента
+        const clientId = responseData?.data?.id || responseData?.id;
+        
+        if (clientId) {
+          // Сразу переходим на карточку созданного клиента
+          router.push(`/clients/${clientId}`);
+        } else {
+          // Если ID не получен, переходим на список (fallback)
+          console.warn("Client created but no ID returned:", responseData);
           router.push("/clients");
-          router.refresh();
-        });
+        }
       } else {
         const data = responseData;
         console.log("Form error:", { status: res.status, data });

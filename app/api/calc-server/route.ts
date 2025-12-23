@@ -47,7 +47,7 @@ function cleanText(text: string | null | undefined): string | null {
 }
 
 export async function POST(req: Request) {
-  logger.debug("[CALC-SERVER] POST /api/calc-server");
+  logger.log("[CALC-SERVER] POST /api/calc-server - Starting calculation");
 
   let token = cookies().get("directus_access_token")?.value;
   const refreshToken = cookies().get("directus_refresh_token")?.value;
@@ -91,8 +91,18 @@ export async function POST(req: Request) {
   // Определяем тип расчета
   const calculationType = type || "base";
 
+  logger.log("[CALC-SERVER] Calculation request:", {
+    name,
+    birthday,
+    type: calculationType,
+    clientId: clientId || null,
+    publicCode,
+    hasRequest: !!(request || clientRequest || query || prompt),
+  });
+
   // Валидация обязательных полей
   if (!name || !birthday) {
+    logger.error("[CALC-SERVER] Missing required fields:", { name: !!name, birthday: !!birthday, type: calculationType });
     return NextResponse.json({ message: "name и birthday обязательны" }, { status: 400 });
   }
 
@@ -154,9 +164,16 @@ export async function POST(req: Request) {
     const createData = await createRes.json().catch(() => ({}));
     if (createRes.ok && createData?.data?.id) {
       profileId = Number(createData.data.id);
-      logger.debug("[CALC-SERVER] Profile created, profileId:", profileId);
+      logger.log("[CALC-SERVER] Profile created successfully:", {
+        profileId,
+        clientId: clientId || null,
+        publicCode,
+      });
     } else {
-      logger.error("[CALC-SERVER] Failed to create profile:", createData);
+      logger.error("[CALC-SERVER] Failed to create profile:", {
+        status: createRes.status,
+        error: createData?.errors?.[0]?.message || createData?.message,
+      });
       return NextResponse.json(
         { message: "Failed to create profile", error: createData },
         { status: createRes.status || 500 }
@@ -164,14 +181,23 @@ export async function POST(req: Request) {
     }
 
     // 2. Рассчитываем коды САЛ
+    logger.log("[CALC-SERVER] Calculating SAL codes:", { birthday });
     const codes = calculateSALCodes(birthday);
     if (!codes) {
-      logger.error("[CALC-SERVER] Failed to calculate SAL codes");
+      logger.error("[CALC-SERVER] Failed to calculate SAL codes:", { birthday });
       return NextResponse.json(
         { message: "Failed to calculate SAL codes" },
         { status: 400 }
       );
     }
+    
+    logger.log("[CALC-SERVER] SAL codes calculated:", {
+      personality: codes.personality,
+      connector: codes.connector,
+      realization: codes.realization,
+      generator: codes.generator,
+      mission: codes.mission,
+    });
 
     const codesArray = [
       codes.personality,
@@ -182,6 +208,11 @@ export async function POST(req: Request) {
     ];
 
     // 3. Генерируем консультацию
+    logger.log("[CALC-SERVER] Starting consultation generation:", {
+      type: calculationType,
+      profileId,
+    });
+    
     let consultationResult: any;
 
     try {
@@ -232,11 +263,19 @@ export async function POST(req: Request) {
         );
       }
 
-      logger.debug("[CALC-SERVER] Consultation generated successfully");
+      logger.log("[CALC-SERVER] Consultation generated successfully:", {
+        type: calculationType,
+        profileId,
+        hasResult: !!consultationResult,
+      });
     } catch (error: any) {
       logger.error("[CALC-SERVER] Error generating consultation:", {
         message: error?.message || String(error),
+        stack: error?.stack?.substring(0, 500),
         type: calculationType,
+        profileId,
+        name,
+        birthday,
       });
       return NextResponse.json(
         {
@@ -252,6 +291,11 @@ export async function POST(req: Request) {
       if (!token || !directusUrl) {
         throw new Error("Token or directusUrl is missing");
       }
+      logger.log("[CALC-SERVER] Saving consultation to profile:", {
+        profileId,
+        type: calculationType,
+      });
+      
       await saveConsultationToProfile(
         profileId,
         consultationResult,
@@ -260,10 +304,15 @@ export async function POST(req: Request) {
         token,
         directusUrl
       );
-      logger.debug("[CALC-SERVER] Consultation saved to profile successfully");
+      
+      logger.log("[CALC-SERVER] Consultation saved to profile successfully:", {
+        profileId,
+        type: calculationType,
+      });
     } catch (error: any) {
       logger.error("[CALC-SERVER] Error saving consultation:", {
         message: error?.message || String(error),
+        stack: error?.stack?.substring(0, 500),
         profileId,
         type: calculationType,
       });
@@ -281,6 +330,13 @@ export async function POST(req: Request) {
     }
 
     // 5. Возвращаем результат
+    logger.log("[CALC-SERVER] Calculation completed successfully:", {
+      profileId,
+      publicCode,
+      type: calculationType,
+      clientId: clientId || null,
+    });
+    
     return NextResponse.json({
       profileId,
       public_code: publicCode,
@@ -290,6 +346,10 @@ export async function POST(req: Request) {
     logger.error("[CALC-SERVER] Unexpected error:", {
       message: error?.message || String(error),
       stack: error?.stack?.substring(0, 500),
+      type: calculationType,
+      name,
+      birthday,
+      clientId: clientId || null,
     });
     return NextResponse.json(
       {

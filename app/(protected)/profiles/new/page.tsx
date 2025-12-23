@@ -119,7 +119,12 @@ export default function NewCalculationPage() {
           throw new Error(data?.message || "Calculation failed");
         }
         const profileId = data?.profileId || data?.data?.profileId || data?.id || data?.data?.id;
-        router.push(profileId ? `/profiles/${profileId}` : "/profiles");
+        // Сразу переходим на страницу профиля, там будет показан LoadingMessage с заготовленными надписями
+        if (profileId) {
+          router.push(`/profiles/${profileId}`);
+        } else {
+          router.push("/profiles");
+        }
       } else {
         // Для целевого, партнерского и детского расчета используем /api/calc
       const res = await fetch("/api/calc", {
@@ -135,8 +140,12 @@ export default function NewCalculationPage() {
       }
       
       const profileId = data?.profileId || data?.data?.profileId || data?.id;
-      if (profileId) router.push(`/profiles/${profileId}`);
-      else router.push("/profiles");
+      // Сразу переходим на страницу профиля, там будет показан LoadingMessage с заготовленными надписями
+      if (profileId) {
+        router.push(`/profiles/${profileId}`);
+      } else {
+        router.push("/profiles");
+      }
       }
     } catch (err: any) {
       setError(err.message || String(err));

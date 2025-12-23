@@ -2806,17 +2806,38 @@ export default function ProfileDetail() {
           }
           
           // Приоритет 2: Если это обработанное изображение из коллекции images (с полями id и code)
+          if (typeof img === 'object' && img.id) {
+            // Если id - это число, используем его для формирования S3 URL
+            const imageId = img.id;
+            if (/^\d+$/.test(String(imageId))) {
+              // Пробуем сформировать S3 URL напрямую
+              const s3Endpoint = process.env.NEXT_PUBLIC_S3_ENDPOINT || "https://s3.ru1.storage.beget.cloud";
+              const s3Bucket = process.env.NEXT_PUBLIC_S3_BUCKET || "da0eaeb06b35-sal-app";
+              const s3Path = process.env.NEXT_PUBLIC_S3_IMAGES_PATH || "sall_app/photo";
+              const cleanPath = s3Path.replace(/^\/+|\/+$/g, '');
+              // Используем path-style формат по умолчанию
+              const s3Url = `${s3Endpoint}/${s3Bucket}/${cleanPath}/${imageId}.jpeg`;
+              return s3Url;
+            }
+          }
+          
+          // Приоритет 3: Если это обработанное изображение из коллекции images (с полями id и code)
           if (typeof img === 'object' && img.code) {
             // Используем code для получения изображения
-            // Если code - это ID файла, используем /api/files/{code}
+            // Если code - это ID файла, используем S3 URL напрямую
             if (/^\d+$/.test(String(img.code))) {
-              return `/api/files/${img.code}`;
+              const s3Endpoint = process.env.NEXT_PUBLIC_S3_ENDPOINT || "https://s3.ru1.storage.beget.cloud";
+              const s3Bucket = process.env.NEXT_PUBLIC_S3_BUCKET || "da0eaeb06b35-sal-app";
+              const s3Path = process.env.NEXT_PUBLIC_S3_IMAGES_PATH || "sall_app/photo";
+              const cleanPath = s3Path.replace(/^\/+|\/+$/g, '');
+              const s3Url = `${s3Endpoint}/${s3Bucket}/${cleanPath}/${img.code}.jpeg`;
+              return s3Url;
             }
             // Иначе code может быть URL или другим идентификатором
             return img.code;
           }
           
-          // Приоритет 3: Если это объект файла Directus с полным URL
+          // Приоритет 4: Если это объект файла Directus с полным URL
           if (typeof img === 'object') {
             if (img.id) {
               // Используем API прокси для изображений
@@ -2827,12 +2848,20 @@ export default function ProfileDetail() {
             }
           }
           
-          // Приоритет 4: Если это строка
+          // Приоритет 5: Если это строка
           if (typeof img === 'string') {
             // Если уже полный URL
             if (img.startsWith('http')) return img;
             // Если это ID файла
-            if (/^\d+$/.test(img)) return `/api/files/${img}`;
+            if (/^\d+$/.test(img)) {
+              // Формируем S3 URL напрямую
+              const s3Endpoint = process.env.NEXT_PUBLIC_S3_ENDPOINT || "https://s3.ru1.storage.beget.cloud";
+              const s3Bucket = process.env.NEXT_PUBLIC_S3_BUCKET || "da0eaeb06b35-sal-app";
+              const s3Path = process.env.NEXT_PUBLIC_S3_IMAGES_PATH || "sall_app/photo";
+              const cleanPath = s3Path.replace(/^\/+|\/+$/g, '');
+              const s3Url = `${s3Endpoint}/${s3Bucket}/${cleanPath}/${img}.jpeg`;
+              return s3Url;
+            }
             // Иначе считаем это URL
             return img;
           }

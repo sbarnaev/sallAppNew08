@@ -73,9 +73,10 @@ export function calculateSALCodes(birthday: string): SALCodes | null {
     );
 
     // Код Реализации = сумма последних 2 цифр года (до 9)
-    const realization = digitSum1to9(
-      (year % 100).toString().split('').reduce((a, b) => a + parseInt(b, 10), 0)
-    );
+    // Если год заканчивается на 00 (например, 2000), то сумма = 0, но должно быть 9
+    const lastTwoDigits = year % 100;
+    const sumLastTwo = lastTwoDigits.toString().split('').reduce((a, b) => a + parseInt(b, 10), 0);
+    const realization = sumLastTwo === 0 ? 9 : digitSum1to9(sumLastTwo);
 
     // Код Генератора = (сумма цифр дня) × (сумма цифр месяца), затем до 9
     const sumDay = day.toString().split('').reduce((a, b) => a + parseInt(b, 10), 0);

@@ -31,7 +31,7 @@ function generatePublicCode(): string {
 }
 
 export async function POST(req: Request) {
-  logger.debug("[CALC] POST /api/calc");
+  logger.log("[CALC] POST /api/calc - Starting calculation");
   
   let token = cookies().get("directus_access_token")?.value;
   const refreshToken = cookies().get("directus_refresh_token")?.value;
@@ -46,7 +46,8 @@ export async function POST(req: Request) {
     hasRefreshToken: !!refreshToken,
     hasDirectusUrl: !!directusUrl,
     hasN8nUrl: !!n8nUrl,
-    n8nUrl: n8nUrl ? "configured" : "NOT SET"
+    n8nUrl: n8nUrl ? "configured" : "NOT SET",
+    useServerGeneration,
   });
 
   if (!token && !refreshToken) {
@@ -90,6 +91,17 @@ export async function POST(req: Request) {
 
   const { clientId, name, birthday, type, request, clientRequest, query, prompt, partnerName, partnerBirthday, goal } = payload || {};
   const publicCode = generatePublicCode();
+  const calculationType = type || "base";
+
+  logger.log("[CALC] Calculation request:", {
+    name,
+    birthday,
+    type: calculationType,
+    clientId: clientId || null,
+    publicCode,
+    hasRequest: !!(request || clientRequest || query || prompt),
+    useServerGeneration,
+  });
 
   // Функция для очистки текста от переносов строк и специальных символов
   function cleanText(text: string | null | undefined): string | null {
@@ -243,11 +255,21 @@ export async function POST(req: Request) {
         throw new Error(`Unknown calculation type: ${calculationType}`);
       }
 
+      logger.log("[CALC] Consultation generated successfully:", {
+        profileId,
+        type: calculationType,
+        hasResult: !!consultationResult,
+        codes: codesArray,
+      });
+
       // Сохраняем результат в профиль
       if (profileId) {
         if (!token || !directusUrl) {
+          logger.error("[CALC] Token or directusUrl missing before save");
           throw new Error("Token or directusUrl is missing");
         }
+        
+        logger.log("[CALC] Saving consultation to profile:", { profileId, type: calculationType });
         await saveConsultationToProfile(
           profileId,
           consultationResult,
@@ -256,19 +278,31 @@ export async function POST(req: Request) {
           token,
           directusUrl
         );
+        logger.log("[CALC] Consultation saved successfully:", { profileId });
       }
 
-      logger.debug("[CALC] Server generation completed successfully");
+      logger.log("[CALC] Calculation completed successfully:", {
+        profileId,
+        publicCode,
+        type: calculationType,
+        clientId: clientId || null,
+      });
+      
       return NextResponse.json({ profileId, public_code: publicCode });
     } catch (error: any) {
       logger.error("[CALC] Server generation error:", {
         message: error?.message || String(error),
         stack: error?.stack?.substring(0, 500),
+        type: calculationType,
+        name,
+        birthday,
+        clientId: clientId || null,
       });
       // Fallback на n8n если настроен
       if (n8nUrl) {
-        logger.debug("[CALC] Falling back to n8n after error");
+        logger.warn("[CALC] Falling back to n8n after server generation error");
       } else {
+        logger.error("[CALC] No n8n fallback available, returning error");
         return NextResponse.json(
           { message: "Server generation failed", error: error?.message || String(error) },
           { status: 500 }

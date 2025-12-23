@@ -353,6 +353,15 @@ export async function POST(req: NextRequest) {
 
   const url = `${baseUrl}/items/clients`;
 
+  logger.log("[CLIENTS] Creating new client:", {
+    name: clientData.name,
+    birthDate: clientData.birth_date,
+    gender: clientData.gender,
+    hasPhone: !!clientData.phone,
+    hasEmail: !!clientData.email,
+    ownerUserId: currentUser.id,
+  });
+
   try {
     const r = await fetch(url, {
       method: "POST",
@@ -368,10 +377,12 @@ export async function POST(req: NextRequest) {
 
     // Если токен истек, попробуем обновить его
     if (r.status === 401 && data?.errors?.[0]?.message === "Token expired.") {
+      logger.warn("[CLIENTS] Token expired, attempting refresh");
       // Используем функцию getValidToken для автоматического обновления токена
       const newToken = await getValidToken();
       
       if (newToken) {
+        logger.info("[CLIENTS] Token refreshed, retrying client creation");
         // Повторим запрос с новым токеном
         const retryRes = await fetch(url, {
           method: "POST",
@@ -385,13 +396,46 @@ export async function POST(req: NextRequest) {
 
         const retryData = await retryRes.json().catch(() => ({}));
 
+        if (retryRes.ok) {
+          const clientId = retryData?.data?.id || retryData?.id;
+          logger.log("[CLIENTS] Client created successfully (after token refresh):", {
+            clientId,
+            name: clientData.name,
+            status: retryRes.status,
+          });
+        } else {
+          logger.error("[CLIENTS] Failed to create client (after token refresh):", {
+            status: retryRes.status,
+            error: retryData?.errors?.[0]?.message || retryData?.message,
+          });
+        }
+
         return NextResponse.json(retryData, { status: retryRes.status });
       }
     }
 
+    if (r.ok) {
+      const clientId = data?.data?.id || data?.id;
+      logger.log("[CLIENTS] Client created successfully:", {
+        clientId,
+        name: clientData.name,
+        status: r.status,
+      });
+    } else {
+      logger.error("[CLIENTS] Failed to create client:", {
+        status: r.status,
+        error: data?.errors?.[0]?.message || data?.message,
+        clientData: { name: clientData.name, birthDate: clientData.birth_date },
+      });
+    }
+
     return NextResponse.json(data, { status: r.status });
   } catch (error: any) {
-    logger.error("Creating client - Fetch error:", error);
+    logger.error("[CLIENTS] Error creating client:", {
+      message: error?.message || String(error),
+      stack: error?.stack?.substring(0, 500),
+      clientData: { name: clientData.name, birthDate: clientData.birth_date },
+    });
     const errorMessage = error?.message || String(error);
     return NextResponse.json({ 
       message: "Ошибка соединения с Directus", 
