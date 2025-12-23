@@ -2479,6 +2479,21 @@ export default function ProfileDetail() {
               </section>
             )}
 
+            {/* Декомпозиция цели пары */}
+            {Array.isArray(item.goalDecomposition) && item.goalDecomposition.length > 0 && (
+              <section id="goal-decomposition" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
+                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">📋 Декомпозиция цели пары</h2>
+                <ol className="space-y-3 list-none pl-0">
+                  {item.goalDecomposition.map((goal: string, i: number) => (
+                    <li key={i} className="text-gray-700 leading-relaxed flex gap-3">
+                      <span className="font-semibold text-blue-600 flex-shrink-0">{i + 1}.</span>
+                      <span>{goal}</span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+
             {/* Совместимость ресурсов */}
             {item.compatibility && (
               <AccordionSection title="🤝 Совместимость ресурсов" id="compatibility">
