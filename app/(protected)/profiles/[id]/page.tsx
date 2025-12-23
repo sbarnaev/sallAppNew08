@@ -351,7 +351,7 @@ export default function ProfileDetail() {
   const [loading, setLoading] = useState(false);
   const [polling, setPolling] = useState(true);
   const pollingRef = useRef(true);
-  const [navigationExpanded, setNavigationExpanded] = useState(true);
+  const [navigationExpanded, setNavigationExpanded] = useState(false);
   const [expandAll, setExpandAll] = useState(false);
   const localUiStateRef = useRef<Record<string, boolean>>({});
   const [checkedMap, setCheckedMap] = useState<Record<string, boolean>>({});
@@ -1991,39 +1991,54 @@ export default function ProfileDetail() {
                         {mapPracticeKey(blockKey)}
                       </div>
                       {Array.isArray(list) ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {list.map((pr: any, j: number) => (
-                            <div key={j} className="rounded-xl border-2 border-blue-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
-                              <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                <span className="text-lg">✨</span>
-                                {pr.title}
-                              </h4>
-                              <div className="space-y-3">
-                                {pr.p1 && (
-                                  <div className="flex gap-2">
-                                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center">1</span>
-                                    <p className="text-sm leading-relaxed text-gray-700 flex-1">
-                                      {pr.p1}
+                        // Новый формат: массив строк
+                        list.every((item: any) => typeof item === 'string') ? (
+                          <ul className="space-y-3">
+                            {list.map((practice: string, j: number) => (
+                              <li key={j} className="flex items-start gap-3">
+                                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center mt-0.5">
+                                  {j + 1}
+                                </span>
+                                <p className="text-base leading-relaxed text-gray-800 flex-1">{practice}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          // Старый формат: массив объектов с title, p1, p2, description
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {list.map((pr: any, j: number) => (
+                              <div key={j} className="rounded-xl border-2 border-blue-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+                                <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                  <span className="text-lg">✨</span>
+                                  {pr.title}
+                                </h4>
+                                <div className="space-y-3">
+                                  {pr.p1 && (
+                                    <div className="flex gap-2">
+                                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center">1</span>
+                                      <p className="text-sm leading-relaxed text-gray-700 flex-1">
+                                        {pr.p1}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {pr.p2 && (
+                                    <div className="flex gap-2">
+                                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center">2</span>
+                                      <p className="text-sm leading-relaxed text-gray-700 flex-1">
+                                        {pr.p2}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {pr.description && (
+                                    <p className="text-xs leading-relaxed text-gray-600 italic mt-3 pt-3 border-t border-gray-200">
+                                      {pr.description}
                                     </p>
-                                  </div>
-                                )}
-                                {pr.p2 && (
-                                  <div className="flex gap-2">
-                                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center">2</span>
-                                    <p className="text-sm leading-relaxed text-gray-700 flex-1">
-                                      {pr.p2}
-                                    </p>
-                                  </div>
-                                )}
-                                {pr.description && (
-                                  <p className="text-xs leading-relaxed text-gray-600 italic mt-3 pt-3 border-t border-gray-200">
-                                    {pr.description}
-                                  </p>
-                                )}
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )
                       ) : (
                         <div className="text-sm text-gray-500">Нет данных</div>
                       )}
