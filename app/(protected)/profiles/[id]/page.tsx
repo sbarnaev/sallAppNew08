@@ -2072,7 +2072,12 @@ export default function ProfileDetail() {
             {(() => {
               const targetJson = (profile as any)?.target_json;
               if (targetJson) {
-                const parsed = typeof targetJson === 'string' ? JSON.parse(targetJson) : targetJson;
+                let parsed: any;
+                try {
+                  parsed = typeof targetJson === 'string' ? JSON.parse(targetJson) : targetJson;
+                } catch {
+                  return null;
+                }
                 if (parsed?.type === "child" && parsed.request) {
                   return (
                     <section id="child-request" className="rounded-2xl border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-pink-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
@@ -2297,7 +2302,12 @@ export default function ProfileDetail() {
             {(() => {
               const targetJson = (profile as any)?.target_json;
               if (!targetJson) return null;
-              const parsed = typeof targetJson === 'string' ? JSON.parse(targetJson) : targetJson;
+              let parsed: any;
+              try {
+                parsed = typeof targetJson === 'string' ? JSON.parse(targetJson) : targetJson;
+              } catch {
+                return null;
+              }
               if (parsed?.type === "target") {
                 return (
                   <section id="target-request" className="rounded-2xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
@@ -2667,7 +2677,21 @@ export default function ProfileDetail() {
             {(() => {
               const targetJson = (profile as any)?.target_json;
               if (targetJson) {
-                const parsed = typeof targetJson === 'string' ? JSON.parse(targetJson) : targetJson;
+                let parsed: any;
+                try {
+                  parsed = typeof targetJson === 'string' ? JSON.parse(targetJson) : targetJson;
+                } catch {
+                  // Если не удалось распарсить, используем старый формат
+                  if (item.goal) {
+                    return (
+                      <section id="goal" className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 shadow-sm">
+                        <h2 className="m-0 text-base font-bold text-gray-800 mb-3">🎯 Цель консультации</h2>
+                        <p className="mt-3 whitespace-pre-wrap leading-relaxed text-gray-800">{item.goal}</p>
+                      </section>
+                    );
+                  }
+                  return null;
+                }
                 if (parsed?.type === "partner" && parsed.goal) {
                   return (
                     <section id="goal" className="rounded-2xl border-2 border-pink-200 bg-gradient-to-br from-pink-50 to-rose-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
