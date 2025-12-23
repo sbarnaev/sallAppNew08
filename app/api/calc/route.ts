@@ -156,21 +156,26 @@ export async function POST(req: Request) {
         ...(ownerUserId ? { owner_user: ownerUserId } : {}),
       };
       
-      // Сохраняем данные запроса для целевого расчета
+      // Сохраняем данные запроса в target_json для всех типов расчетов
       if (type === "target" && targetRequest) {
-        profileData.target_request = targetRequest;
-      }
-      
-      // Сохраняем цель для партнерского расчета
-      if (type === "partner" && goal) {
-        profileData.partner_goal = cleanText(goal);
-      }
-      
-      // Сохраняем запрос родителей для детского расчета
-      if (type === "child") {
+        profileData.target_json = {
+          type: "target",
+          current: targetRequest.current,
+          want: targetRequest.want,
+          additional: targetRequest.additional || null,
+        };
+      } else if (type === "partner" && goal) {
+        profileData.target_json = {
+          type: "partner",
+          goal: cleanText(goal),
+        };
+      } else if (type === "child") {
         const childReq = cleanText(request ?? clientRequest ?? query ?? prompt ?? null);
         if (childReq) {
-          profileData.child_request = childReq;
+          profileData.target_json = {
+            type: "child",
+            request: childReq,
+          };
         }
       }
       

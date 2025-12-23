@@ -2069,13 +2069,13 @@ export default function ProfileDetail() {
         {items.map((item, idx) => (
           <div key={idx} className="space-y-6">
             {/* Запрос родителей */}
-            {(profile as any)?.child_request && (
+            {(profile as any)?.target_json && (profile as any).target_json.type === "child" && (profile as any).target_json.request && (
               <section id="child-request" className="rounded-2xl border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-pink-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
                 <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
                   <span className="text-2xl">📝</span>
                   Запрос родителей
                 </h2>
-                <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).child_request}</p>
+                <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_json.request}</p>
               </section>
             )}
             
@@ -2285,29 +2285,29 @@ export default function ProfileDetail() {
         {items.map((item, idx) => (
           <div key={idx} className="space-y-6">
             {/* Данные запроса для целевого расчета */}
-            {(profile as any)?.target_request && (
+            {(profile as any)?.target_json && (profile as any).target_json.type === "target" && (
               <section id="target-request" className="rounded-2xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
                 <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
                   <span className="text-2xl">📝</span>
                   Запрос клиента
                 </h2>
                 <div className="space-y-4">
-                  {(profile as any).target_request.current && (
+                  {(profile as any).target_json.current && (
                     <div>
                       <div className="text-sm font-semibold text-purple-700 mb-2">Что есть сейчас:</div>
-                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_request.current}</p>
+                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_json.current}</p>
                     </div>
                   )}
-                  {(profile as any).target_request.want && (
+                  {(profile as any).target_json.want && (
                     <div>
                       <div className="text-sm font-semibold text-purple-700 mb-2">Что клиент хочет:</div>
-                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_request.want}</p>
+                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_json.want}</p>
                     </div>
                   )}
-                  {(profile as any).target_request.additional && (
+                  {(profile as any).target_json.additional && (
                     <div>
                       <div className="text-sm font-semibold text-purple-700 mb-2">Дополнительная информация:</div>
-                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_request.additional}</p>
+                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_json.additional}</p>
                     </div>
                   )}
                 </div>
@@ -2647,13 +2647,13 @@ export default function ProfileDetail() {
         {items.map((item, idx) => (
           <div key={idx} className="space-y-6">
             {/* Цель консультации */}
-            {(profile as any)?.partner_goal ? (
+            {(profile as any)?.target_json && (profile as any).target_json.type === "partner" && (profile as any).target_json.goal ? (
               <section id="goal" className="rounded-2xl border-2 border-pink-200 bg-gradient-to-br from-pink-50 to-rose-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
                 <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
                   <span className="text-2xl">🎯</span>
                   Цель расчета
                 </h2>
-                <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).partner_goal}</p>
+                <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{(profile as any).target_json.goal}</p>
               </section>
             ) : item.goal ? (
               <section id="goal" className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 shadow-sm">
