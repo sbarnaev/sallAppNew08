@@ -157,8 +157,8 @@ export async function POST(req: Request) {
       };
       
       // Сохраняем данные запроса для целевого расчета
-      if (type === "target" && payload.targetRequest) {
-        profileData.target_request = payload.targetRequest;
+      if (type === "target" && targetRequest) {
+        profileData.target_request = targetRequest;
       }
       
       // Сохраняем цель для партнерского расчета
