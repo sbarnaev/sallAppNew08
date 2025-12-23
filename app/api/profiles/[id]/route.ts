@@ -429,7 +429,8 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         });
       }
     } catch (refreshError: any) {
-      logger.error("[DEBUG] Error refreshing token:", {
+      // Это нормальная ситуация, когда refresh token истек - логируем на уровне debug
+      logger.debug("[AUTH] Error refreshing token (expected if refresh token expired):", {
         message: refreshError?.message,
         code: refreshError?.code,
         cause: refreshError?.cause,
