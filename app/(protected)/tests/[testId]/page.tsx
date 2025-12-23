@@ -304,7 +304,7 @@ export default function TakeTestPage() {
                 )}
               </div>
             )}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-4 gap-2 sm:gap-3">
               {Array.from({ length: (question.max || 5) - (question.min || 1) + 1 }, (_, i) => {
                 const value = (question.min || 1) + i;
                 const isSelected = answers[question.id] === value;
@@ -313,7 +313,7 @@ export default function TakeTestPage() {
                   <button
                     key={value}
                     onClick={() => handleAnswer(value)}
-                    className={`flex-1 py-4 rounded-2xl border-2 font-bold text-lg transition-all duration-300 ${
+                    className={`flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 font-bold text-base sm:text-lg transition-all duration-300 ${
                       isSelected
                         ? "bg-gradient-to-r from-brand-600 to-brand-700 text-white border-brand-600 shadow-lg scale-105"
                         : "bg-white text-gray-700 border-gray-300 hover:border-brand-400 hover:bg-brand-50"
@@ -322,7 +322,7 @@ export default function TakeTestPage() {
                     <div className="flex flex-col items-center leading-tight">
                       <div>{value}</div>
                       {valueLabel && (
-                        <div className={`mt-1 text-xs ${isSelected ? "text-white/90" : "text-gray-500"} font-semibold`}>
+                        <div className={`mt-0.5 sm:mt-1 text-[10px] sm:text-xs ${isSelected ? "text-white/90" : "text-gray-500"} font-semibold`}>
                           {valueLabel}
                         </div>
                       )}

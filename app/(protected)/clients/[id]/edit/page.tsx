@@ -17,7 +17,9 @@ export default function EditClientPage() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [source, setSource] = useState("");
+  const [sourceOther, setSourceOther] = useState("");
   const [communicationMethod, setCommunicationMethod] = useState("");
+  const [communicationOther, setCommunicationOther] = useState("");
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
@@ -58,8 +60,8 @@ export default function EditClientPage() {
           birth_date: birthDate || null,
           phone: phone || null,
           email: email || null,
-          source: source || null,
-          communication_method: communicationMethod || null,
+          source: source === "other" && sourceOther.trim() ? sourceOther.trim() : (source || null),
+          communication_method: communicationMethod === "other" && communicationOther.trim() ? communicationOther.trim() : (communicationMethod || null),
           notes: notes || null,
         }),
       });
@@ -124,6 +126,16 @@ export default function EditClientPage() {
               <option value="advertising">Реклама</option>
               <option value="other">Другое</option>
             </select>
+            {source === "other" && (
+              <input
+                type="text"
+                className="w-full rounded-xl border p-3 bg-white mt-2"
+                placeholder="Укажите источник"
+                value={sourceOther}
+                onChange={(e) => setSourceOther(e.target.value.slice(0, 100))}
+                maxLength={100}
+              />
+            )}
           </div>
           <div>
             <label className="block text-sm mb-1">Способ общения</label>
@@ -138,6 +150,16 @@ export default function EditClientPage() {
               <option value="in_person">Лично</option>
               <option value="other">Другое</option>
             </select>
+            {communicationMethod === "other" && (
+              <input
+                type="text"
+                className="w-full rounded-xl border p-3 bg-white mt-2"
+                placeholder="Укажите способ общения"
+                value={communicationOther}
+                onChange={(e) => setCommunicationOther(e.target.value.slice(0, 100))}
+                maxLength={100}
+              />
+            )}
           </div>
         </div>
         <div>

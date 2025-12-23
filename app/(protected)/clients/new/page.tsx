@@ -11,7 +11,9 @@ export default function NewClientPage() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [source, setSource] = useState("");
+  const [sourceOther, setSourceOther] = useState("");
   const [communicationMethod, setCommunicationMethod] = useState("");
+  const [communicationOther, setCommunicationOther] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,8 +46,8 @@ export default function NewClientPage() {
           gender: gender || null,
           phone: phone.trim() || null,
           email: email.trim() || null,
-          source: source.trim() || null,
-          communication_method: communicationMethod.trim() || null,
+          source: source === "other" && sourceOther.trim() ? sourceOther.trim() : (source.trim() || null),
+          communication_method: communicationMethod === "other" && communicationOther.trim() ? communicationOther.trim() : (communicationMethod.trim() || null),
           notes: notes || null,
         }),
       });
@@ -232,6 +234,16 @@ export default function NewClientPage() {
                 <option value="advertising">Реклама</option>
                 <option value="other">Другое</option>
               </select>
+              {source === "other" && (
+                <input
+                  type="text"
+                  className="w-full rounded-xl border p-3 mt-2"
+                  placeholder="Укажите источник"
+                  value={sourceOther}
+                  onChange={(e) => setSourceOther(e.target.value.slice(0, 100))}
+                  maxLength={100}
+                />
+              )}
             </div>
 
             <div className="space-y-2">
@@ -251,6 +263,16 @@ export default function NewClientPage() {
                 <option value="in_person">Лично</option>
                 <option value="other">Другое</option>
               </select>
+              {communicationMethod === "other" && (
+                <input
+                  type="text"
+                  className="w-full rounded-xl border p-3 mt-2"
+                  placeholder="Укажите способ общения"
+                  value={communicationOther}
+                  onChange={(e) => setCommunicationOther(e.target.value.slice(0, 100))}
+                  maxLength={100}
+                />
+              )}
             </div>
           </div>
         </div>

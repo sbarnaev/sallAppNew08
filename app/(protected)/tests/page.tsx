@@ -12,6 +12,17 @@ export default function TestsPage({ searchParams }: { searchParams: Record<strin
       {/* Заголовок */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
         <div className="space-y-2">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/dashboard"
+              className="text-gray-600 hover:text-gray-900 text-sm font-semibold flex items-center gap-2 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Назад
+            </Link>
+          </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent leading-tight">
             Психологическое тестирование
           </h1>

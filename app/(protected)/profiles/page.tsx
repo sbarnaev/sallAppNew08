@@ -157,8 +157,9 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
           </div>
         )}
         {profiles.map((p:any) => {
-          // Определяем тип расчета из raw_json
+          // Определяем тип расчета из raw_json и извлекаем запрос
           let consultationType = "Базовый";
+          let requestText = "";
           try {
             let payload: any = p.raw_json;
             if (typeof payload === "string") payload = JSON.parse(payload);
@@ -168,9 +169,23 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
                   item.partnerCodes || 
                   (item.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant))) {
                 consultationType = "Партнерский";
+                // Для партнерского - берем goal
+                if (item.goal && typeof item.goal === "string") {
+                  requestText = item.goal;
+                }
               } else if ((item.goalDecomposition || item.warnings || item.plan123 || item.request) && 
                          !item.opener && !item.personalitySummary) {
                 consultationType = "Целевой";
+                // Для целевого - берем request
+                if (item.request && typeof item.request === "string") {
+                  requestText = item.request;
+                }
+              } else if (item.childPotential || item.upbringingRecommendations || item.developmentFeatures) {
+                consultationType = "Детский";
+                // Для детского - берем request (если есть)
+                if (item.request && typeof item.request === "string") {
+                  requestText = item.request;
+                }
               }
             }
           } catch {}
@@ -179,6 +194,9 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
           const clientName = client?.name || (p.client_id ? `Клиент #${p.client_id}` : "Без клиента");
           const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString("ru-RU") : "";
           const birthDateStr = client?.birth_date ? new Date(client.birth_date).toLocaleDateString("ru-RU") : null;
+          
+          // Обрезаем запрос, если слишком длинный
+          const displayRequest = requestText ? (requestText.length > 100 ? requestText.substring(0, 100) + "..." : requestText) : "";
           
           return (
             <div key={p.id} className="card p-5 hover:shadow-md transition-all duration-200 border border-gray-200 relative group">
@@ -200,6 +218,14 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                       <span className="text-gray-600">Дата рождения: {birthDateStr}</span>
+                    </div>
+                  )}
+                  {displayRequest && (
+                    <div className="flex items-start gap-2.5 pt-1">
+                      <svg className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span className="text-gray-700 italic text-xs leading-relaxed">{displayRequest}</span>
                     </div>
                   )}
                 </div>
