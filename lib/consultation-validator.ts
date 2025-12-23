@@ -25,15 +25,15 @@ export function validateBaseConsultation(data: any): ValidationResult {
   // Проверка обязательных полей
   const requiredFields = [
     "opener",
-    "personalitySummary",
+    "coreTask",
     "strengths",
     "weaknesses",
-    "happinessFormula",
     "resourceSignals",
     "deficitSignals",
-    "codesExplanation",
-    "conflicts",
-    "practices",
+    "keyConflicts",
+    "levers",
+    "focusNow",
+    "consultantQuestions",
   ];
 
   for (const field of requiredFields) {
@@ -55,23 +55,42 @@ export function validateBaseConsultation(data: any): ValidationResult {
     }
   };
 
-  checkArrayLength(data.personalitySummary, 3, 3, "personalitySummary");
+  // Проверка строковых полей
+  if (data.opener && typeof data.opener !== "string") {
+    errors.push("Поле opener должно быть строкой");
+  }
+  if (data.coreTask && typeof data.coreTask !== "string") {
+    errors.push("Поле coreTask должно быть строкой");
+  }
+  if (data.focusNow && typeof data.focusNow !== "string") {
+    errors.push("Поле focusNow должно быть строкой");
+  }
+
   checkArrayLength(data.strengths, 7, 7, "strengths");
   checkArrayLength(data.weaknesses, 7, 7, "weaknesses");
-  checkArrayLength(data.happinessFormula, 2, 3, "happinessFormula");
   checkArrayLength(data.resourceSignals, 10, 10, "resourceSignals");
   checkArrayLength(data.deficitSignals, 10, 10, "deficitSignals");
-  checkArrayLength(data.codesExplanation, 3, 5, "codesExplanation");
-  checkArrayLength(data.conflicts, 5, 5, "conflicts");
+  checkArrayLength(data.keyConflicts, 2, 2, "keyConflicts");
+  checkArrayLength(data.levers, 3, 3, "levers");
+  checkArrayLength(data.consultantQuestions, 3, 3, "consultantQuestions");
 
-  // Проверка practices
-  if (data.practices && typeof data.practices === "object") {
-    const practiceResources = ["personality", "connector", "realization", "generator", "mission"];
-    for (const resource of practiceResources) {
-      checkArrayLength(data.practices[resource], 3, 3, `practices.${resource}`);
-    }
-  } else {
-    errors.push("Поле practices должно быть объектом");
+  // Проверка структуры keyConflicts
+  if (data.keyConflicts && Array.isArray(data.keyConflicts)) {
+    data.keyConflicts.forEach((conflict: any, index: number) => {
+      if (!conflict || typeof conflict !== "object") {
+        errors.push(`keyConflicts[${index}] должен быть объектом`);
+        return;
+      }
+      if (!conflict.type || !conflict.description || !conflict.manifestations || !conflict.whyStuck) {
+        errors.push(`keyConflicts[${index}] должен содержать type, description, manifestations и whyStuck`);
+      }
+      if (conflict.type && !["ОСНОВНОЙ КОНФЛИКТ", "ВТОРИЧНЫЙ КОНФЛИКТ"].includes(conflict.type)) {
+        errors.push(`keyConflicts[${index}].type должен быть "ОСНОВНОЙ КОНФЛИКТ" или "ВТОРИЧНЫЙ КОНФЛИКТ"`);
+      }
+      if (!Array.isArray(conflict.manifestations)) {
+        errors.push(`keyConflicts[${index}].manifestations должен быть массивом`);
+      }
+    });
   }
 
   // Проверка на смешивание weaknesses и resourceSignals
@@ -106,21 +125,6 @@ export function validateBaseConsultation(data: any): ValidationResult {
     }
   }
 
-  // Проверка структуры conflicts
-  if (data.conflicts && Array.isArray(data.conflicts)) {
-    data.conflicts.forEach((conflict: any, index: number) => {
-      if (!conflict || typeof conflict !== "object") {
-        errors.push(`conflicts[${index}] должен быть объектом`);
-        return;
-      }
-      if (!conflict.title || !conflict.description || !conflict.manifestations || !conflict.advice) {
-        errors.push(`conflicts[${index}] должен содержать title, description, manifestations и advice`);
-      }
-      if (!Array.isArray(conflict.manifestations)) {
-        errors.push(`conflicts[${index}].manifestations должен быть массивом`);
-      }
-    });
-  }
 
   return {
     valid: errors.length === 0,

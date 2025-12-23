@@ -56,7 +56,7 @@ function createBaseUserPrompts(
   return [
     {
       role: "user",
-      content: `Входные данные профиля САЛ клиента ${name} ${formattedBirthday} в поле codes:`,
+      content: `Входные данные профиля САЛ клиента ${name} ${formattedBirthday} (используй дату рождения для общего понимания возраста клиента) в поле codes:`,
     },
     {
       role: "user",
@@ -69,10 +69,17 @@ function createBaseUserPrompts(
  * Формирует пользовательский промпт для целевого расчета
  */
 function createTargetUserPrompt(
+  name: string,
+  birthday: string,
   request: string,
   codesDescription: string
 ): string {
-  return `Запрос клиента: ${request} ${codesDescription}`;
+  // Форматируем дату в DD.MM.YYYY
+  const formattedBirthday = birthday.includes(".")
+    ? birthday
+    : birthday.split("-").reverse().join(".");
+
+  return `Запрос клиента: ${request} ${name} ${formattedBirthday} (дата рождения используется для общего понимания возраста клиента) ${codesDescription}`;
 }
 
 /**
@@ -89,9 +96,9 @@ function createPartnerUserPrompt(
 
   return `Запрос пары: ${goal}
 
-Профиль первого участника: ${firstParticipant.name} ${formatBirthday(firstParticipant.birthday)} ${firstParticipant.codesDescription}
+Профиль первого участника: ${firstParticipant.name} ${formatBirthday(firstParticipant.birthday)} (дата рождения используется для общего понимания возраста первого участника) ${firstParticipant.codesDescription}
 
-Профиль второго участника: ${secondParticipant.name} ${formatBirthday(secondParticipant.birthday)} ${secondParticipant.codesDescription}`;
+Профиль второго участника: ${secondParticipant.name} ${formatBirthday(secondParticipant.birthday)} (дата рождения используется для общего понимания возраста второго участника) ${secondParticipant.codesDescription}`;
 }
 
 /**
@@ -117,7 +124,7 @@ function createChildUserPrompts(
   return [
     {
       role: "user",
-      content: `Входные данные профиля САЛ ребенка ${name} ${formattedBirthday} в поле codes:`,
+      content: `Входные данные профиля САЛ ребенка ${name} ${formattedBirthday} (дата рождения используется для общего понимания возраста ребенка) в поле codes:`,
     },
     {
       role: "user",
@@ -483,7 +490,7 @@ export async function generateTargetConsultation(
   const reasoning = getReasoning("target");
 
   // Формируем пользовательский промпт
-  const userPrompt = createTargetUserPrompt(input.request, codesDescription);
+  const userPrompt = createTargetUserPrompt(input.name, input.birthday, input.request, codesDescription);
 
   // Вызываем API
   const result = await callOpenAI(systemPrompt, userPrompt, textFormat, model, reasoning);
