@@ -5,7 +5,7 @@
 
 import { logger } from "./logger";
 import { getProfileCodes, formatCodesForPrompt, ProfileCodes } from "./sal-interpretations";
-import { loadPrompt, getSystemPrompt, getJsonSchema, getModel, getReasoning } from "./prompt-loader";
+import { loadPrompt, getSystemPrompt, getJsonSchema, getTextFormat, getModel, getReasoning } from "./prompt-loader";
 import { validateConsultation } from "./consultation-validator";
 
 export type ConsultationType = "base" | "target" | "partner" | "child";
@@ -132,7 +132,7 @@ function createChildUserPrompts(
 async function callOpenAI(
   systemPrompt: string,
   userPrompts: string | Array<{ role: string; content: string }>,
-  jsonSchema: any,
+  jsonSchemaOrTextFormat: any,
   model: string,
   reasoning: any
 ): Promise<any> {
@@ -173,12 +173,21 @@ async function callOpenAI(
   }
 
   // Добавляем JSON schema для структурированного ответа
-  if (jsonSchema) {
+  // Важно: для OpenAI Responses API при type=json_schema обязательны text.format.name и schema
+  if (jsonSchemaOrTextFormat) {
+    const schema = jsonSchemaOrTextFormat?.schema ?? jsonSchemaOrTextFormat;
+    const name = jsonSchemaOrTextFormat?.name ?? "sal_consult_schema";
+    const strict =
+      typeof jsonSchemaOrTextFormat?.strict === "boolean"
+        ? jsonSchemaOrTextFormat.strict
+        : true;
+
     requestBody.text = {
       format: {
         type: "json_schema",
-        strict: true,
-        schema: jsonSchema,
+        name,
+        strict,
+        schema,
       },
     };
   }
@@ -186,7 +195,7 @@ async function callOpenAI(
   logger.debug("[SAL-GENERATION] OpenAI request:", {
     url: apiUrl,
     model,
-    hasSchema: !!jsonSchema,
+    hasSchema: !!jsonSchemaOrTextFormat,
     hasReasoning: !!reasoning,
     systemPromptLength: systemPrompt.length,
     userPromptsCount: Array.isArray(userPrompts) ? userPrompts.length : 1,
@@ -412,7 +421,12 @@ export async function generateBaseConsultation(
 
   // Загружаем промпт
   const systemPrompt = getSystemPrompt("base");
-  const jsonSchema = getJsonSchema("base");
+  const textFormat =
+    getTextFormat("base") ?? {
+      schema: getJsonSchema("base"),
+      name: "sal_consult_prep",
+      strict: true,
+    };
   const model = getModel("base");
   const reasoning = getReasoning("base");
 
@@ -420,7 +434,7 @@ export async function generateBaseConsultation(
   const userPrompts = createBaseUserPrompts(input.name, input.birthday, codesDescription);
 
   // Вызываем API
-  const result = await callOpenAI(systemPrompt, userPrompts, jsonSchema, model, reasoning);
+  const result = await callOpenAI(systemPrompt, userPrompts, textFormat, model, reasoning);
 
   // Валидация результата
   const validation = validateConsultation(result, "base");
@@ -459,7 +473,12 @@ export async function generateTargetConsultation(
 
   // Загружаем промпт
   const systemPrompt = getSystemPrompt("target");
-  const jsonSchema = getJsonSchema("target");
+  const textFormat =
+    getTextFormat("target") ?? {
+      schema: getJsonSchema("target"),
+      name: "sal_target_consult",
+      strict: true,
+    };
   const model = getModel("target");
   const reasoning = getReasoning("target");
 
@@ -467,7 +486,7 @@ export async function generateTargetConsultation(
   const userPrompt = createTargetUserPrompt(input.request, codesDescription);
 
   // Вызываем API
-  const result = await callOpenAI(systemPrompt, userPrompt, jsonSchema, model, reasoning);
+  const result = await callOpenAI(systemPrompt, userPrompt, textFormat, model, reasoning);
 
   // Валидация результата
   const validation = validateConsultation(result, "target");
@@ -509,7 +528,12 @@ export async function generatePartnerConsultation(
 
   // Загружаем промпт
   const systemPrompt = getSystemPrompt("partner");
-  const jsonSchema = getJsonSchema("partner");
+  const textFormat =
+    getTextFormat("partner") ?? {
+      schema: getJsonSchema("partner"),
+      name: "sal_partner_consult",
+      strict: true,
+    };
   const model = getModel("partner");
   const reasoning = getReasoning("partner");
 
@@ -529,7 +553,7 @@ export async function generatePartnerConsultation(
   );
 
   // Вызываем API
-  const result = await callOpenAI(systemPrompt, userPrompt, jsonSchema, model, reasoning);
+  const result = await callOpenAI(systemPrompt, userPrompt, textFormat, model, reasoning);
 
   // Валидация результата
   const validation = validateConsultation(result, "partner");
@@ -569,7 +593,12 @@ export async function generateChildConsultation(
 
   // Загружаем промпт
   const systemPrompt = getSystemPrompt("child");
-  const jsonSchema = getJsonSchema("child");
+  const textFormat =
+    getTextFormat("child") ?? {
+      schema: getJsonSchema("child"),
+      name: "sal_child_consult_structure",
+      strict: true,
+    };
   const model = getModel("child");
   const reasoning = getReasoning("child");
 
@@ -582,7 +611,7 @@ export async function generateChildConsultation(
   );
 
   // Вызываем API
-  const result = await callOpenAI(systemPrompt, userPrompts, jsonSchema, model, reasoning);
+  const result = await callOpenAI(systemPrompt, userPrompts, textFormat, model, reasoning);
 
   // Валидация результата
   const validation = validateConsultation(result, "child");

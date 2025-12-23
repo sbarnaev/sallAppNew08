@@ -88,6 +88,19 @@ export function getJsonSchema(promptType: "base" | "target" | "partner" | "child
 }
 
 /**
+ * Получает полный text.format (нужно для Responses API: обязательны type/name/strict/schema)
+ */
+export function getTextFormat(promptType: "base" | "target" | "partner" | "child"): {
+  type?: string;
+  name?: string;
+  strict?: boolean;
+  schema?: any;
+} | null {
+  const prompt = loadPrompt(promptType);
+  return prompt?.text?.format || null;
+}
+
+/**
  * Получает модель из загруженного промпта
  */
 export function getModel(promptType: "base" | "target" | "partner" | "child"): string {

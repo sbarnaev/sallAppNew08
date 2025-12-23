@@ -27,6 +27,10 @@ export default function NewCalculationPage() {
   const [partnerGoal, setPartnerGoal] = useState<string>("");
   const canStartPartner = Boolean(name && birthday && partnerName && partnerBirthday && partnerGoal);
 
+  // Поля для детского расчета
+  const [childRequest, setChildRequest] = useState<string>("");
+  const canStartChild = Boolean(name && birthday); // запрос опционален
+
   useEffect(() => {
     if (clientIdParam) {
       setClientId(clientIdParam);
@@ -55,7 +59,7 @@ export default function NewCalculationPage() {
       .trim();
   }
 
-  async function startCalc(type: "base" | "target" | "partner") {
+  async function startCalc(type: "base" | "target" | "partner" | "child") {
     setError(null);
     if (!name || !birthday) {
       setError("Нет имени или даты рождения. Подождите автозаполнение или используйте форму ниже.");
@@ -98,6 +102,10 @@ export default function NewCalculationPage() {
         }
         payload.goal = cleanText(partnerGoal);
       }
+      if (type === "child") {
+        const req = cleanText(childRequest || "");
+        if (req) payload.request = req;
+      }
 
       // Для базового расчета используем n8n через /api/calc-base
       if (type === "base") {
@@ -113,7 +121,7 @@ export default function NewCalculationPage() {
         const profileId = data?.profileId || data?.data?.profileId || data?.id || data?.data?.id;
         router.push(profileId ? `/profiles/${profileId}` : "/profiles");
       } else {
-        // Для целевого и партнерского расчета используем старый API через n8n
+        // Для целевого, партнерского и детского расчета используем /api/calc
       const res = await fetch("/api/calc", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -413,6 +421,45 @@ export default function NewCalculationPage() {
                 )}
               </button>
             </div>
+          </div>
+
+          {/* Детский расчет */}
+          <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 flex flex-col h-full shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14a4 4 0 10-4-4 4 4 0 004 4zm7 7a7 7 0 00-14 0" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Детский</h3>
+                <p className="text-sm text-gray-500">Потенциал + рекомендации</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Анализ профиля ребёнка: потенциал, особенности развития, рекомендации по воспитанию, обучению и хобби.
+              Можно добавить запрос родителей (опционально).
+            </p>
+
+            <div className="space-y-2 mb-6">
+              <label className="block text-sm font-medium text-gray-700">
+                Запрос родителей (опционально)
+              </label>
+              <textarea
+                className="w-full rounded-xl border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-200 focus:border-rose-300 min-h-[110px]"
+                placeholder="Например: ребёнок очень активный, сложно концентрируется; как помочь?"
+                value={childRequest}
+                onChange={(e) => setChildRequest(e.target.value)}
+              />
+            </div>
+
+            <button
+              className="mt-auto inline-flex items-center justify-center rounded-xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || !canStartChild}
+              onClick={() => startCalc("child")}
+            >
+              {loading ? "Считаем..." : "Запустить детский расчёт"}
+            </button>
           </div>
         </div>
 
