@@ -1,4 +1,5 @@
 import { getDirectusUrl } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 /**
  * Обновляет access token через refresh token
@@ -22,14 +23,17 @@ export async function refreshAccessToken(refreshToken: string): Promise<string |
         });
 
         if (!res.ok) {
-            console.error("[AUTH] Token refresh failed:", res.status, res.statusText);
+            // Это нормальная ситуация, когда refresh token истек - пользователь должен перелогиниться
+            // Логируем на уровне debug, а не error, чтобы не засорять логи
+            logger.debug("[AUTH] Token refresh failed (expected if refresh token expired):", res.status, res.statusText);
             return null;
         }
 
         const data = await res.json().catch(() => ({}));
         return data?.data?.access_token || null;
     } catch (error) {
-        console.error("[AUTH] Error refreshing token:", error);
+        // Сетевые ошибки логируем на уровне debug
+        logger.debug("[AUTH] Error refreshing token (network/timeout):", error instanceof Error ? error.message : String(error));
         return null;
     }
 }
