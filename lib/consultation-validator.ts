@@ -80,16 +80,33 @@ export function validateBaseConsultation(data: any): ValidationResult {
     if (typeof data.practices !== "object" || Array.isArray(data.practices)) {
       errors.push("Поле practices должно быть объектом");
     } else {
-      // Проверяем, что practices содержит массивы строк
-      Object.entries(data.practices).forEach(([key, value]: [string, any]) => {
-        if (!Array.isArray(value)) {
-          errors.push(`Поле practices.${key} должно быть массивом`);
+      // Проверяем, что practices содержит массивы объектов с title, p1, p2
+      const requiredKeys = ["personality", "connector", "realization", "generator", "mission"];
+      requiredKeys.forEach((key) => {
+        if (!(key in data.practices)) {
+          errors.push(`Поле practices.${key} обязательно`);
         } else {
-          value.forEach((item: any, idx: number) => {
-            if (typeof item !== "string") {
-              errors.push(`Поле practices.${key}[${idx}] должно быть строкой`);
-            }
-          });
+          const value = (data.practices as any)[key];
+          if (!Array.isArray(value)) {
+            errors.push(`Поле practices.${key} должно быть массивом`);
+          } else {
+            checkArrayLength(value, 3, 3, `practices.${key}`);
+            value.forEach((item: any, idx: number) => {
+              if (typeof item !== "object" || !item) {
+                errors.push(`Поле practices.${key}[${idx}] должно быть объектом`);
+              } else {
+                if (!item.title || typeof item.title !== "string") {
+                  errors.push(`Поле practices.${key}[${idx}].title обязательно и должно быть строкой`);
+                }
+                if (!item.p1 || typeof item.p1 !== "string") {
+                  errors.push(`Поле practices.${key}[${idx}].p1 обязательно и должно быть строкой`);
+                }
+                if (!item.p2 || typeof item.p2 !== "string") {
+                  errors.push(`Поле practices.${key}[${idx}].p2 обязательно и должно быть строкой`);
+                }
+              }
+            });
+          }
         }
       });
     }
