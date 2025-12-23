@@ -29,7 +29,8 @@ export default function NewCalculationPage() {
 
   // Поля для детского расчета
   const [childRequest, setChildRequest] = useState<string>("");
-  const canStartChild = Boolean(name && birthday); // запрос опционален
+  const [childBirthday, setChildBirthday] = useState<string>(""); // дата рождения ребенка (дд.мм.гггг)
+  const canStartChild = Boolean(name && childBirthday); // имя клиента (родителя) и дата рождения ребенка обязательны
 
   useEffect(() => {
     if (clientIdParam) {
@@ -61,9 +62,18 @@ export default function NewCalculationPage() {
 
   async function startCalc(type: "base" | "target" | "partner" | "child") {
     setError(null);
-    if (!name || !birthday) {
-      setError("Нет имени или даты рождения. Подождите автозаполнение или используйте форму ниже.");
-      return;
+    if (type === "child") {
+      // Для детского расчета нужны имя клиента (родителя) и дата рождения ребенка
+      if (!name || !childBirthday) {
+        setError("Для детского расчета заполните имя клиента (родителя) и дату рождения ребенка.");
+        return;
+      }
+    } else {
+      // Для остальных расчетов нужны имя и дата рождения клиента
+      if (!name || !birthday) {
+        setError("Нет имени или даты рождения. Подождите автозаполнение или используйте форму ниже.");
+        return;
+      }
     }
     if (type === "partner") {
       if (!partnerName || !partnerBirthday || !partnerGoal) {
@@ -103,6 +113,16 @@ export default function NewCalculationPage() {
         payload.goal = cleanText(partnerGoal);
       }
       if (type === "child") {
+        // Для детского расчета используем дату рождения ребенка, а не клиента
+        // Преобразуем дд.мм.гггг в YYYY-MM-DD
+        const m = childBirthday.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+        if (m) {
+          const [, dd, mm, yyyy] = m;
+          payload.birthday = `${yyyy}-${mm}-${dd}`;
+        } else {
+          // Если формат не дд.мм.гггг, пробуем использовать как есть (может быть уже YYYY-MM-DD)
+          payload.birthday = childBirthday;
+        }
         const req = cleanText(childRequest || "");
         if (req) payload.request = req;
       }
@@ -450,16 +470,55 @@ export default function NewCalculationPage() {
               Можно добавить запрос родителей (опционально).
             </p>
 
-            <div className="space-y-2 mb-6">
-              <label className="block text-sm font-medium text-gray-700">
-                Запрос родителей (опционально)
-              </label>
-              <textarea
-                className="w-full rounded-xl border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-200 focus:border-rose-300 min-h-[110px]"
-                placeholder="Например: ребёнок очень активный, сложно концентрируется; как помочь?"
-                value={childRequest}
-                onChange={(e) => setChildRequest(e.target.value)}
-              />
+            <div className="space-y-4 flex-grow flex flex-col">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Дата рождения ребёнка <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    className="w-full rounded-xl border-2 border-gray-200 p-3 text-sm focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition"
+                    placeholder="дд.мм.гггг"
+                    value={childBirthday}
+                    onChange={(e) => {
+                      // Маска: DD.MM.YYYY (ввод подряд цифр)
+                      const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+                      const parts = [digits.slice(0,2), digits.slice(2,4), digits.slice(4,8)].filter(Boolean);
+                      const masked = parts.join(".");
+                      setChildBirthday(masked);
+                    }}
+                  />
+                  <input
+                    type="date"
+                    className="rounded-xl border-2 border-gray-200 p-3 text-sm focus:border-rose-500 focus:ring-2 focus:ring-rose-200 bg-white transition"
+                    value={(childBirthday.match(/^(\d{2})\.(\d{2})\.(\d{4})$/) ? `${childBirthday.slice(6,10)}-${childBirthday.slice(3,5)}-${childBirthday.slice(0,2)}` : "")}
+                    onChange={(e) => {
+                      const iso = e.target.value; // YYYY-MM-DD
+                      if (iso) {
+                        const [yyyy, mm, dd] = iso.split("-");
+                        setChildBirthday(`${dd}.${mm}.${yyyy}`);
+                      } else {
+                        setChildBirthday("");
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Запрос родителей (опционально)
+                </label>
+                <textarea
+                  className="w-full rounded-xl border-2 border-gray-200 p-3 text-sm resize-none focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition"
+                  placeholder="Например: ребёнок очень активный, сложно концентрируется; как помочь?"
+                  value={childRequest}
+                  onChange={(e) => setChildRequest(e.target.value)}
+                  rows={3}
+                />
+              </div>
             </div>
 
             <button

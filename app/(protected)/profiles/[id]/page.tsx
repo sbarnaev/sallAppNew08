@@ -3235,6 +3235,7 @@ export default function ProfileDetail() {
         if (consultationType === "base") {
           menuItems.push(
             { id: "opener", label: "Скажите клиенту", icon: "❗" },
+            { id: "coreTask", label: "Ключевая задача", icon: "🎯" },
             { id: "personality", label: "Описание личности", icon: "👤" },
             { id: "codes", label: "Пояснение кодов", icon: "🔢" },
             { id: "strengths", label: "Сильные стороны", icon: "⚖️" },
@@ -3242,7 +3243,11 @@ export default function ProfileDetail() {
             { id: "happiness", label: "Формула счастья", icon: "☺️" },
             { id: "resource-signals", label: "Признаки плюса", icon: "✅" },
             { id: "deficit-signals", label: "Признаки минуса", icon: "❌" },
+            { id: "keyConflicts", label: "Ключевые конфликты", icon: "⚠️" },
             { id: "conflicts", label: "Конфликты и проблемы", icon: "⚠️" },
+            { id: "levers", label: "Рычаги влияния", icon: "🔧" },
+            { id: "focusNow", label: "Фокус на ближайший период", icon: "🎯" },
+            { id: "consultantQuestions", label: "Вопросы для консультанта", icon: "❓" },
             { id: "practices", label: "Практики", icon: "💡" }
           );
         } else if (consultationType === "target") {
@@ -3262,6 +3267,7 @@ export default function ProfileDetail() {
         } else if (consultationType === "partner") {
           menuItems.push(
             { id: "goal", label: "Цель консультации", icon: "🎯" },
+            { id: "goal-decomposition", label: "Декомпозиция цели пары", icon: "📋" },
             { id: "warnings", label: "Предупреждения", icon: "⚠️" },
             { id: "compatibility", label: "Совместимость ресурсов", icon: "🤝" },
             { id: "conflict-zones", label: "Зоны конфликтов", icon: "⚔️" },
@@ -3274,6 +3280,19 @@ export default function ProfileDetail() {
             { id: "what-if", label: "Что делать в разных ситуациях", icon: "🔄" },
             { id: "objections", label: "Обработка возражений", icon: "💬" },
             { id: "strategy", label: "Финальная стратегия", icon: "✅" }
+          );
+        } else if (consultationType === "child") {
+          menuItems.push(
+            { id: "opener", label: "Скажите родителям", icon: "👶" },
+            { id: "childPotential", label: "Потенциал ребенка", icon: "🌟" },
+            { id: "developmentFeatures", label: "Особенности развития", icon: "🌱" },
+            { id: "upbringingRecommendations", label: "Рекомендации по воспитанию", icon: "👨‍👩‍👧‍👦" },
+            { id: "educationalApproach", label: "Подход к обучению", icon: "📚" },
+            { id: "communicationStyle", label: "Стиль общения", icon: "🗣️" },
+            { id: "challengesAndSolutions", label: "Вызовы и решения", icon: "🚧" },
+            { id: "activitiesAndHobbies", label: "Активности и хобби", icon: "🎨" },
+            { id: "parentChildInteraction", label: "Взаимодействие родитель-ребенок", icon: "🤝" },
+            { id: "futureProspects", label: "Перспективы будущего", icon: "🔮" }
           );
         }
 
