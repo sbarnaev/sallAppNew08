@@ -2376,29 +2376,57 @@ export default function ProfileDetail() {
               </section>
             )}
 
-            {/* Вопросы для уточнения */}
-            {Array.isArray(item.currentDiagnostics?.questions) && item.currentDiagnostics.questions.length > 0 && (
-              <section id="questions" className="rounded-2xl border-2 border-blue-200 bg-white p-6 shadow-sm">
-                <h2 className="m-0 text-base font-bold text-gray-800 mb-3">❓ Вопросы для уточнения</h2>
-                <div className="space-y-3">
-                  {item.currentDiagnostics.questions.map((q: any, i: number) => (
-                    <div key={i} className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                      <p className="text-gray-800 mb-1">{q.question}</p>
-                      {q.salResource && (
-                        <span className="text-xs text-gray-500">Ресурс: {q.salResource}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
             {/* Диагностика */}
             {item.currentDiagnostics && (
               <AccordionSection title="🔍 Диагностика" id="diagnostics">
                 <div className="space-y-6">
+                  {/* Что в плюсе */}
+                  {Array.isArray(item.currentDiagnostics.inPlus) && item.currentDiagnostics.inPlus.length > 0 && (
+                    <div>
+                      <h3 className="text-base font-semibold mb-3 text-green-700">Что сейчас в плюсе</h3>
+                      <ul className="space-y-2">
+                        {item.currentDiagnostics.inPlus.map((item: string, i: number) => (
+                          <li key={i} className="text-gray-700 leading-relaxed flex gap-2">
+                            <span className="text-green-600 flex-shrink-0">✓</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* Что в минусе */}
+                  {Array.isArray(item.currentDiagnostics.inMinus) && item.currentDiagnostics.inMinus.length > 0 && (
+                    <div>
+                      <h3 className="text-base font-semibold mb-3 text-red-700">Что сейчас в минусе</h3>
+                      <ul className="space-y-2">
+                        {item.currentDiagnostics.inMinus.map((item: string, i: number) => (
+                          <li key={i} className="text-gray-700 leading-relaxed flex gap-2">
+                            <span className="text-red-600 flex-shrink-0">⚠</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* Диагностические вопросы */}
+                  {Array.isArray(item.currentDiagnostics.diagnosticQuestions) && item.currentDiagnostics.diagnosticQuestions.length > 0 && (
+                    <div>
+                      <h3 className="text-base font-semibold mb-3">Диагностические вопросы</h3>
+                      <div className="space-y-3">
+                        {item.currentDiagnostics.diagnosticQuestions.map((q: string, i: number) => (
+                          <div key={i} className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                            <p className="text-gray-800">{q}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Обратная совместимость со старой структурой */}
                   {Array.isArray(item.currentDiagnostics.resourceStates) && item.currentDiagnostics.resourceStates.length > 0 && (
-        <div>
+                    <div>
                       <h3 className="text-base font-semibold mb-3">Состояние ресурсов</h3>
                       <div className="space-y-3">
                         {item.currentDiagnostics.resourceStates.map((state: any, i: number) => (
