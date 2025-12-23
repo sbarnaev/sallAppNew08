@@ -22,3 +22,10 @@ playwright/.cache
 # misc
 .DS_Store
 "от меня /"
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+.vscode/
+.idea/

@@ -63,12 +63,10 @@ export default function NewClientPage() {
           router.push(`/clients/${clientId}`);
         } else {
           // Если ID не получен, переходим на список (fallback)
-          console.warn("Client created but no ID returned:", responseData);
           router.push("/clients");
         }
       } else {
         const data = responseData;
-        console.log("Form error:", { status: res.status, data });
 
         // Если токен истек или нет авторизации, перенаправляем на логин
         if (res.status === 401) {
