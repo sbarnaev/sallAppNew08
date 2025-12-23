@@ -1,0 +1,727 @@
+{
+  "базовый": {
+    "model": "gpt-5-mini",
+    "reasoning": { "effort": "medium" },
+    "input": [
+      {
+        "role": "system",
+        "content": "Ты — эксперт по системному анализу личности (САЛ), который помогает консультанту провести консультацию для клиента. Твоя задача — создать понятный, ясный, бытовой текст, который консультант сможет легко использовать в работе с клиентом.\n\nСАЛ — это метод, который определяет ключевые аспекты личности через пять кодов по дате рождения:\n1) Код Личности — ядро человека, его врожденная природа, способ мышления, характер.\n2) Код Коннектора — как человек взаимодействует с миром, как его воспринимают окружающие.\n3) Код Реализации — через что человек реализует себя, получает чувство пользы и результата, через что приходит материальное.\n4) Код Генератора — что заряжает и истощает человека, что даёт смысл.\n5) Код Миссии — постоянное искажение человека, это то, что дается ему сложно, то что почти всегда не получается до конца.\n\nВАЖНО: Пиши простым, понятным языком, как будто объясняешь другу. Избегай сложных терминов, используй бытовые примеры и ситуации из жизни.\n\nЖЁСТКИЕ ПРАВИЛА ПО СТРУКТУРЕ:\n- strengths (сильные стороны) — ровно 7 пунктов. Это то, что у человека хорошо получается, его таланты и способности. Указывай ресурс с цифрой, например: \"Лидерские качества — Личность (1)\".\n- weaknesses (слабые стороны) — ровно 7 пунктов. Это риски, сложности, то, что может мешать. НЕ ПУТАТЬ с resourceSignals! Указывай ресурс с цифрой, например: \"Импульсивность и рассеянность — Личность (3): риск недоведения дел до конца\".\n- resourceSignals (признаки плюса) — ровно 10 пунктов. Это конкретные признаки, что ресурс работает хорошо, например: \"Вы легко начинаете разговоры и люди тянутся — признак активной Личности (3)\".\n- deficitSignals (признаки минуса) — ровно 10 пунктов. Это конкретные признаки, что ресурс в дефиците, например: \"Трудно начать разговор, чувствуете себя неловко — признак дефицита Личности (3)\".\n\nВо всех описательных местах явно указывай ресурс и его цифру в скобках, например: \"Коннектор (2)\".\n\nВ opener напиши вводную фразу, которую консультант прочитает клиенту для установления доверия. Используй интересный факт из профиля, особенность или конфликт, чтобы человек узнал себя с первых слов."
+      },
+      {
+        "role": "user",
+        "content": "Входные данные профиля САЛ клиента {{ $('Webhook').first().json.body.name }} {{ $('Webhook').first().json.body.birthday.split('-').reverse().join('.') }} в поле codes:"
+      },
+      {
+        "role": "user",
+        "content": "Входные данные профиля САЛ в поле codes: Личность: {{ $json.codes[0].description }}, Коннектор: {{ $json.codes[1].description }}, Реализация: {{ $json.codes[2].description }}, Генератор: {{ $json.codes[3].description }}, Миссия: {{ $json.codes[4].description }}"
+      }
+    ],
+    "text": {
+      "format": {
+        "type": "json_schema",
+        "name": "sal_consult_prep",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "opener": { 
+              "type": "string",
+              "description": "Вводная фраза, которую консультант прочитает клиенту для установления доверия. Используй интересный факт из профиля, особенность или конфликт, чтобы человек узнал себя с первых слов. Простым, понятным языком."
+            },
+            "personalitySummary": {
+              "type": "array",
+              "description": "Ровно 3 абзаца описания личности простым, понятным языком. В тексте указываются ресурсы с цифрами. Используй бытовые примеры и ситуации из жизни.",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": { "type": "string" }
+            },
+            "strengths": { 
+              "type": "array", 
+              "minItems": 7, 
+              "maxItems": 7, 
+              "description": "Ровно 7 сильных сторон клиента — его таланты и способности. Указывай ресурс с цифрой, например: 'Лидерские качества — Личность (1)'. НЕ ПУТАТЬ с resourceSignals!",
+              "items": { "type": "string" } 
+            },
+            "weaknesses": { 
+              "type": "array", 
+              "minItems": 7, 
+              "maxItems": 7, 
+              "description": "Ровно 7 слабых сторон клиента — риски, сложности, то, что может мешать. Указывай ресурс с цифрой, например: 'Импульсивность и рассеянность — Личность (3): риск недоведения дел до конца'. НЕ ПУТАТЬ с deficitSignals!",
+              "items": { "type": "string" } 
+            },
+            "happinessFormula": {
+              "type": "array",
+              "description": "2–3 абзаца формулы счастья простым, понятным языком. Первые два абзаца — объяснение, последний (если есть) — примеры/сцены из жизни. Указывать ресурсы и цифры.",
+              "minItems": 2,
+              "maxItems": 3,
+              "items": { "type": "string" }
+            },
+            "resourceSignals": { 
+              "type": "array", 
+              "minItems": 10, 
+              "maxItems": 10, 
+              "description": "Ровно 10 признаков плюса — конкретные признаки, что ресурс работает хорошо. Например: 'Вы легко начинаете разговоры и люди тянутся — признак активной Личности (3)'. НЕ ПУТАТЬ с strengths!",
+              "items": { "type": "string" } 
+            },
+            "deficitSignals": { 
+              "type": "array", 
+              "minItems": 10, 
+              "maxItems": 10, 
+              "description": "Ровно 10 признаков минуса — конкретные признаки, что ресурс в дефиците. Например: 'Трудно начать разговор, чувствуете себя неловко — признак дефицита Личности (3)'. НЕ ПУТАТЬ с weaknesses!",
+              "items": { "type": "string" } 
+            },
+            "codesExplanation": {
+              "type": "array",
+              "description": "3–5 абзацев пояснения кодов простым, понятным языком. Объясни, из каких ресурсов состоит человек, как они сочетаются или конфликтуют, с бытовыми примерами. Указывать ресурсы и цифры.",
+              "minItems": 3,
+              "maxItems": 5,
+              "items": { "type": "string" }
+            },
+            "conflicts": {
+              "type": "array",
+              "description": "Конфликты и проблемы — внутренние противоречия в профиле клиента. Описывай простым языком с примерами.",
+              "minItems": 5,
+              "maxItems": 5,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "title": { "type": "string" },
+                  "description": { "type": "string" },
+                  "manifestations": { "type": "array", "items": { "type": "string" } },
+                  "advice": { "type": "string" }
+                },
+                "required": ["title", "description", "manifestations", "advice"]
+              }
+            },
+            "practices": {
+              "type": "object",
+              "description": "Практики для развития каждого ресурса. Для каждого ресурса (personality, connector, realization, generator, mission) — ровно 3 практики. Каждая практика содержит title, p1, p2. Описывай простым языком.",
+              "additionalProperties": false,
+              "properties": {
+                "personality": { "$ref": "#/$defs/practiceTriplet" },
+                "connector":   { "$ref": "#/$defs/practiceTriplet" },
+                "realization": { "$ref": "#/$defs/practiceTriplet" },
+                "generator":   { "$ref": "#/$defs/practiceTriplet" },
+                "mission":     { "$ref": "#/$defs/practiceTriplet" }
+              },
+              "required": ["personality", "connector", "realization", "generator", "mission"]
+            }
+          },
+          "required": [
+            "opener",
+            "personalitySummary",
+            "strengths",
+            "weaknesses",
+            "happinessFormula",
+            "resourceSignals",
+            "deficitSignals",
+            "codesExplanation",
+            "conflicts",
+            "practices"
+          ],
+          "$defs": {
+            "practiceTriplet": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "title": { "type": "string" },
+                  "p1": { "type": "string" },
+                  "p2": { "type": "string" }
+                },
+                "required": ["title", "p1", "p2"]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "целевой": {
+    "model": "gpt-5-mini",
+    "reasoning": { "effort": "medium" },
+    "input": [
+      {
+        "role": "system",
+        "content": "Ты — эксперт по системному анализу личности (САЛ), который помогает консультанту провести целевую консультацию для клиента. Твоя задача — создать понятный, ясный, бытовой текст, который консультант сможет легко использовать в работе с клиентом.\n\nСАЛ — это метод, который определяет ключевые аспекты личности через пять кодов по дате рождения:\n1) Код Личности — ядро человека, его врожденная природа, способ мышления, характер.\n2) Код Коннектора — как человек взаимодействует с миром, как его воспринимают окружающие.\n3) Код Реализации — через что человек реализует себя, получает чувство пользы и результата.\n4) Код Генератора — что заряжает и истощает человека, что даёт смысл.\n5) Код Миссии — какую энергию человек призван нести в мир, испытания и искажения.\n\nВАЖНО: Пиши простым, понятным языком, как будто объясняешь другу. Избегай сложных терминов, используй бытовые примеры и ситуации из жизни.\n\nЖЁСТКОЕ ПРАВИЛО ПО ЦИФРАМ: Всегда указывай цифру кода ресурса из профиля клиента, например: \"Личность (1)\", \"Коннектор (2)\".\n\nЧто нужно вернуть:\n- Предупреждения (warnings) — какие сложности и проблемы могут быть по профилю САЛ в разрезе достижения цели. Пиши коротко, ясно, по делу.\n- Декомпозицию цели (goalDecomposition) — из чего состоит большая цель и что нужно для её достижения. Разложи цель на понятные шаги.\n- Ресурсы для этапов (resourcesForStages) — какой ресурс САЛ нужен на каком этапе и зачем. Указывай ресурс с цифрой и объясняй простым языком.\n- Диагностику сейчас (currentDiagnostics) — что в плюсе/минусе, реальная готовность клиента. Добавь диагностические вопросы простым языком.\n- План достижения (plan123) — что делать сначала, потом, затем. Три этапа с конкретными действиями.\n- Метрики прогресса (progressMetrics) — как понять, что человек идёт к цели и что получается. Ранние, средние и итоговые сигналы.\n- Что делать при негативе (whatIf) — усталость, перегруз, откаты. Конкретные советы простым языком.\n- Работа с возражениями (objectionHandling) — что может возразить клиент и как помочь/ответить.\n- Итоговое резюме (finalStrategy) — как идём к цели, ровно в 3 абзацах простым языком.\n\nСтиль: коротко, ясно, по делу, простым языком."
+      },
+      {
+        "role": "user",
+        "content": "Запрос клиента: {{ $('Webhook').item.json.body.request }} {{ $json.codes[0].description }} {{ $json.codes[1].description }}{{ $json.codes[2].description }} {{ $json.codes[3].description }}{{ $json.codes[4].description }}"
+      }
+    ],
+    "text": {
+      "format": {
+        "type": "json_schema",
+        "name": "sal_consult_structure_v2",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "warnings": {
+              "type": "array",
+              "description": "Предупреждения — какие сложности и проблемы могут быть по профилю САЛ в разрезе достижения цели. Пиши коротко, ясно, по делу, простым языком.",
+              "items": { "type": "string" }
+            },
+            "goalDecomposition": {
+              "type": "array",
+              "description": "Декомпозиция цели — из чего состоит большая цель и что нужно для её достижения. Разложи цель на понятные шаги простым языком.",
+              "items": { "type": "string" }
+            },
+            "resourcesForStages": {
+              "type": "array",
+              "description": "Ресурсы для этапов — какой ресурс САЛ нужен на каком этапе и зачем. Указывай ресурс с цифрой и объясняй простым языком.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "stage": { "type": "string", "description": "Этап: '1', '2' или '3'." },
+                  "resources": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "resource": { "type": "string", "description": "Личность/Коннектор/Реализация/Генератор/Миссия." },
+                        "code": { "type": ["integer","string"], "description": "Цифра кода из профиля клиента (num)." },
+                        "why": { "type": "string", "description": "Зачем этот ресурс на этапе." },
+                        "successSignals": { "type": "array", "items": { "type": "string" }, "description": "Признаки, что ресурс сработал." }
+                      },
+                      "required": ["resource","code","why","successSignals"]
+                    }
+                  }
+                },
+                "required": ["stage","resources"]
+              }
+            },
+            "currentDiagnostics": {
+              "type": "object",
+              "description": "Диагностика сейчас — что в плюсе/минусе, реальная готовность клиента. Добавь диагностические вопросы простым языком.",
+              "additionalProperties": false,
+              "properties": {
+                "resourceStates": {
+                  "type": "array",
+                  "description": "Плюс/минус/нейтраль по каждому ресурсу с цифрой и коррекцией.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "resource": { "type": "string" },
+                      "code": { "type": ["integer","string"] },
+                      "state": { "type": "string", "enum": ["plus","neutral","minus","unknown"] },
+                      "evidence": { "type": "array", "items": { "type": "string" } },
+                      "correction": { "type": "array", "items": { "type": "string" } }
+                    },
+                    "required": ["resource","code","state","evidence","correction"]
+                  }
+                },
+                "readiness": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "willingness": { "type": ["integer","null"], "minimum": 0, "maximum": 10, "description": "0–10, готов ли идти к цели." },
+                    "blockers": { "type": "array", "items": { "type": "string" } },
+                    "comment": { "type": ["string","null"] }
+                  },
+                  "required": ["willingness","blockers","comment"]
+                },
+                "questions": {
+                  "type": "array",
+                  "description": "Диагностические вопросы (каждый привязан к ресурсу с цифрой).",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "question": { "type": "string" },
+                      "salResource": { "type": "string" }
+                    },
+                    "required": ["question","salResource"]
+                  }
+                }
+              },
+              "required": ["resourceStates","readiness","questions"]
+            },
+            "plan123": {
+              "type": "array",
+              "description": "План достижения — что делать сначала, потом, затем. Три этапа с конкретными действиями простым языком.",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "stageTitle": { "type": "string" },
+                  "actions": { "type": "array", "items": { "type": "string" } },
+                  "resources": {
+                    "type": "array",
+                    "description": "Какие ресурсы с цифрами задействуем на этом шаге.",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "resource": { "type": "string" },
+                        "code": { "type": ["integer","string"] }
+                      },
+                      "required": ["resource","code"]
+                    }
+                  },
+                  "successCriteria": { "type": "string" },
+                  "riskNotes": { "type": ["string","null"] }
+                },
+                "required": ["stageTitle","actions","resources","successCriteria","riskNotes"]
+              }
+            },
+            "progressMetrics": {
+              "type": "object",
+              "description": "Метрики прогресса — как понять, что человек идёт к цели и что получается. Ранние, средние и итоговые сигналы простым языком.",
+              "additionalProperties": false,
+              "properties": {
+                "earlySignals": { "type": "array", "items": { "type": "string" }, "description": "Ранние признаки, что идём верно." },
+                "midSignals": { "type": "array", "items": { "type": "string" }, "description": "Сигналы на середине пути." },
+                "resultSignals": { "type": "array", "items": { "type": "string" }, "description": "Итоговые индикаторы результата." }
+              },
+              "required": ["earlySignals","midSignals","resultSignals"]
+            },
+            "whatIf": {
+              "type": "object",
+              "description": "Что делать при негативе — усталость, перегруз, откаты. Конкретные советы простым языком.",
+              "additionalProperties": false,
+              "properties": {
+                "fatigue": { "type": "array", "items": { "type": "string" } },
+                "overwhelm": { "type": "array", "items": { "type": "string" } },
+                "relapse": { "type": "array", "items": { "type": "string" } },
+                "pitfalls": { "type": "array", "items": { "type": "string" } }
+              },
+              "required": ["fatigue","overwhelm","relapse","pitfalls"]
+            },
+            "objectionHandling": {
+              "type": "array",
+              "description": "Работа с возражениями — что может возразить клиент и как помочь/ответить простым языком.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "objection": { "type": "string" },
+                  "reply": { "type": "string" }
+                },
+                "required": ["objection","reply"]
+              }
+            },
+            "finalStrategy": {
+              "type": "array",
+              "description": "Итоговое резюме — как идём к цели, ровно в 3 абзацах простым языком.",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": { "type": "string" }
+            }
+          },
+          "required": [
+            "warnings",
+            "goalDecomposition",
+            "resourcesForStages",
+            "currentDiagnostics",
+            "plan123",
+            "progressMetrics",
+            "whatIf",
+            "objectionHandling",
+            "finalStrategy"
+          ]
+        }
+      }
+    }
+  },
+  "партнерский": {
+    "model": "gpt-5-mini",
+    "reasoning": { 
+      "effort": "medium" 
+    },
+    "input": [
+      {
+        "role": "system",
+        "content": "Ты — эксперт по системному анализу личности (САЛ), который помогает консультанту провести партнерскую консультацию для пары (двух человек). Твоя задача — создать понятный, ясный, бытовой текст, который консультант сможет легко использовать в работе с парой.\n\nСАЛ — это метод, который определяет ключевые аспекты личности через пять кодов по дате рождения:\n1) Код Личности — ядро человека, его врожденная природа, способ мышления, характер.\n2) Код Коннектора — как человек взаимодействует с миром, как его воспринимают окружающие.\n3) Код Реализации — через что человек реализует себя, получает чувство пользы и результата.\n4) Код Генератора — что заряжает и истощает человека, что даёт смысл.\n5) Код Миссии — какую энергию человек призван нести в мир, испытания и искажения.\n\nВАЖНО: Пиши простым, понятным языком, как будто объясняешь другу. Избегай сложных терминов, используй бытовые примеры и ситуации из жизни.\n\nЖЁСТКОЕ ПРАВИЛО ПО ЦИФРАМ: Всегда указывай цифру кода ресурса из профиля каждого участника, например: \"Личность (1) первого участника\", \"Коннектор (2) второго участника\".\n\nЧто нужно вернуть:\n- Предупреждения (warnings) — какие сложности и проблемы могут быть по профилям САЛ пары в разрезе достижения цели. Пиши коротко, ясно, по делу.\n- Декомпозицию цели пары (goalDecomposition) — из чего состоит большая цель и что нужно для её достижения. Разложи цель на понятные шаги.\n- Ресурсы для этапов (resourcesForStages) — какой ресурс САЛ какого участника нужен на каком этапе и зачем. Указывай ресурс с цифрой и участника, объясняй простым языком.\n- Совместимость ресурсов (compatibility) — какие ресурсы дополняют друг друга, какие конфликтуют, и как это решить.\n- Диагностику пары сейчас (currentDiagnostics) — что в плюсе/минусе у каждого участника, реальная готовность пары, зоны конфликтов. Добавь диагностические вопросы простым языком.\n- План достижения (plan123) — что делать сначала, потом, затем, с указанием кто из участников что делает. Три этапа с конкретными действиями.\n- Метрики прогресса (progressMetrics) — как понять, что пара идёт к цели и что получается. Ранние, средние и итоговые сигналы.\n- Что делать при негативе (whatIf) — усталость, перегруз, конфликты, откаты. Конкретные советы простым языком.\n- Работа с возражениями (objectionHandling) — что может возразить пара и как помочь/ответить.\n- Итоговое резюме (finalStrategy) — как идём к цели, ровно в 3 абзацах простым языком.\n\nСтиль: коротко, ясно, по делу, простым языком."
+      },
+      {
+        "role": "user",
+        "content": "Запрос пары: {{ $('Webhook').item.json.body.goal }}\n\nПрофиль первого участника: {{ $('Webhook').item.json.body.name }} {{ $('Webhook').item.json.body.birthday }} {{ $('Call \'Собирает инфу по учебнику\'').item.json.codes[0].description }} {{ $('Call \'Собирает инфу по учебнику\'').item.json.codes[1].description }} {{ $('Call \'Собирает инфу по учебнику\'').item.json.codes[2].description }} {{ $('Call \'Собирает инфу по учебнику\'').item.json.codes[3].description }} {{ $('Call \'Собирает инфу по учебнику\'').item.json.codes[4].description }}\n\n\nПрофиль второго участника: {{ $('Webhook').item.json.body.partnerName }} {{ $('Webhook').item.json.body.partnerBirthday }}\n{{ $json.codes[0].description }} {{ $json.codes[1].description }} {{ $json.codes[2].description }} {{ $json.codes[3].description }} {{ $json.codes[4].description }}"
+      }
+    ],
+    "text": {
+      "format": {
+        "type": "json_schema",
+        "name": "sal_partner_consult_structure",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "warnings": {
+              "type": "array",
+              "description": "Предупреждения — какие сложности и проблемы могут быть по профилям САЛ пары в разрезе достижения цели. Пиши коротко, ясно, по делу, простым языком.",
+              "items": { "type": "string" }
+            },
+            "goalDecomposition": {
+              "type": "array",
+              "description": "Декомпозиция цели пары — из чего состоит большая цель и что нужно для её достижения. Разложи цель на понятные шаги простым языком.",
+              "items": { "type": "string" }
+            },
+            "resourcesForStages": {
+              "type": "array",
+              "description": "Ресурсы для этапов — какой ресурс САЛ какого участника нужен на каком этапе и зачем. Указывай ресурс с цифрой и участника, объясняй простым языком.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "stage": { "type": "string" },
+                  "resources": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "resource": { "type": "string" },
+                        "code": { "type": "string" },
+                        "participant": { "type": "string", "enum": ["first", "second"] },
+                        "why": { "type": "string" },
+                        "successSignals": { "type": "array", "items": { "type": "string" } }
+                      },
+                      "required": ["resource","code","participant","why","successSignals"]
+                    }
+                  }
+                },
+                "required": ["stage","resources"]
+              }
+            },
+            "compatibility": {
+              "type": "object",
+              "description": "Совместимость ресурсов — какие ресурсы дополняют друг друга, какие конфликтуют, и как это решить простым языком.",
+              "additionalProperties": false,
+              "properties": {
+                "complementary": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "firstResource": { "type": "string" },
+                      "secondResource": { "type": "string" },
+                      "why": { "type": "string" }
+                    },
+                    "required": ["firstResource","secondResource","why"]
+                  }
+                },
+                "conflicts": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "firstResource": { "type": "string" },
+                      "secondResource": { "type": "string" },
+                      "why": { "type": "string" },
+                      "solution": { "type": "string" }
+                    },
+                    "required": ["firstResource","secondResource","why","solution"]
+                  }
+                }
+              },
+              "required": ["complementary","conflicts"]
+            },
+            "currentDiagnostics": {
+              "type": "object",
+              "description": "Диагностика пары сейчас — что в плюсе/минусе у каждого участника, реальная готовность пары, зоны конфликтов. Добавь диагностические вопросы простым языком.",
+              "additionalProperties": false,
+              "properties": {
+                "firstParticipant": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "resourceStates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "resource": { "type": "string" },
+                          "code": { "type": "string" },
+                          "state": { "type": "string", "enum": ["plus","neutral","minus","unknown"] },
+                          "evidence": { "type": "array", "items": { "type": "string" } },
+                          "correction": { "type": "array", "items": { "type": "string" } }
+                        },
+                        "required": ["resource","code","state","evidence","correction"]
+                      }
+                    }
+                  },
+                  "required": ["resourceStates"]
+                },
+                "secondParticipant": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "resourceStates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "resource": { "type": "string" },
+                          "code": { "type": "string" },
+                          "state": { "type": "string", "enum": ["plus","neutral","minus","unknown"] },
+                          "evidence": { "type": "array", "items": { "type": "string" } },
+                          "correction": { "type": "array", "items": { "type": "string" } }
+                        },
+                        "required": ["resource","code","state","evidence","correction"]
+                      }
+                    }
+                  },
+                  "required": ["resourceStates"]
+                },
+                "conflictZones": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "zone": { "type": "string" },
+                      "description": { "type": "string" },
+                      "firstParticipantRole": { "type": "string" },
+                      "secondParticipantRole": { "type": "string" },
+                      "solution": { "type": "string" }
+                    },
+                    "required": ["zone","description","firstParticipantRole","secondParticipantRole","solution"]
+                  }
+                },
+                "readiness": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "willingness": { "type": "number", "minimum": 0, "maximum": 10 },
+                    "blockers": { "type": "array", "items": { "type": "string" } },
+                    "comment": { "type": "string" }
+                  },
+                  "required": ["willingness","blockers","comment"]
+                },
+                "questions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "question": { "type": "string" },
+                      "salResource": { "type": "string" },
+                      "participant": { "type": "string", "enum": ["first", "second", "both"] }
+                    },
+                    "required": ["question","salResource","participant"]
+                  }
+                }
+              },
+              "required": ["firstParticipant","secondParticipant","conflictZones","readiness","questions"]
+            },
+            "plan123": {
+              "type": "array",
+              "description": "План достижения — что делать сначала, потом, затем, с указанием кто из участников что делает. Три этапа с конкретными действиями простым языком.",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "stageTitle": { "type": "string" },
+                  "actions": { "type": "array", "items": { "type": "string" } },
+                  "resources": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "resource": { "type": "string" },
+                        "code": { "type": "string" },
+                        "participant": { "type": "string", "enum": ["first", "second"] }
+                      },
+                      "required": ["resource","code","participant"]
+                    }
+                  },
+                  "successCriteria": { "type": "string" },
+                  "riskNotes": { "type": "string" }
+                },
+                "required": ["stageTitle","actions","resources","successCriteria","riskNotes"]
+              }
+            },
+            "progressMetrics": {
+              "type": "object",
+              "description": "Метрики прогресса — как понять, что пара идёт к цели и что получается. Ранние, средние и итоговые сигналы простым языком.",
+              "additionalProperties": false,
+              "properties": {
+                "earlySignals": { "type": "array", "items": { "type": "string" } },
+                "midSignals": { "type": "array", "items": { "type": "string" } },
+                "resultSignals": { "type": "array", "items": { "type": "string" } }
+              },
+              "required": ["earlySignals","midSignals","resultSignals"]
+            },
+            "whatIf": {
+              "type": "object",
+              "description": "Что делать при негативе — усталость, перегруз, конфликты, откаты. Конкретные советы простым языком.",
+              "additionalProperties": false,
+              "properties": {
+                "fatigue": { "type": "array", "items": { "type": "string" } },
+                "overwhelm": { "type": "array", "items": { "type": "string" } },
+                "conflicts": { "type": "array", "items": { "type": "string" } },
+                "relapse": { "type": "array", "items": { "type": "string" } },
+                "pitfalls": { "type": "array", "items": { "type": "string" } }
+              },
+              "required": ["fatigue","overwhelm","conflicts","relapse","pitfalls"]
+            },
+            "objectionHandling": {
+              "type": "array",
+              "description": "Работа с возражениями — что может возразить пара и как помочь/ответить простым языком.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "objection": { "type": "string" },
+                  "reply": { "type": "string" }
+                },
+                "required": ["objection","reply"]
+              }
+            },
+            "finalStrategy": {
+              "type": "array",
+              "description": "Итоговое резюме — как идём к цели, ровно в 3 абзацах простым языком.",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": { "type": "string" }
+            }
+          },
+          "required": [
+            "warnings",
+            "goalDecomposition",
+            "resourcesForStages",
+            "compatibility",
+            "currentDiagnostics",
+            "plan123",
+            "progressMetrics",
+            "whatIf",
+            "objectionHandling",
+            "finalStrategy"
+          ]
+        }
+      }
+    }
+  },
+  "детский": {
+    "model": "gpt-5-mini",
+    "reasoning": { "effort": "medium" },
+    "input": [
+      {
+        "role": "system",
+        "content": "Ты — эксперт по системному анализу личности (САЛ), который помогает консультанту провести консультацию для родителей о ребенке. Твоя задача — создать понятный, ясный, бытовой текст, который консультант сможет легко использовать в работе с родителями.\n\nСАЛ — это метод, который определяет ключевые аспекты личности через пять кодов по дате рождения:\n1) Код Личности — ядро человека, его врожденная природа, способ мышления, характер.\n2) Код Коннектора — как человек взаимодействует с миром, как его воспринимают окружающие.\n3) Код Реализации — через что человек реализует себя, получает чувство пользы и результата.\n4) Код Генератора — что заряжает и истощает человека, что даёт смысл.\n5) Код Миссии — какую энергию человек призван нести в мир, испытания и искажения.\n\nВАЖНО: Пиши простым, понятным языком, как будто объясняешь другу. Избегай сложных терминов, используй бытовые примеры и ситуации из жизни.\n\nЖЁСТКОЕ ПРАВИЛО ПО ЦИФРАМ: Всегда указывай цифру кода ресурса из профиля ребенка, например: \"Личность (1)\", \"Коннектор (2)\".\n\nЧто нужно вернуть:\n- opener (вводная фраза) — интересный факт о ребенке, особенность или потенциал, чтобы родители узнали своего ребенка с первых слов.\n- childPotential (потенциал ребенка) — 3–5 абзацев о врожденных талантах, способностях и потенциале развития ребенка. Указывай ресурсы с цифрами.\n- developmentFeatures (особенности развития) — 5–7 пунктов о том, как развивается ребенок, какие этапы важны, на что обратить внимание.\n- upbringingRecommendations (рекомендации по воспитанию) — 7–10 конкретных рекомендаций для родителей, как лучше воспитывать этого ребенка с учетом его кодов САЛ.\n- educationalApproach (подход к обучению) — 5–7 рекомендаций по обучению и развитию, какие методы подходят, чего избегать.\n- communicationStyle (стиль общения) — 3–5 рекомендаций, как лучше общаться с ребенком, что говорить, как мотивировать.\n- challengesAndSolutions (вызовы и решения) — 5–7 пунктов о возможных сложностях в воспитании и конкретных способах их решения.\n- activitiesAndHobbies (активности и хобби) — 5–7 рекомендаций, какие занятия, кружки, хобби подходят ребенку.\n- parentChildInteraction (взаимодействие родитель-ребенок) — 3–5 абзацев о том, как лучше строить отношения с ребенком, учитывая его коды.\n- futureProspects (перспективы будущего) — 2–3 абзаца о том, в каком направлении может развиваться ребенок, какие сферы ему подходят.\n\nЕсли есть запрос от родителей (request), учитывай его при формировании всех разделов, особенно в рекомендациях по воспитанию и решении вызовов.\n\nСтиль: коротко, ясно, по делу, простым языком, с акцентом на практические советы для родителей."
+      },
+      {
+        "role": "user",
+        "content": "Входные данные профиля САЛ ребенка {{ $('Webhook').first().json.body.name }} {{ $('Webhook').first().json.body.birthday.split('-').reverse().join('.') }} в поле codes:"
+      },
+      {
+        "role": "user",
+        "content": "Входные данные профиля САЛ в поле codes: Личность: {{ $json.codes[0].description }}, Коннектор: {{ $json.codes[1].description }}, Реализация: {{ $json.codes[2].description }}, Генератор: {{ $json.codes[3].description }}, Миссия: {{ $json.codes[4].description }}{{ $('Webhook').first().json.body.request ? '\\n\\nЗапрос родителей: ' + $('Webhook').first().json.body.request : '' }}"
+      }
+    ],
+    "text": {
+      "format": {
+        "type": "json_schema",
+        "name": "sal_child_consult_structure",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "opener": {
+              "type": "string",
+              "description": "Вводная фраза для родителей — интересный факт о ребенке, особенность или потенциал, чтобы родители узнали своего ребенка с первых слов. Простым, понятным языком."
+            },
+            "childPotential": {
+              "type": "array",
+              "description": "Потенциал ребенка — 3–5 абзацев о врожденных талантах, способностях и потенциале развития. Указывай ресурсы с цифрами.",
+              "minItems": 3,
+              "maxItems": 5,
+              "items": { "type": "string" }
+            },
+            "developmentFeatures": {
+              "type": "array",
+              "description": "Особенности развития — 5–7 пунктов о том, как развивается ребенок, какие этапы важны, на что обратить внимание.",
+              "minItems": 5,
+              "maxItems": 7,
+              "items": { "type": "string" }
+            },
+            "upbringingRecommendations": {
+              "type": "array",
+              "description": "Рекомендации по воспитанию — 7–10 конкретных рекомендаций для родителей, как лучше воспитывать этого ребенка с учетом его кодов САЛ.",
+              "minItems": 7,
+              "maxItems": 10,
+              "items": { "type": "string" }
+            },
+            "educationalApproach": {
+              "type": "array",
+              "description": "Подход к обучению — 5–7 рекомендаций по обучению и развитию, какие методы подходят, чего избегать.",
+              "minItems": 5,
+              "maxItems": 7,
+              "items": { "type": "string" }
+            },
+            "communicationStyle": {
+              "type": "array",
+              "description": "Стиль общения — 3–5 рекомендаций, как лучше общаться с ребенком, что говорить, как мотивировать.",
+              "minItems": 3,
+              "maxItems": 5,
+              "items": { "type": "string" }
+            },
+            "challengesAndSolutions": {
+              "type": "array",
+              "description": "Вызовы и решения — 5–7 пунктов о возможных сложностях в воспитании и конкретных способах их решения.",
+              "minItems": 5,
+              "maxItems": 7,
+              "items": { "type": "string" }
+            },
+            "activitiesAndHobbies": {
+              "type": "array",
+              "description": "Активности и хобби — 5–7 рекомендаций, какие занятия, кружки, хобби подходят ребенку.",
+              "minItems": 5,
+              "maxItems": 7,
+              "items": { "type": "string" }
+            },
+            "parentChildInteraction": {
+              "type": "array",
+              "description": "Взаимодействие родитель-ребенок — 3–5 абзацев о том, как лучше строить отношения с ребенком, учитывая его коды.",
+              "minItems": 3,
+              "maxItems": 5,
+              "items": { "type": "string" }
+            },
+            "futureProspects": {
+              "type": "array",
+              "description": "Перспективы будущего — 2–3 абзаца о том, в каком направлении может развиваться ребенок, какие сферы ему подходят.",
+              "minItems": 2,
+              "maxItems": 3,
+              "items": { "type": "string" }
+            }
+          },
+          "required": [
+            "opener",
+            "childPotential",
+            "developmentFeatures",
+            "upbringingRecommendations",
+            "educationalApproach",
+            "communicationStyle",
+            "challengesAndSolutions",
+            "activitiesAndHobbies",
+            "parentChildInteraction",
+            "futureProspects"
+          ]
+        }
+      }
+    }
+  }
+}
+
