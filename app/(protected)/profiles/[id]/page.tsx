@@ -3090,7 +3090,110 @@ export default function ProfileDetail() {
 
       {/* Пять кубиков - вывод кодов для всех типов расчетов */}
       {(() => {
-        // digits: или массив, или строка JSON/CSV; возьмём как есть порядок
+        // Для партнерского расчета показываем коды обоих участников
+        if (consultationType === "partner" && profile?.raw_json) {
+          try {
+            let payload: any = profile.raw_json;
+            if (typeof payload === "string") payload = JSON.parse(payload);
+            const item = Array.isArray(payload) ? payload[0] : payload;
+            
+            let firstCodes: any[] = [];
+            let secondCodes: any[] = [];
+            
+            // Получаем коды первого участника
+            if (item?.firstParticipantCodes) {
+              firstCodes = Array.isArray(item.firstParticipantCodes) 
+                ? item.firstParticipantCodes 
+                : String(item.firstParticipantCodes).split(/[,\s]+/).filter(Boolean);
+            } else {
+              // Пытаемся получить из digits
+              const d = (profile as any)?.digits;
+              if (Array.isArray(d)) firstCodes = d;
+              else if (typeof d === 'string') {
+                try {
+                  const parsed = JSON.parse(d);
+                  if (Array.isArray(parsed)) firstCodes = parsed;
+                  else firstCodes = String(d).split(/[,\s]+/).filter(Boolean);
+                } catch {
+                  firstCodes = String(d).split(/[,\s]+/).filter(Boolean);
+                }
+              }
+              // Если нет в digits, пытаемся рассчитать по дате рождения клиента
+              if (firstCodes.length === 0 && clientBirthDate) {
+                const calculatedCodes = calculateSALCodes(clientBirthDate);
+                if (calculatedCodes) {
+                  firstCodes = [
+                    calculatedCodes.personality,
+                    calculatedCodes.connector,
+                    calculatedCodes.realization,
+                    calculatedCodes.generator,
+                    calculatedCodes.mission,
+                  ];
+                }
+              }
+            }
+            
+            // Получаем коды второго участника
+            if (item?.secondParticipantCodes) {
+              secondCodes = Array.isArray(item.secondParticipantCodes) 
+                ? item.secondParticipantCodes 
+                : String(item.secondParticipantCodes).split(/[,\s]+/).filter(Boolean);
+            } else if (item?.partnerCodes) {
+              secondCodes = Array.isArray(item.partnerCodes) 
+                ? item.partnerCodes 
+                : String(item.partnerCodes).split(/[,\s]+/).filter(Boolean);
+            }
+            
+            // Если есть коды обоих участников, показываем оба
+            if (firstCodes.length > 0 && secondCodes.length > 0) {
+              const codeLabels = ["Код Личности", "Код Коннектора", "Код Реализации", "Код Генератора", "Код Миссии"];
+              
+              return (
+                <div className="space-y-6">
+                  {/* Коды первого участника */}
+                  <div className="space-y-3">
+                    <div className="text-center">
+                      <h2 className="text-lg md:text-xl font-semibold text-gray-900">Коды первого участника</h2>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6 py-4">
+                      {firstCodes.slice(0, 5).map((val: any, i: number) => (
+                        <div key={i} className="flex flex-col items-center gap-2">
+                          <div className="w-14 h-14 md:w-[74px] md:h-[74px] rounded-xl shadow-sm bg-[#1f92aa] text-white font-bold text-xl md:text-[28px] grid place-items-center">
+                            {val ?? ""}
+                          </div>
+                          <div className="text-xs md:text-sm text-gray-600 text-center font-medium">
+                            {codeLabels[i] || `Код ${i + 1}`}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Коды второго участника */}
+                  <div className="space-y-3">
+                    <div className="text-center">
+                      <h2 className="text-lg md:text-xl font-semibold text-gray-900">Коды второго участника</h2>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6 py-4">
+                      {secondCodes.slice(0, 5).map((val: any, i: number) => (
+                        <div key={i} className="flex flex-col items-center gap-2">
+                          <div className="w-14 h-14 md:w-[74px] md:h-[74px] rounded-xl shadow-sm bg-[#e91e63] text-white font-bold text-xl md:text-[28px] grid place-items-center">
+                            {val ?? ""}
+                          </div>
+                          <div className="text-xs md:text-sm text-gray-600 text-center font-medium">
+                            {codeLabels[i] || `Код ${i + 1}`}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+          } catch { }
+        }
+        
+        // Для остальных типов расчетов - стандартная логика
         let arr: any[] = [];
         const d = (profile as any)?.digits;
         if (Array.isArray(d)) arr = d;
@@ -3102,20 +3205,6 @@ export default function ProfileDetail() {
           } catch {
             arr = String(d).split(/[,\s]+/).filter(Boolean);
           }
-        }
-
-        // Для партнерского расчета проверяем наличие кодов в raw_json
-        if (consultationType === "partner" && arr.length === 0 && profile?.raw_json) {
-          try {
-            let payload: any = profile.raw_json;
-            if (typeof payload === "string") payload = JSON.parse(payload);
-            const item = Array.isArray(payload) ? payload[0] : payload;
-            if (item?.firstParticipantCodes) {
-              arr = Array.isArray(item.firstParticipantCodes) ? item.firstParticipantCodes : String(item.firstParticipantCodes).split(/[,\s]+/).filter(Boolean);
-            } else if (item?.partnerCodes) {
-              arr = Array.isArray(item.partnerCodes) ? item.partnerCodes : String(item.partnerCodes).split(/[,\s]+/).filter(Boolean);
-            }
-          } catch { }
         }
 
         // Названия кодов САЛ
@@ -3137,26 +3226,10 @@ export default function ProfileDetail() {
 
         if (arr.length === 0) return null;
 
-        // Определяем заголовок в зависимости от типа
-        let title = "Коды профиля";
-        if (consultationType === "partner") {
-          try {
-            let payload: any = profile?.raw_json;
-            if (typeof payload === "string") payload = JSON.parse(payload);
-            const item = Array.isArray(payload) ? payload[0] : payload;
-            if (item?.firstParticipantCodes && item?.secondParticipantCodes) {
-              // Если есть коды обоих участников, показываем коды первого участника
-              title = "Коды первого участника";
-            } else if (item?.partnerCodes) {
-              title = "Коды партнера";
-            }
-          } catch { }
-        }
-
         return (
           <div className="space-y-3">
             <div className="text-center">
-              <h2 className="text-lg md:text-xl font-semibold text-gray-900">{title}</h2>
+              <h2 className="text-lg md:text-xl font-semibold text-gray-900">Коды профиля</h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6 py-4">
               {arr.slice(0, 5).map((val: any, i: number) => (
@@ -3318,7 +3391,7 @@ export default function ProfileDetail() {
         );
       })()}
 
-      {polling && <LoadingMessage />}
+      {(polling || !profile) && <LoadingMessage />}
 
       {/* Меню-навигация по блокам */}
       {!polling && renderedFromJson && consultationType && (() => {

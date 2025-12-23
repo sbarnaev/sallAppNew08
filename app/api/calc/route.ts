@@ -241,6 +241,7 @@ export async function POST(req: Request) {
           gender: clientGender || null,
         };
         consultationResult = await generatePartnerConsultation(input);
+        // Коды обоих участников уже добавлены в generatePartnerConsultation
       } else if (calculationType === "child") {
         const requestText = cleanText(request ?? clientRequest ?? query ?? prompt ?? null);
         const input: ChildCalculationInput = {

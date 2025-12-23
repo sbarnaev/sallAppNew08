@@ -562,6 +562,26 @@ export async function generatePartnerConsultation(
   // Вызываем API
   const result = await callOpenAI(systemPrompt, userPrompt, textFormat, model, reasoning);
 
+  // Добавляем коды обоих участников в результат для сохранения
+  const firstCodesArray = [
+    firstProfileCodes.personality,
+    firstProfileCodes.connector,
+    firstProfileCodes.realization,
+    firstProfileCodes.generator,
+    firstProfileCodes.mission,
+  ];
+  const secondCodesArray = [
+    secondProfileCodes.personality,
+    secondProfileCodes.connector,
+    secondProfileCodes.realization,
+    secondProfileCodes.generator,
+    secondProfileCodes.mission,
+  ];
+  
+  // Сохраняем коды в результат
+  result.firstParticipantCodes = firstCodesArray;
+  result.secondParticipantCodes = secondCodesArray;
+
   // Валидация результата
   const validation = validateConsultation(result, "partner");
   if (!validation.valid) {
