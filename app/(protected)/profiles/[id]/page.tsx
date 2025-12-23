@@ -1356,6 +1356,13 @@ export default function ProfileDetail() {
       return "target";
     }
     
+    // Детский расчет - есть childPotential, upbringingRecommendations, developmentFeatures и т.д.
+    if (item.childPotential || item.upbringingRecommendations || item.developmentFeatures || 
+        item.educationalApproach || item.communicationStyle || item.challengesAndSolutions ||
+        item.activitiesAndHobbies || item.parentChildInteraction || item.futureProspects) {
+      return "child";
+    }
+    
     // Базовый расчет - есть opener, personalitySummary, strengths, weaknesses и т.д.
     if (item.opener || item.personalitySummary || item.strengths || item.weaknesses) {
       return "base";
@@ -1476,7 +1483,17 @@ export default function ProfileDetail() {
         item.firstParticipantCodes ||
         item.secondParticipantCodes ||
         item.partnerCodes ||
-        (item.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant || item.currentDiagnostics.conflictZones))
+        (item.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant || item.currentDiagnostics.conflictZones)) ||
+        // Поля детского расчета
+        item.childPotential ||
+        item.upbringingRecommendations ||
+        item.developmentFeatures ||
+        item.educationalApproach ||
+        item.communicationStyle ||
+        item.challengesAndSolutions ||
+        item.activitiesAndHobbies ||
+        item.parentChildInteraction ||
+        item.futureProspects
       );
     });
     
@@ -1498,14 +1515,19 @@ export default function ProfileDetail() {
       item?.partnerCodes || 
       (item?.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant)));
     const isTarget = !!(item?.goalDecomposition || item?.warnings || item?.plan123 || item?.request) && 
-      !item?.opener && !item?.personalitySummary;
-    const isBase = !!(item?.opener || item?.personalitySummary || item?.strengths || item?.weaknesses);
+      !item?.opener && !item?.personalitySummary && !item?.childPotential;
+    const isChild = !!(item?.childPotential || item?.upbringingRecommendations || item?.developmentFeatures || 
+      item?.educationalApproach || item?.communicationStyle || item?.challengesAndSolutions ||
+      item?.activitiesAndHobbies || item?.parentChildInteraction || item?.futureProspects);
+    const isBase = !!(item?.opener || item?.personalitySummary || item?.strengths || item?.weaknesses) && !isChild;
 
     // Выбираем функцию рендеринга в зависимости от типа
     if (isPartner) {
       return renderPartnerConsultation(items, CheckList, Entry, checkedMap, setCheckedMap, localUiStateRef, saveChecked);
     } else if (isTarget) {
       return renderTargetConsultation(items, CheckList, Entry, checkedMap, setCheckedMap, localUiStateRef, saveChecked);
+    } else if (isChild) {
+      return renderChildConsultation(items, CheckList, Entry, checkedMap, setCheckedMap, localUiStateRef, saveChecked);
     } else if (isBase) {
       return renderBaseConsultation(items, CheckList, Entry, checkedMap, setCheckedMap, localUiStateRef, saveChecked);
     }
@@ -1925,6 +1947,173 @@ export default function ProfileDetail() {
   }
 
   // Функция рендеринга целевой консультации
+  // Функция рендеринга детского расчета
+  function renderChildConsultation(
+    items: any[],
+    CheckList: any,
+    Entry: any,
+    checkedMap: Record<string, boolean>,
+    setCheckedMap: (map: Record<string, boolean>) => void,
+    localUiStateRef: React.MutableRefObject<Record<string, boolean>>,
+    saveChecked: (map: Record<string, boolean>) => void
+  ) {
+    return (
+      <div className="space-y-6">
+        {items.map((item, idx) => (
+          <div key={idx} className="space-y-6">
+            {/* Скажите родителям */}
+            {item.opener && (
+              <section id="opener" className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow relative group">
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(item.opener);
+                      alert('Текст скопирован в буфер обмена');
+                    }}
+                    className="p-2 rounded-lg bg-white/80 hover:bg-white shadow-sm border border-gray-200 transition-colors"
+                    title="Копировать текст"
+                  >
+                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </div>
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-4">
+                  <span className="text-2xl">👶</span>
+                  Скажите родителям
+                </h2>
+                <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg font-medium">{item.opener}</p>
+              </section>
+            )}
+
+            {/* Потенциал ребенка */}
+            {Array.isArray(item.childPotential) && item.childPotential.length > 0 && (
+              <section id="childPotential" className="rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">⭐</span>
+                  Потенциал ребенка
+                </h2>
+                <div className="space-y-5">
+                  {item.childPotential.map((t: string, i: number) => (
+                    <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg">{t}</p>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Особенности развития */}
+            {Array.isArray(item.developmentFeatures) && item.developmentFeatures.length > 0 && (
+              <section id="developmentFeatures" className="rounded-2xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">🌱</span>
+                  Особенности развития
+                </h2>
+                <div className="mt-3">
+                  <CheckList list={item.developmentFeatures} section="developmentFeatures" />
+                </div>
+              </section>
+            )}
+
+            {/* Рекомендации по воспитанию */}
+            {Array.isArray(item.upbringingRecommendations) && item.upbringingRecommendations.length > 0 && (
+              <section id="upbringingRecommendations" className="rounded-2xl border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">💚</span>
+                  Рекомендации по воспитанию
+                </h2>
+                <div className="mt-3">
+                  <CheckList list={item.upbringingRecommendations} section="upbringingRecommendations" />
+                </div>
+              </section>
+            )}
+
+            {/* Подход к обучению */}
+            {Array.isArray(item.educationalApproach) && item.educationalApproach.length > 0 && (
+              <section id="educationalApproach" className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">📚</span>
+                  Подход к обучению
+                </h2>
+                <div className="mt-3">
+                  <CheckList list={item.educationalApproach} section="educationalApproach" />
+                </div>
+              </section>
+            )}
+
+            {/* Стиль общения */}
+            {Array.isArray(item.communicationStyle) && item.communicationStyle.length > 0 && (
+              <section id="communicationStyle" className="rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">💬</span>
+                  Стиль общения
+                </h2>
+                <div className="mt-3">
+                  <CheckList list={item.communicationStyle} section="communicationStyle" />
+                </div>
+              </section>
+            )}
+
+            {/* Вызовы и решения */}
+            {Array.isArray(item.challengesAndSolutions) && item.challengesAndSolutions.length > 0 && (
+              <section id="challengesAndSolutions" className="rounded-2xl border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">⚡</span>
+                  Вызовы и решения
+                </h2>
+                <div className="mt-3">
+                  <CheckList list={item.challengesAndSolutions} section="challengesAndSolutions" />
+                </div>
+              </section>
+            )}
+
+            {/* Активности и хобби */}
+            {Array.isArray(item.activitiesAndHobbies) && item.activitiesAndHobbies.length > 0 && (
+              <section id="activitiesAndHobbies" className="rounded-2xl border-2 border-pink-200 bg-gradient-to-br from-pink-50 to-rose-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">🎨</span>
+                  Активности и хобби
+                </h2>
+                <div className="mt-3">
+                  <CheckList list={item.activitiesAndHobbies} section="activitiesAndHobbies" />
+                </div>
+              </section>
+            )}
+
+            {/* Взаимодействие родитель-ребенок */}
+            {Array.isArray(item.parentChildInteraction) && item.parentChildInteraction.length > 0 && (
+              <section id="parentChildInteraction" className="rounded-2xl border-2 border-teal-200 bg-gradient-to-br from-teal-50 to-cyan-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">👨‍👩‍👧</span>
+                  Взаимодействие родитель-ребенок
+                </h2>
+                <div className="space-y-5">
+                  {item.parentChildInteraction.map((t: string, i: number) => (
+                    <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg">{t}</p>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Перспективы будущего */}
+            {Array.isArray(item.futureProspects) && item.futureProspects.length > 0 && (
+              <section id="futureProspects" className="rounded-2xl border-2 border-violet-200 bg-gradient-to-br from-violet-50 to-purple-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">🔮</span>
+                  Перспективы будущего
+                </h2>
+                <div className="space-y-5">
+                  {item.futureProspects.map((t: string, i: number) => (
+                    <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg">{t}</p>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   function renderTargetConsultation(
     items: any[],
     CheckList: any,
