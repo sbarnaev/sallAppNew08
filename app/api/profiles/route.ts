@@ -230,7 +230,8 @@ export async function GET(req: NextRequest) {
         }
       }
     } catch (refreshError) {
-      logger.error("Error refreshing token:", refreshError);
+      // Это нормальная ситуация, когда refresh token истек - логируем на уровне debug
+      logger.debug("Error refreshing token (expected if refresh token expired):", refreshError instanceof Error ? refreshError.message : String(refreshError));
     }
   }
 

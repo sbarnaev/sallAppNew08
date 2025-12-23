@@ -422,11 +422,10 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
         } catch {
           refreshErrorData = { raw: refreshErrorText.substring(0, 200) };
         }
-        logger.error("[DEBUG] Token refresh failed:", {
+        // Это нормальная ситуация, когда refresh token истек - логируем на уровне debug
+        logger.debug("[AUTH] Token refresh failed (expected if refresh token expired):", {
           status: refreshRes.status,
           statusText: refreshRes.statusText,
-          error: refreshErrorData,
-          errorText: refreshErrorText.substring(0, 200)
         });
       }
     } catch (refreshError: any) {
