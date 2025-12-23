@@ -199,39 +199,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Unauthorized - no valid token" }, { status: 401 });
   }
 
-  let payload: any = {};
-  try {
-    payload = await req.json();
-  } catch {
-    payload = {};
-  }
-
-  const { clientId, name, birthday } = payload || {};
-  const publicCode = generatePublicCode();
-  if (!name || !birthday) {
-    return NextResponse.json({ message: "Нужны name и birthday" }, { status: 400 });
-  }
-
-  // 0) Получаем gender из данных клиента, если clientId указан
-  let clientGender: string | null = null;
-  if (clientId && directusUrl) {
-    try {
-      const clientRes = await fetch(`${directusUrl}/items/clients/${clientId}?fields=gender`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-        cache: "no-store",
-      });
-      if (clientRes.ok) {
-        const clientData = await clientRes.json().catch(() => ({}));
-        clientGender = clientData?.data?.gender || null;
-      }
-    } catch (error) {
-      logger.warn("[CALC-BASE] Failed to fetch client gender:", error);
-    }
-  }
-
-  // Используем серверную генерацию вместо n8n
-  const useServerGeneration = process.env.USE_SERVER_GENERATION !== "false"; // По умолчанию true
-
   // 1) Пытаемся создать пустой профиль в Directus, чтобы получить profileId для дальнейшего поллинга
   let profileId: number | null = null;
   if (directusUrl) {
