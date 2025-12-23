@@ -1573,26 +1573,37 @@ export default function ProfileDetail() {
               </section>
                 )}
 
-            {/* Описание личности - 3-4 абзаца */}
-                {item.personalitySummary && (
+            {/* Ключевая задача личности */}
+            {item.coreTask && (
+              <section id="coreTask" className="rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">🎯</span>
+                  Ключевая задача личности
+                </h2>
+                <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg font-semibold">{item.coreTask}</p>
+              </section>
+            )}
+
+            {/* Обратная совместимость: старый формат "Описание личности" */}
+            {!item.coreTask && item.personalitySummary && (
               <section id="personality" className="rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
                 <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
                   <span className="text-2xl">👤</span>
                   Описание личности
                 </h2>
-                    {Array.isArray(item.personalitySummary) ? (
-                      <div className="space-y-5">
-                        {item.personalitySummary.map((t: string, idx: number) => (
-                          <p key={idx} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg first:font-semibold">{t}</p>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg">{item.personalitySummary}</p>
+                {Array.isArray(item.personalitySummary) ? (
+                  <div className="space-y-5">
+                    {item.personalitySummary.map((t: string, idx: number) => (
+                      <p key={idx} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg first:font-semibold">{t}</p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg">{item.personalitySummary}</p>
                 )}
               </section>
             )}
 
-            {/* Пояснение кодов - 5-6 абзацев с синтезом */}
+            {/* Обратная совместимость: старый формат "Пояснение кодов" */}
             {Array.isArray(item.codesExplanation) && item.codesExplanation.length > 0 && (
               <section id="codes" className="rounded-2xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
                 <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
@@ -1660,7 +1671,7 @@ export default function ProfileDetail() {
               </div>
             )}
 
-            {/* Формула счастья */}
+            {/* Обратная совместимость: старый формат "Формула счастья" */}
             {item.happinessFormula && (
               <section id="happiness" className="rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
                 <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
@@ -1722,8 +1733,52 @@ export default function ProfileDetail() {
               </div>
             )}
 
-            {/* Конфликты и проблемы */}
-            {Array.isArray(item.conflicts) && item.conflicts.length > 0 && (
+            {/* Ключевые конфликты - новый формат */}
+            {Array.isArray(item.keyConflicts) && item.keyConflicts.length > 0 && (
+              <section id="keyConflicts" className="space-y-6">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                  <span className="text-3xl">⚡</span>
+                  Ключевые конфликты
+                </h2>
+                <div className="space-y-6">
+                  {item.keyConflicts.map((c: any, i: number) => (
+                    <div key={i} className="rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                      <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <span className="text-2xl">
+                          {c.type === "ОСНОВНОЙ КОНФЛИКТ" ? "❗" : "⚠"}
+                        </span>
+                        {c.type === "ОСНОВНОЙ КОНФЛИКТ" ? "ОСНОВНОЙ КОНФЛИКТ" : "ВТОРИЧНЫЙ КОНФЛИКТ"}
+                      </h3>
+                      {c.description && (
+                        <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg mb-5">{c.description}</p>
+                      )}
+                      {Array.isArray(c.manifestations) && c.manifestations.length > 0 && (
+                        <div className="mb-5">
+                          <div className="mb-3 text-sm font-semibold text-amber-900 uppercase tracking-wide">Как проявляется:</div>
+                          <ul className="space-y-2 pl-0 list-none">
+                            {c.manifestations.map((m: string, j: number) => (
+                              <li key={j} className="flex items-start gap-3 text-gray-800 text-base">
+                                <span className="flex-shrink-0 w-2 h-2 rounded-full bg-amber-500 mt-2"></span>
+                                <span className="leading-relaxed">{m}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {c.whyStuck && (
+                        <div className="mt-5 pt-5 border-t-2 border-amber-200">
+                          <div className="mb-3 text-sm font-semibold text-amber-900 uppercase tracking-wide">Почему человек застревает:</div>
+                          <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg">{c.whyStuck}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Обратная совместимость: старый формат "Конфликты и проблемы" */}
+            {!item.keyConflicts && Array.isArray(item.conflicts) && item.conflicts.length > 0 && (
               <AccordionSection title="⚠️ Конфликты и проблемы" id="conflicts">
                 <div className="space-y-6">
                   {item.conflicts.map((c: any, i: number) => (
@@ -1760,8 +1815,59 @@ export default function ProfileDetail() {
               </AccordionSection>
             )}
 
-            {/* Практики */}
-            {item.practices && (
+            {/* Рычаги влияния - новый формат */}
+            {Array.isArray(item.levers) && item.levers.length > 0 && (
+              <section id="levers" className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">⚙️</span>
+                  Рычаги влияния
+                </h2>
+                <div className="space-y-4">
+                  {item.levers.map((lever: string, i: number) => (
+                    <div key={i} className="flex items-start gap-3 p-4 bg-white rounded-lg border-l-4 border-blue-500">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center mt-0.5">
+                        {i + 1}
+                      </span>
+                      <p className="text-base md:text-lg leading-relaxed text-gray-800 flex-1">{lever}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Фокус на ближайший период */}
+            {item.focusNow && (
+              <section id="focusNow" className="rounded-2xl border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">🎯</span>
+                  Фокус на ближайший период
+                </h2>
+                <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg font-medium">{item.focusNow}</p>
+              </section>
+            )}
+
+            {/* Вопросы для консультанта */}
+            {Array.isArray(item.consultantQuestions) && item.consultantQuestions.length > 0 && (
+              <section id="consultantQuestions" className="rounded-2xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+                <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
+                  <span className="text-2xl">❓</span>
+                  Вопросы для консультанта
+                </h2>
+                <div className="space-y-4">
+                  {item.consultantQuestions.map((question: string, i: number) => (
+                    <div key={i} className="flex items-start gap-3 p-4 bg-white rounded-lg border-l-4 border-purple-500">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-100 text-purple-700 font-bold text-sm flex items-center justify-center mt-0.5">
+                        {i + 1}
+                      </span>
+                      <p className="text-base md:text-lg leading-relaxed text-gray-800 flex-1">{question}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Обратная совместимость: старый формат "Практики" */}
+            {!item.levers && item.practices && (
               <AccordionSection title="💡 Практики" id="practices">
                 <div className="space-y-8">
                   {Object.entries(item.practices).map(([blockKey, list]: any, i: number) => (
