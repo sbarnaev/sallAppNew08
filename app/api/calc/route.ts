@@ -4,6 +4,18 @@ import { getDirectusUrl } from "@/lib/env";
 
 import { refreshAccessToken } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import {
+  generateBaseConsultation,
+  generateTargetConsultation,
+  generatePartnerConsultation,
+  generateChildConsultation,
+  saveConsultationToProfile,
+  BaseCalculationInput,
+  TargetCalculationInput,
+  PartnerCalculationInput,
+  ChildCalculationInput,
+} from "@/lib/sal-generation";
+import { calculateSALCodes } from "@/lib/sal-codes";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,6 +36,9 @@ export async function POST(req: Request) {
   let token = cookies().get("directus_access_token")?.value;
   const refreshToken = cookies().get("directus_refresh_token")?.value;
   const directusUrl = getDirectusUrl();
+  
+  // Используем серверную генерацию вместо n8n
+  const useServerGeneration = process.env.USE_SERVER_GENERATION !== "false"; // По умолчанию true
   const n8nUrl = process.env.N8N_CALC_URL;
 
   logger.debug("[CALC] Initial check:", {
@@ -38,9 +53,9 @@ export async function POST(req: Request) {
     logger.error("[CALC] No tokens found, returning 401");
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
-  if (!n8nUrl) {
-    logger.error("[CALC] N8N_CALC_URL is not configured");
-    return NextResponse.json({ message: "No N8N_CALC_URL configured" }, { status: 400 });
+  
+  if (!directusUrl) {
+    return NextResponse.json({ message: "DIRECTUS_URL not configured" }, { status: 500 });
   }
   
   logger.debug("[CALC] Starting calculation request", {
@@ -157,6 +172,112 @@ export async function POST(req: Request) {
         body: JSON.stringify({ public_code: publicCode }),
       }).catch(() => { });
     } catch { }
+  }
+
+  // Если включена серверная генерация, используем её
+  if (useServerGeneration) {
+    logger.debug("[CALC] Using server-side generation");
+    try {
+      // Рассчитываем коды
+      const codes = calculateSALCodes(birthday);
+      if (!codes) {
+        throw new Error("Failed to calculate SAL codes");
+      }
+
+      const codesArray = [
+        codes.personality,
+        codes.connector,
+        codes.realization,
+        codes.generator,
+        codes.mission,
+      ];
+
+      // Генерируем консультацию в зависимости от типа
+      let consultationResult: any;
+      const calculationType = type || "base";
+
+      if (calculationType === "base") {
+        const input: BaseCalculationInput = {
+          name,
+          birthday,
+          clientId: clientId ? Number(clientId) : undefined,
+          gender: clientGender || null,
+        };
+        consultationResult = await generateBaseConsultation(input);
+      } else if (calculationType === "target") {
+        const requestText = cleanText(request ?? clientRequest ?? query ?? prompt ?? null) || "";
+        const input: TargetCalculationInput = {
+          name,
+          birthday,
+          request: requestText,
+          clientId: clientId ? Number(clientId) : undefined,
+          gender: clientGender || null,
+        };
+        consultationResult = await generateTargetConsultation(input);
+      } else if (calculationType === "partner") {
+        if (!partnerName || !partnerBirthday || !goal) {
+          throw new Error("For partner calculation, partnerName, partnerBirthday and goal are required");
+        }
+        const goalText = cleanText(goal) || "";
+        const input: PartnerCalculationInput = {
+          name,
+          birthday,
+          partnerName,
+          partnerBirthday,
+          goal: goalText,
+          clientId: clientId ? Number(clientId) : undefined,
+          gender: clientGender || null,
+        };
+        consultationResult = await generatePartnerConsultation(input);
+      } else if (calculationType === "child") {
+        const requestText = cleanText(request ?? clientRequest ?? query ?? prompt ?? null);
+        const input: ChildCalculationInput = {
+          name,
+          birthday,
+          request: requestText || null, // Опциональный запрос
+          clientId: clientId ? Number(clientId) : undefined,
+          gender: clientGender || null,
+        };
+        consultationResult = await generateChildConsultation(input);
+      } else {
+        throw new Error(`Unknown calculation type: ${calculationType}`);
+      }
+
+      // Сохраняем результат в профиль
+      if (profileId) {
+        await saveConsultationToProfile(
+          profileId,
+          consultationResult,
+          calculationType,
+          codesArray,
+          token,
+          directusUrl
+        );
+      }
+
+      logger.debug("[CALC] Server generation completed successfully");
+      return NextResponse.json({ profileId, public_code: publicCode });
+    } catch (error: any) {
+      logger.error("[CALC] Server generation error:", {
+        message: error?.message || String(error),
+        stack: error?.stack?.substring(0, 500),
+      });
+      // Fallback на n8n если настроен
+      if (n8nUrl) {
+        logger.debug("[CALC] Falling back to n8n after error");
+      } else {
+        return NextResponse.json(
+          { message: "Server generation failed", error: error?.message || String(error) },
+          { status: 500 }
+        );
+      }
+    }
+  }
+
+  // Fallback на n8n если серверная генерация не используется или не удалась
+  if (!n8nUrl) {
+    logger.error("[CALC] Neither server generation nor N8N_CALC_URL is configured");
+    return NextResponse.json({ message: "No calculation method configured" }, { status: 400 });
   }
 
   // 2) Вызываем n8n, передаём profileId (если удалось создать) и publicCode

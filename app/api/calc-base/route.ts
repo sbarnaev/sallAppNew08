@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { getDirectusUrl } from "@/lib/env";
 import { refreshAccessToken } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { generateBaseConsultation, saveConsultationToProfile, BaseCalculationInput } from "@/lib/sal-generation";
+import { calculateSALCodes } from "@/lib/sal-codes";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,6 +25,9 @@ export async function POST(req: Request) {
   let token = cookies().get("directus_access_token")?.value;
   const refreshToken = cookies().get("directus_refresh_token")?.value;
   const directusUrl = getDirectusUrl();
+  
+  // Используем серверную генерацию вместо n8n
+  const useServerGeneration = process.env.USE_SERVER_GENERATION !== "false"; // По умолчанию true
   const n8nUrl = process.env.N8N_CALC_URL;
 
   logger.debug("[CALC-BASE] Initial check:", {
@@ -37,9 +42,108 @@ export async function POST(req: Request) {
     logger.error("[CALC-BASE] No tokens found, returning 401");
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
+  
+  // Если включена серверная генерация, используем её
+  if (useServerGeneration) {
+    logger.debug("[CALC-BASE] Using server-side generation");
+    try {
+      // 1. Создаем профиль
+      let profileId: number | null = null;
+      let ownerUserId: string | null = null;
+
+      try {
+        const meRes = await fetch(`${directusUrl}/users/me`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+          cache: "no-store",
+        });
+        if (meRes.ok) {
+          const me = await meRes.json().catch(() => ({}));
+          ownerUserId = me?.data?.id || null;
+        }
+      } catch (error) {
+        logger.warn("[CALC-BASE] Failed to get current user:", error);
+      }
+
+      const createRes = await fetch(`${directusUrl}/items/profiles`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          client_id: clientId ? Number(clientId) : null,
+          ...(ownerUserId ? { owner_user: ownerUserId } : {}),
+          public_code: publicCode,
+        }),
+      });
+
+      const createData = await createRes.json().catch(() => ({}));
+      if (createRes.ok && createData?.data?.id) {
+        profileId = Number(createData.data.id);
+        logger.debug("[CALC-BASE] Profile created, profileId:", profileId);
+      } else {
+        logger.error("[CALC-BASE] Failed to create profile:", createData);
+        throw new Error("Failed to create profile");
+      }
+
+      // 2. Рассчитываем коды
+      const codes = calculateSALCodes(birthday);
+      if (!codes) {
+        throw new Error("Failed to calculate SAL codes");
+      }
+
+      const codesArray = [
+        codes.personality,
+        codes.connector,
+        codes.realization,
+        codes.generator,
+        codes.mission,
+      ];
+
+      // 3. Генерируем консультацию
+      const input: BaseCalculationInput = {
+        name,
+        birthday,
+        clientId: clientId ? Number(clientId) : undefined,
+        gender: clientGender || null,
+      };
+      
+      const consultationResult = await generateBaseConsultation(input);
+
+      // 4. Сохраняем в профиль
+      await saveConsultationToProfile(
+        profileId,
+        consultationResult,
+        "base",
+        codesArray,
+        token,
+        directusUrl
+      );
+
+      logger.debug("[CALC-BASE] Server generation completed successfully");
+      return NextResponse.json({ profileId, public_code: publicCode });
+    } catch (error: any) {
+      logger.error("[CALC-BASE] Server generation error:", {
+        message: error?.message || String(error),
+        stack: error?.stack?.substring(0, 500),
+      });
+      // Fallback на n8n если настроен
+      if (n8nUrl) {
+        logger.debug("[CALC-BASE] Falling back to n8n after error");
+      } else {
+        return NextResponse.json(
+          { message: "Server generation failed", error: error?.message || String(error) },
+          { status: 500 }
+        );
+      }
+    }
+  }
+  
+  // Fallback на n8n если серверная генерация не используется или не удалась
   if (!n8nUrl) {
-    logger.error("[CALC-BASE] N8N_CALC_URL is not configured");
-    return NextResponse.json({ message: "No N8N_CALC_URL configured" }, { status: 400 });
+    logger.error("[CALC-BASE] Neither server generation nor N8N_CALC_URL is configured");
+    return NextResponse.json({ message: "No calculation method configured" }, { status: 400 });
   }
   
   logger.debug("[CALC-BASE] Starting calculation request", {
