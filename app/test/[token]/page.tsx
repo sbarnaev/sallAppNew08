@@ -99,7 +99,6 @@ export default function PublicTestPage() {
   
   const question = currentTest.questions[currentQuestion];
   const progress = ((currentQuestion + 1) / currentTest.questions.length) * 100;
-  const allAnswered = currentTest.questions.every((q) => answers[q.id] !== undefined);
 
   function handleAnswer(value: number | string) {
     setAnswers({ ...answers, [question.id]: value });
@@ -108,8 +107,11 @@ export default function PublicTestPage() {
   function handleNext() {
     if (currentQuestion < currentTest.questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
-    } else if (allAnswered) {
-      handleSubmit();
+    } else {
+      // На последнем вопросе - проверяем, что текущий вопрос отвечен, и вызываем handleSubmit
+      if (answers[question.id] !== undefined) {
+        handleSubmit();
+      }
     }
   }
 
@@ -396,8 +398,8 @@ export default function PublicTestPage() {
 
                 {/* Варианты: на телефоне 2 в ряд, на десктопе 4-5 в ряд */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {Array.from({ length: (question.max || 5) - (question.min || 1) + 1 }, (_, i) => {
-                    const value = (question.min || 1) + i;
+                  {Array.from({ length: ((question.max ?? 5) - (question.min ?? 1)) + 1 }, (_, i) => {
+                    const value = (question.min ?? 1) + i;
                     const isSelected = answers[question.id] === value;
                     const valueLabel = question.valueLabels?.[value];
                     return (

@@ -53,7 +53,6 @@ export default function TakeTestPage() {
 
   const question = test.questions[currentQuestion];
   const progress = ((currentQuestion + 1) / test.questions.length) * 100;
-  const allAnswered = test.questions.every((q) => answers[q.id] !== undefined);
 
   function handleAnswer(value: number | string) {
     setAnswers({ ...answers, [question.id]: value });
@@ -62,8 +61,11 @@ export default function TakeTestPage() {
   function handleNext() {
     if (currentQuestion < test.questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
-    } else if (allAnswered) {
-      handleSubmit();
+    } else {
+      // На последнем вопросе - проверяем, что текущий вопрос отвечен, и вызываем handleSubmit
+      if (answers[question.id] !== undefined) {
+        handleSubmit();
+      }
     }
   }
 
@@ -305,8 +307,8 @@ export default function TakeTestPage() {
               </div>
             )}
             <div className="grid grid-cols-4 gap-2 sm:gap-3">
-              {Array.from({ length: (question.max || 5) - (question.min || 1) + 1 }, (_, i) => {
-                const value = (question.min || 1) + i;
+              {Array.from({ length: ((question.max ?? 5) - (question.min ?? 1)) + 1 }, (_, i) => {
+                const value = (question.min ?? 1) + i;
                 const isSelected = answers[question.id] === value;
                 const valueLabel = question.valueLabels?.[value];
                 return (

@@ -135,37 +135,43 @@ export default function NewCalculationPage() {
           body: JSON.stringify(payload),
         });
         const data = await res.json().catch(() => ({}));
+        
+        const profileId = data?.profileId || data?.data?.profileId || data?.id || data?.data?.id;
+        
+        // Сразу переходим на страницу профиля, даже если есть ошибка (но есть profileId)
+        // Там будет показан LoadingMessage с заготовленными надписями
+        if (profileId) {
+          router.push(`/profiles/${profileId}`);
+          return; // Выходим, чтобы не показывать ошибку если переадресация успешна
+        }
+        
+        // Если нет profileId, показываем ошибку
         if (!res.ok) {
           throw new Error(data?.message || "Calculation failed");
         }
-        const profileId = data?.profileId || data?.data?.profileId || data?.id || data?.data?.id;
-        // Сразу переходим на страницу профиля, там будет показан LoadingMessage с заготовленными надписями
-        if (profileId) {
-          router.push(`/profiles/${profileId}`);
-        } else {
-          router.push("/profiles");
-        }
       } else {
         // Для целевого, партнерского и детского расчета используем /api/calc
-      const res = await fetch("/api/calc", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      
-      const data = await res.json().catch(() => ({}));
-      
-      if (!res.ok) {
-        throw new Error(data?.message || "Calculation failed");
-      }
-      
-      const profileId = data?.profileId || data?.data?.profileId || data?.id;
-      // Сразу переходим на страницу профиля, там будет показан LoadingMessage с заготовленными надписями
-      if (profileId) {
-        router.push(`/profiles/${profileId}`);
-      } else {
-        router.push("/profiles");
-      }
+        const res = await fetch("/api/calc", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        
+        const data = await res.json().catch(() => ({}));
+        
+        const profileId = data?.profileId || data?.data?.profileId || data?.id;
+        
+        // Сразу переходим на страницу профиля, даже если есть ошибка (но есть profileId)
+        // Там будет показан LoadingMessage с заготовленными надписями
+        if (profileId) {
+          router.push(`/profiles/${profileId}`);
+          return; // Выходим, чтобы не показывать ошибку если переадресация успешна
+        }
+        
+        // Если нет profileId, показываем ошибку
+        if (!res.ok) {
+          throw new Error(data?.message || "Calculation failed");
+        }
       }
     } catch (err: any) {
       setError(err.message || String(err));
