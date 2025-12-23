@@ -1591,7 +1591,53 @@ export default function ProfileDetail() {
                   <span className="text-2xl">❗</span>
                       Скажите клиенту
                     </h2>
-                    <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg font-medium">{item.opener}</p>
+                    {(() => {
+                      // Разбиваем текст на абзацы по предложениям (2-3 абзаца)
+                      const text = item.opener || '';
+                      const sentences = text.split(/([.!?]+\s+)/).filter((s: string) => s.trim());
+                      const paragraphs: string[] = [];
+                      let currentParagraph = '';
+                      
+                      sentences.forEach((sentence: string, idx: number) => {
+                        currentParagraph += sentence;
+                        // Разбиваем на абзацы: примерно каждые 2-3 предложения или если абзац уже длинный
+                        if (currentParagraph.length > 200 || (idx > 0 && (idx + 1) % 3 === 0 && sentences.length > 3)) {
+                          paragraphs.push(currentParagraph.trim());
+                          currentParagraph = '';
+                        }
+                      });
+                      if (currentParagraph.trim()) {
+                        paragraphs.push(currentParagraph.trim());
+                      }
+                      
+                      // Если получился только один абзац, разбиваем пополам
+                      if (paragraphs.length === 1 && paragraphs[0].length > 300) {
+                        const mid = Math.floor(paragraphs[0].length / 2);
+                        const splitPoint = paragraphs[0].lastIndexOf('.', mid);
+                        if (splitPoint > 0) {
+                          paragraphs[0] = paragraphs[0].substring(0, splitPoint + 1);
+                          paragraphs.push(paragraphs[0].substring(splitPoint + 1).trim());
+                        }
+                      }
+                      
+                      // Минимум 2 абзаца, максимум 3
+                      if (paragraphs.length === 1) {
+                        const mid = Math.floor(paragraphs[0].length / 2);
+                        const splitPoint = paragraphs[0].lastIndexOf('.', mid);
+                        if (splitPoint > 0) {
+                          paragraphs.push(paragraphs[0].substring(splitPoint + 1).trim());
+                          paragraphs[0] = paragraphs[0].substring(0, splitPoint + 1);
+                        }
+                      }
+                      
+                      return (
+                        <div className="space-y-4">
+                          {paragraphs.slice(0, 3).map((para, i) => (
+                            <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg font-medium">{para}</p>
+                          ))}
+                        </div>
+                      );
+                    })()}
               </section>
                 )}
 
@@ -1602,7 +1648,53 @@ export default function ProfileDetail() {
                   <span className="text-2xl">🎯</span>
                   Ключевая задача личности
                 </h2>
-                <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg font-semibold">{item.coreTask}</p>
+                {(() => {
+                  // Разбиваем текст на абзацы по предложениям (2-3 абзаца)
+                  const text = item.coreTask || '';
+                  const sentences = text.split(/([.!?]+\s+)/).filter((s: string) => s.trim());
+                  const paragraphs: string[] = [];
+                  let currentParagraph = '';
+                  
+                  sentences.forEach((sentence: string, idx: number) => {
+                    currentParagraph += sentence;
+                    // Разбиваем на абзацы: примерно каждые 2-3 предложения или если абзац уже длинный
+                    if (currentParagraph.length > 200 || (idx > 0 && (idx + 1) % 3 === 0 && sentences.length > 3)) {
+                      paragraphs.push(currentParagraph.trim());
+                      currentParagraph = '';
+                    }
+                  });
+                  if (currentParagraph.trim()) {
+                    paragraphs.push(currentParagraph.trim());
+                  }
+                  
+                  // Если получился только один абзац, разбиваем пополам
+                  if (paragraphs.length === 1 && paragraphs[0].length > 300) {
+                    const mid = Math.floor(paragraphs[0].length / 2);
+                    const splitPoint = paragraphs[0].lastIndexOf('.', mid);
+                    if (splitPoint > 0) {
+                      paragraphs[0] = paragraphs[0].substring(0, splitPoint + 1);
+                      paragraphs.push(paragraphs[0].substring(splitPoint + 1).trim());
+                    }
+                  }
+                  
+                  // Минимум 2 абзаца, максимум 3
+                  if (paragraphs.length === 1) {
+                    const mid = Math.floor(paragraphs[0].length / 2);
+                    const splitPoint = paragraphs[0].lastIndexOf('.', mid);
+                    if (splitPoint > 0) {
+                      paragraphs.push(paragraphs[0].substring(splitPoint + 1).trim());
+                      paragraphs[0] = paragraphs[0].substring(0, splitPoint + 1);
+                    }
+                  }
+                  
+                  return (
+                    <div className="space-y-4">
+                      {paragraphs.slice(0, 3).map((para, i) => (
+                        <p key={i} className="whitespace-pre-wrap leading-relaxed text-gray-800 text-base md:text-lg font-semibold">{para}</p>
+                      ))}
+                    </div>
+                  );
+                })()}
               </section>
             )}
 
@@ -1888,8 +1980,8 @@ export default function ProfileDetail() {
               </section>
             )}
 
-            {/* Обратная совместимость: старый формат "Практики" */}
-            {!item.levers && item.practices && (
+            {/* Практики - новый и старый формат */}
+            {item.practices && (
               <AccordionSection title="💡 Практики" id="practices">
                 <div className="space-y-8">
                   {Object.entries(item.practices).map(([blockKey, list]: any, i: number) => (

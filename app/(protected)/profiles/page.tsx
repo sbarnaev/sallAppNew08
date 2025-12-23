@@ -182,7 +182,10 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
           
           return (
             <div key={p.id} className="card p-5 hover:shadow-md transition-all duration-200 border border-gray-200 relative group">
-              <Link href={`/profiles/${p.id}`} className="block space-y-3">
+              <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <DeleteProfile id={p.id} />
+              </div>
+              <Link href={`/profiles/${p.id}`} className="block space-y-3 pr-20">
                 <div className="font-bold text-base text-gray-900 break-words group-hover:text-brand-600 transition-colors leading-tight">{clientName}</div>
                 <div className="space-y-2 text-sm text-gray-600">
                   <div className="flex items-center gap-2.5">
@@ -206,9 +209,6 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
                   </span>
                 </div>
               </Link>
-              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <DeleteProfile id={p.id} />
-              </div>
             </div>
           );
         })}

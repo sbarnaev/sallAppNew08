@@ -111,6 +111,18 @@
               "maxItems": 3,
               "description": "Ровно 3 вопроса для консультанта. Вопросы для диалога, помогают вскрыть сопротивление или осознание. Не риторические.",
               "items": { "type": "string" }
+            },
+            "practices": {
+              "type": "object",
+              "description": "Практики — конкретные действия и упражнения для работы с ресурсами. Структурируй по ресурсам (Личность, Коннектор, Реализация, Генератор, Миссия). Для каждого ресурса дай 3-5 практических рекомендаций.",
+              "additionalProperties": false,
+              "patternProperties": {
+                "^.*$": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Массив практик для конкретного ресурса"
+                }
+              }
             }
           },
           "required": [
@@ -123,7 +135,8 @@
             "keyConflicts",
             "levers",
             "focusNow",
-            "consultantQuestions"
+            "consultantQuestions",
+            "practices"
           ]
         }
       }

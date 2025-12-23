@@ -34,6 +34,7 @@ export function validateBaseConsultation(data: any): ValidationResult {
     "levers",
     "focusNow",
     "consultantQuestions",
+    "practices",
   ];
 
   for (const field of requiredFields) {
@@ -73,6 +74,26 @@ export function validateBaseConsultation(data: any): ValidationResult {
   checkArrayLength(data.keyConflicts, 2, 2, "keyConflicts");
   checkArrayLength(data.levers, 3, 3, "levers");
   checkArrayLength(data.consultantQuestions, 3, 3, "consultantQuestions");
+
+  // Проверка practices
+  if (data.practices) {
+    if (typeof data.practices !== "object" || Array.isArray(data.practices)) {
+      errors.push("Поле practices должно быть объектом");
+    } else {
+      // Проверяем, что practices содержит массивы строк
+      Object.entries(data.practices).forEach(([key, value]: [string, any]) => {
+        if (!Array.isArray(value)) {
+          errors.push(`Поле practices.${key} должно быть массивом`);
+        } else {
+          value.forEach((item: any, idx: number) => {
+            if (typeof item !== "string") {
+              errors.push(`Поле practices.${key}[${idx}] должно быть строкой`);
+            }
+          });
+        }
+      });
+    }
+  }
 
   // Проверка структуры keyConflicts
   if (data.keyConflicts && Array.isArray(data.keyConflicts)) {
