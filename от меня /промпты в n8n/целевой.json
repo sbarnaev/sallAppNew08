@@ -58,50 +58,14 @@
             },
             "currentDiagnostics": {
               "type": "object",
-              "description": "Диагностика сейчас — что в плюсе/минусе, реальная готовность клиента. Добавь диагностические вопросы простым языком.",
               "additionalProperties": false,
+              "description": "Диагностика сейчас — задача блока помочь консультанту понять стартовую точку. Включи: что сейчас, вероятнее всего, в плюсе, что сейчас, вероятнее всего, в минусе, 3–4 диагностических вопроса клиенту (простые, бытовые, не психологические).",
               "properties": {
-                "resourceStates": {
-                  "type": "array",
-                  "description": "Плюс/минус/нейтраль по каждому ресурсу с цифрой и коррекцией.",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "resource": { "type": "string" },
-                      "code": { "type": ["integer","string"] },
-                      "state": { "type": "string", "enum": ["plus","neutral","minus","unknown"] },
-                      "evidence": { "type": "array", "items": { "type": "string" } },
-                      "correction": { "type": "array", "items": { "type": "string" } }
-                    },
-                    "required": ["resource","code","state","evidence","correction"]
-                  }
-                },
-                "readiness": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "willingness": { "type": ["integer","null"], "minimum": 0, "maximum": 10, "description": "0–10, готов ли идти к цели." },
-                    "blockers": { "type": "array", "items": { "type": "string" } },
-                    "comment": { "type": ["string","null"] }
-                  },
-                  "required": ["willingness","blockers","comment"]
-                },
-                "questions": {
-                  "type": "array",
-                  "description": "Диагностические вопросы (каждый привязан к ресурсу с цифрой).",
-                  "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "properties": {
-                      "question": { "type": "string" },
-                      "salResource": { "type": "string" }
-                    },
-                    "required": ["question","salResource"]
-                  }
-                }
+                "inPlus": { "type": "array", "items": { "type": "string" } },
+                "inMinus": { "type": "array", "items": { "type": "string" } },
+                "diagnosticQuestions": { "type": "array", "minItems": 3, "maxItems": 4, "items": { "type": "string" }, "description": "3–4 диагностических вопроса клиенту" }
               },
-              "required": ["resourceStates","readiness","questions"]
+              "required": ["inPlus", "inMinus", "diagnosticQuestions"]
             },
             "plan123": {
               "type": "array",
