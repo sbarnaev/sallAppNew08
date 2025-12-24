@@ -3575,7 +3575,6 @@ export default function ProfileDetail() {
                             });
                           }
                         }}
-                        onLoad={() => {}}
                       />
                       <div className="hidden absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-50">
             Изображение {i + 1}
