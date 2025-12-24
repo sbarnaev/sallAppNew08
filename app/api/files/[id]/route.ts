@@ -31,11 +31,37 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
     });
   }
 
+  // Если Directus не может вернуть файл (403 или 404), пробуем S3 напрямую
+  if (!r.ok && (r.status === 403 || r.status === 404)) {
+    const s3Endpoint = process.env.NEXT_PUBLIC_S3_ENDPOINT || "https://s3.ru1.storage.beget.cloud";
+    const s3Bucket = process.env.NEXT_PUBLIC_S3_BUCKET || "da0eaeb06b35-sal-app";
+    const s3Path = process.env.NEXT_PUBLIC_S3_IMAGES_PATH || "sall_app/photo";
+    const cleanPath = s3Path.replace(/^\/+|\/+$/g, '');
+    const s3Url = `${s3Endpoint}/${s3Bucket}/${cleanPath}/${id}.jpeg`;
+    
+    // Пробуем получить файл из S3
+    const s3Response = await fetch(s3Url, {
+      cache: "no-store",
+    });
+    
+    if (s3Response.ok) {
+      const fileData = await s3Response.arrayBuffer();
+      const contentType = s3Response.headers.get("content-type") || "image/jpeg";
+      
+      return new NextResponse(fileData, {
+        headers: {
+          "Content-Type": contentType,
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    }
+  }
+
   if (!r.ok) {
     return NextResponse.json({ message: "File not found" }, { status: r.status });
   }
 
-  // Проксируем файл
+  // Проксируем файл из Directus
   const fileData = await r.arrayBuffer();
   const contentType = r.headers.get("content-type") || "application/octet-stream";
   

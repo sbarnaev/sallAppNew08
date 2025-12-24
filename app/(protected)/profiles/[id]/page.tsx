@@ -286,14 +286,14 @@ function LoadingMessage() {
     // Показываем основное сообщение, затем через 2 секунды начинаем показывать факты
     const factTimer = setTimeout(() => setShowFact(true), 2000);
     
-    // Меняем факты каждые 15 секунд на случайный
+    // Меняем факты каждые 4 секунды на случайный
     const interval = setInterval(() => {
       setFactIndex(() => {
         const randomIndex = Math.floor(Math.random() * INTERESTING_FACTS.length);
         setKey(prev => prev + 1); // Меняем key для анимации
         return randomIndex;
       });
-    }, 15000);
+    }, 4000);
 
     return () => {
       clearTimeout(factTimer);
@@ -1411,8 +1411,10 @@ export default function ProfileDetail() {
     const CheckList = ({ list, section }: { list: string[]; section: string }) => (
       <ul className="space-y-2">
         {list.map((text, i) => {
-          const legacyKey = makeLegacyKey(section, text, i);
-          const hashKey = makeHashKey(section, text);
+          // Убираем символ • и другие маркеры списка из начала текста
+          const cleanText = (text || "").toString().replace(/^[\s•\-\*\+]\s*/, '').trim();
+          const legacyKey = makeLegacyKey(section, cleanText, i);
+          const hashKey = makeHashKey(section, cleanText);
           const checked = Boolean(checkedMap[hashKey] ?? checkedMap[legacyKey]);
           const inputId = `${hashKey}-${i}`;
           return (
@@ -1430,7 +1432,7 @@ export default function ProfileDetail() {
                 className="mt-0.5 h-[18px] w-[18px] shrink-0 rounded border-2 border-indigo-300 bg-indigo-100 text-indigo-600 focus:ring-0"
               />
               <label htmlFor={inputId} className="leading-relaxed text-gray-800 cursor-pointer flex-1 pl-1">
-                {text}
+                {cleanText}
               </label>
             </li>
           );
@@ -3461,65 +3463,55 @@ export default function ProfileDetail() {
           
           // Приоритет 1: Если есть прямой URL из S3 (новый формат)
           if (typeof img === 'object' && img.url) {
+            // Если это прямой S3 URL, используем API прокси для избежания 403
+            if (img.url.includes('s3.') || img.url.includes('storage.beget')) {
+              // Пытаемся извлечь ID из URL
+              const idMatch = img.url.match(/\/(\d+)\.jpeg/);
+              if (idMatch && idMatch[1]) {
+                return `/api/files/${idMatch[1]}`;
+              }
+            }
             return img.url;
           }
           
-          // Приоритет 2: Если это обработанное изображение из коллекции images (с полями id и code)
+          // Приоритет 2: Если это объект файла Directus с id
           if (typeof img === 'object' && img.id) {
-            // Если id - это число, используем его для формирования S3 URL
-            const imageId = img.id;
-            if (/^\d+$/.test(String(imageId))) {
-              // Пробуем сформировать S3 URL напрямую
-              const s3Endpoint = process.env.NEXT_PUBLIC_S3_ENDPOINT || "https://s3.ru1.storage.beget.cloud";
-              const s3Bucket = process.env.NEXT_PUBLIC_S3_BUCKET || "da0eaeb06b35-sal-app";
-              const s3Path = process.env.NEXT_PUBLIC_S3_IMAGES_PATH || "sall_app/photo";
-              const cleanPath = s3Path.replace(/^\/+|\/+$/g, '');
-              // Используем path-style формат по умолчанию
-              const s3Url = `${s3Endpoint}/${s3Bucket}/${cleanPath}/${imageId}.jpeg`;
-              return s3Url;
-            }
+            // Используем API прокси для изображений (избегаем 403)
+            return `/api/files/${img.id}`;
           }
           
           // Приоритет 3: Если это обработанное изображение из коллекции images (с полями id и code)
           if (typeof img === 'object' && img.code) {
-            // Используем code для получения изображения
-            // Если code - это ID файла, используем S3 URL напрямую
+            // Если code - это ID файла, используем API прокси
             if (/^\d+$/.test(String(img.code))) {
-              const s3Endpoint = process.env.NEXT_PUBLIC_S3_ENDPOINT || "https://s3.ru1.storage.beget.cloud";
-              const s3Bucket = process.env.NEXT_PUBLIC_S3_BUCKET || "da0eaeb06b35-sal-app";
-              const s3Path = process.env.NEXT_PUBLIC_S3_IMAGES_PATH || "sall_app/photo";
-              const cleanPath = s3Path.replace(/^\/+|\/+$/g, '');
-              const s3Url = `${s3Endpoint}/${s3Bucket}/${cleanPath}/${img.code}.jpeg`;
-              return s3Url;
+              return `/api/files/${img.code}`;
             }
             // Иначе code может быть URL или другим идентификатором
             return img.code;
           }
           
-          // Приоритет 4: Если это объект файла Directus с полным URL
-          if (typeof img === 'object') {
-            if (img.id) {
-              // Используем API прокси для изображений
-              return `/api/files/${img.id}`;
-            }
-            if (img.filename_download) {
-              return img.id ? `/api/files/${img.id}` : null;
-            }
+          // Приоритет 4: Если это объект файла Directus с filename_download
+          if (typeof img === 'object' && img.filename_download) {
+            return img.id ? `/api/files/${img.id}` : null;
           }
           
           // Приоритет 5: Если это строка
           if (typeof img === 'string') {
             // Если уже полный URL
-            if (img.startsWith('http')) return img;
-            // Если это ID файла
+            if (img.startsWith('http')) {
+              // Если это S3 URL, пытаемся использовать API прокси
+              if (img.includes('s3.') || img.includes('storage.beget')) {
+                const idMatch = img.match(/\/(\d+)\.jpeg/);
+                if (idMatch && idMatch[1]) {
+                  return `/api/files/${idMatch[1]}`;
+                }
+              }
+              return img;
+            }
+            // Если это ID файла (число)
             if (/^\d+$/.test(img)) {
-              // Формируем S3 URL напрямую
-              const s3Endpoint = process.env.NEXT_PUBLIC_S3_ENDPOINT || "https://s3.ru1.storage.beget.cloud";
-              const s3Bucket = process.env.NEXT_PUBLIC_S3_BUCKET || "da0eaeb06b35-sal-app";
-              const s3Path = process.env.NEXT_PUBLIC_S3_IMAGES_PATH || "sall_app/photo";
-              const cleanPath = s3Path.replace(/^\/+|\/+$/g, '');
-              const s3Url = `${s3Endpoint}/${s3Bucket}/${cleanPath}/${img}.jpeg`;
-              return s3Url;
+              // Используем API прокси вместо прямого S3 URL
+              return `/api/files/${img}`;
             }
             // Иначе считаем это URL
             return img;

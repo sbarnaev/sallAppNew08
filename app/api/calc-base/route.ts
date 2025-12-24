@@ -128,55 +128,74 @@ export async function POST(req: Request) {
         throw new Error("Failed to create profile");
       }
 
-      // 2. Рассчитываем коды
-      const codes = calculateSALCodes(birthday);
-      if (!codes) {
-        throw new Error("Failed to calculate SAL codes");
-      }
+      // Возвращаем profileId сразу, генерацию запускаем асинхронно
+      // Это позволяет пользователю сразу перейти на страницу профиля
+      (async () => {
+        try {
+          // 2. Рассчитываем коды
+          const codes = calculateSALCodes(birthday);
+          if (!codes) {
+            logger.error("[CALC-BASE] Failed to calculate SAL codes");
+            return;
+          }
 
-      const codesArray = [
-        codes.personality,
-        codes.connector,
-        codes.realization,
-        codes.generator,
-        codes.mission,
-      ];
+          const codesArray = [
+            codes.personality,
+            codes.connector,
+            codes.realization,
+            codes.generator,
+            codes.mission,
+          ];
 
-      // 3. Генерируем консультацию
-      const input: BaseCalculationInput = {
-        name,
-        birthday,
-        clientId: clientId ? Number(clientId) : undefined,
-        gender: clientGender || null,
-      };
-      
-      const consultationResult = await generateBaseConsultation(input);
-      
-      logger.log("[CALC-BASE] Consultation generated successfully:", {
-        profileId,
-        hasOpener: !!consultationResult?.opener,
-        hasStrengths: !!consultationResult?.strengths,
-        hasWeaknesses: !!consultationResult?.weaknesses,
-        codes: codesArray,
-      });
+          // 3. Генерируем консультацию
+          const input: BaseCalculationInput = {
+            name,
+            birthday,
+            clientId: clientId ? Number(clientId) : undefined,
+            gender: clientGender || null,
+          };
+          
+          const consultationResult = await generateBaseConsultation(input);
+          
+          logger.log("[CALC-BASE] Consultation generated successfully:", {
+            profileId,
+            hasOpener: !!consultationResult?.opener,
+            hasStrengths: !!consultationResult?.strengths,
+            hasWeaknesses: !!consultationResult?.weaknesses,
+            codes: codesArray,
+          });
 
-      // 4. Сохраняем в профиль
-      if (!token || !directusUrl) {
-        logger.error("[CALC-BASE] Token or directusUrl missing before save");
-        throw new Error("Token or directusUrl is missing");
-      }
-      
-      logger.log("[CALC-BASE] Saving consultation to profile:", { profileId });
-      await saveConsultationToProfile(
-        profileId,
-        consultationResult,
-        "base",
-        codesArray,
-        token,
-        directusUrl
-      );
+          // 4. Сохраняем в профиль
+          if (!token || !directusUrl) {
+            logger.error("[CALC-BASE] Token or directusUrl missing before save");
+            return;
+          }
+          
+          logger.log("[CALC-BASE] Saving consultation to profile:", { profileId });
+          await saveConsultationToProfile(
+            profileId,
+            consultationResult,
+            "base",
+            codesArray,
+            token,
+            directusUrl
+          );
 
-      logger.log("[CALC-BASE] Base calculation completed successfully:", {
+          logger.log("[CALC-BASE] Base calculation completed successfully:", {
+            profileId,
+            publicCode,
+            clientId: clientId || null,
+          });
+        } catch (error: any) {
+          logger.error("[CALC-BASE] Async generation error:", {
+            message: error?.message || String(error),
+            stack: error?.stack?.substring(0, 500),
+            profileId,
+          });
+        }
+      })(); // Запускаем асинхронно, не ждем завершения
+
+      logger.log("[CALC-BASE] Profile created, returning profileId immediately:", {
         profileId,
         publicCode,
         clientId: clientId || null,
