@@ -16,16 +16,16 @@ export function Snowflakes() {
     mq?.addEventListener?.("change", update);
 
     // Создаем снежинки (детерминированно на mount, без random в render)
-    // Увеличено количество для более насыщенного фона
-    const count = 60;
+    // Увеличено количество для насыщенного снегопада
+    const count = 120;
     const newSnowflakes = Array.from({ length: count }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
-      delay: Math.random() * 8,
-      duration: 10 + Math.random() * 15, // 10–25s (больше вариативности)
-      size: 8 + Math.random() * 14, // px (8-22px)
-      drift: (Math.random() * 2 - 1) * 40, // -40..40 px (больше горизонтального движения)
-      opacity: 0.2 + Math.random() * 0.6, // 0.2..0.8 (больше вариативности прозрачности)
+      delay: Math.random() * 10,
+      duration: 8 + Math.random() * 20, // 8–28s (больше вариативности скорости)
+      size: 10 + Math.random() * 18, // px (10-28px) - более заметные
+      drift: (Math.random() * 2 - 1) * 50, // -50..50 px (больше горизонтального движения)
+      opacity: 0.4 + Math.random() * 0.5, // 0.4..0.9 (более заметные снежинки)
     }));
     setSnowflakes(newSnowflakes);
 
@@ -34,25 +34,31 @@ export function Snowflakes() {
 
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      {snowflakes.map((snowflake) => (
-        <div
-          key={snowflake.id}
-          className="snowflake"
-          style={{
-            left: `${snowflake.left}%`,
-            animationDelay: `${snowflake.delay}s`,
-            animationDuration: `${snowflake.duration}s`,
-            fontSize: `${snowflake.size}px`,
-            opacity: snowflake.opacity,
-            // CSS var to add gentle horizontal drift
-            ["--snow-drift" as any]: `${snowflake.drift}px`,
-            // If reduced motion -> disable animation entirely
-            animation: reduceMotion ? "none" : undefined,
-          }}
-        >
-          ❄
-        </div>
-      ))}
+      {snowflakes.map((snowflake) => {
+        // Для крупных снежинок используем более медленную анимацию (эффект глубины)
+        const isLarge = snowflake.size > 18;
+        const animationName = isLarge && !reduceMotion ? "snowfall-slow" : "snowfall";
+        
+        return (
+          <div
+            key={snowflake.id}
+            className="snowflake"
+            style={{
+              left: `${snowflake.left}%`,
+              animationDelay: `${snowflake.delay}s`,
+              animationDuration: `${snowflake.duration}s`,
+              fontSize: `${snowflake.size}px`,
+              opacity: snowflake.opacity,
+              // CSS var to add gentle horizontal drift
+              ["--snow-drift" as any]: `${snowflake.drift}px`,
+              // If reduced motion -> disable animation entirely
+              animation: reduceMotion ? "none" : `${animationName} ${snowflake.duration}s linear infinite`,
+            }}
+          >
+            ❄
+          </div>
+        );
+      })}
     </div>
   );
 }
