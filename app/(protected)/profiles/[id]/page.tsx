@@ -2081,14 +2081,27 @@ export default function ProfileDetail() {
                 } catch {
                   return null;
                 }
-                if (parsed?.type === "child" && parsed.request) {
+                if (parsed?.type === "child") {
                   return (
                     <section id="child-request" className="rounded-2xl border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-pink-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
                       <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
                         <span className="text-2xl">📝</span>
-                        Запрос родителей
+                        Информация о ребёнке
                       </h2>
-                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{parsed.request}</p>
+                      <div className="space-y-4">
+                        {parsed.childName && (
+                          <div>
+                            <div className="text-sm font-semibold text-rose-700 mb-2">Имя ребёнка:</div>
+                            <p className="text-base md:text-lg text-gray-800 leading-relaxed">{parsed.childName}</p>
+                          </div>
+                        )}
+                        {parsed.request && (
+                          <div>
+                            <div className="text-sm font-semibold text-rose-700 mb-2">Запрос родителей:</div>
+                            <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{parsed.request}</p>
+                          </div>
+                        )}
+                      </div>
                     </section>
                   );
                 }
@@ -3462,15 +3475,18 @@ export default function ProfileDetail() {
         const getImageUrl = (img: any): string | null => {
           if (!img) return null;
           
-          // Приоритет 1: Если есть прямой URL из S3 (новый формат)
+          // Приоритет 1: Если есть прямой URL из API (новый формат с обработанными изображениями)
           if (typeof img === 'object' && img.url) {
-            // Если это прямой S3 URL, используем API прокси для избежания 403
-            if (img.url.includes('s3.') || img.url.includes('storage.beget')) {
-              // Пытаемся извлечь ID из URL
-              const idMatch = img.url.match(/\/(\d+)\.jpeg/);
-              if (idMatch && idMatch[1]) {
-                return `/api/files/${idMatch[1]}`;
+            // Если есть ID, всегда используем API прокси для надежности (избегаем 403)
+            if (img.id) {
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`[getImageUrl] Using API proxy for image with ID ${img.id}, original URL: ${img.url}`);
               }
+              return `/api/files/${img.id}`;
+            }
+            // Если ID нет, используем прямой URL
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`[getImageUrl] Using direct URL (no ID): ${img.url}`);
             }
             return img.url;
           }
@@ -3500,7 +3516,7 @@ export default function ProfileDetail() {
           if (typeof img === 'string') {
             // Если уже полный URL
             if (img.startsWith('http')) {
-              // Если это S3 URL, пытаемся использовать API прокси
+              // Если это S3 URL, пытаемся использовать API прокси (извлекаем ID из URL)
               if (img.includes('s3.') || img.includes('storage.beget')) {
                 const idMatch = img.match(/\/(\d+)\.jpeg/);
                 if (idMatch && idMatch[1]) {
@@ -3537,19 +3553,26 @@ export default function ProfileDetail() {
                         className="w-full h-full object-contain"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          if (process.env.NODE_ENV === 'development') {
-                            console.error(`[ERROR] Failed to load image ${i + 1}:`, {
-                              url: imageUrl,
-                              imageData: img,
-                              error: '403 Forbidden - возможно файл не загружен в S3 или bucket не публичный',
-                              suggestion: 'Проверьте: 1) Файл загружен в S3 по пути sall_app/photo/{ID}.jpeg, 2) Bucket настроен как публичный'
-                            });
-                          }
+                          console.error(`[ERROR] Failed to load image ${i + 1}:`, {
+                            url: imageUrl,
+                            imageData: img,
+                            imageId: img?.id,
+                            error: 'Failed to load image - возможно файл не загружен или нет доступа',
+                            suggestion: 'Проверьте: 1) Файл существует в Directus/S3, 2) API прокси работает, 3) Bucket настроен правильно'
+                          });
                           target.style.display = 'none';
                           const placeholder = target.nextElementSibling as HTMLElement;
                           if (placeholder) {
                             placeholder.classList.remove('hidden');
-                            placeholder.innerHTML = `<div class="text-red-400 text-xs text-center p-2">Ошибка загрузки<br/>Проверьте доступ к файлу</div>`;
+                            placeholder.innerHTML = `<div class="text-red-400 text-xs text-center p-2">Ошибка загрузки<br/>ID: ${img?.id || 'N/A'}</div>`;
+                          }
+                        }}
+                        onLoad={() => {
+                          if (process.env.NODE_ENV === 'development') {
+                            console.log(`[SUCCESS] Image ${i + 1} loaded successfully:`, {
+                              url: imageUrl,
+                              imageId: img?.id
+                            });
                           }
                         }}
                         onLoad={() => {}}

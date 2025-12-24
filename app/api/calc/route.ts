@@ -171,12 +171,12 @@ export async function POST(req: Request) {
         };
       } else if (type === "child") {
         const childReq = cleanText(request ?? clientRequest ?? query ?? prompt ?? null);
-        if (childReq) {
-          profileData.target_json = {
-            type: "child",
-            request: childReq,
-          };
-        }
+        const childName = payload.childName || null;
+        profileData.target_json = {
+          type: "child",
+          ...(childName ? { childName: childName } : {}),
+          ...(childReq ? { request: childReq } : {}),
+        };
       }
       
       const createRes = await fetch(`${directusUrl}/items/profiles`, {

@@ -28,9 +28,10 @@ export default function NewCalculationPage() {
   const canStartPartner = Boolean(name && birthday && partnerName && partnerBirthday && partnerGoal);
 
   // Поля для детского расчета
+  const [childName, setChildName] = useState<string>(""); // имя ребенка
   const [childRequest, setChildRequest] = useState<string>("");
   const [childBirthday, setChildBirthday] = useState<string>(""); // дата рождения ребенка (дд.мм.гггг)
-  const canStartChild = Boolean(name && childBirthday); // имя клиента (родителя) и дата рождения ребенка обязательны
+  const canStartChild = Boolean(name && childName && childBirthday); // имя клиента (родителя), имя ребенка и дата рождения ребенка обязательны
 
   useEffect(() => {
     if (clientIdParam) {
@@ -63,9 +64,9 @@ export default function NewCalculationPage() {
   async function startCalc(type: "base" | "target" | "partner" | "child") {
     setError(null);
     if (type === "child") {
-      // Для детского расчета нужны имя клиента (родителя) и дата рождения ребенка
-      if (!name || !childBirthday) {
-        setError("Для детского расчета заполните имя клиента (родителя) и дату рождения ребенка.");
+      // Для детского расчета нужны имя клиента (родителя), имя ребенка и дата рождения ребенка
+      if (!name || !childName || !childBirthday) {
+        setError("Для детского расчета заполните имя клиента (родителя), имя ребенка и дату рождения ребенка.");
         return;
       }
     } else {
@@ -129,6 +130,10 @@ export default function NewCalculationPage() {
           // Если формат не дд.мм.гггг, пробуем использовать как есть (может быть уже YYYY-MM-DD)
           payload.birthday = childBirthday;
         }
+        // Передаем имя ребенка
+        payload.childName = cleanText(childName);
+        // Используем имя ребенка для генерации, если указано
+        payload.name = cleanText(childName);
         const req = cleanText(childRequest || "");
         if (req) payload.request = req;
       }
@@ -483,6 +488,19 @@ export default function NewCalculationPage() {
             </p>
 
             <div className="space-y-4 flex-grow flex flex-col">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Имя ребёнка <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="w-full rounded-xl border-2 border-gray-200 p-3 text-sm focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition"
+                  placeholder="Имя ребёнка"
+                  value={childName}
+                  onChange={(e) => setChildName(e.target.value)}
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Дата рождения ребёнка <span className="text-red-500">*</span>
