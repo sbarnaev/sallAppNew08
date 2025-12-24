@@ -2,7 +2,6 @@ import Link from "next/link";
 import { MobileMenu } from "@/components/MobileMenu";
 import { requireAuthAndSubscription } from "@/lib/guards";
 import ClientLayoutWrapper from "./ClientLayout";
-import { Snowflakes } from "@/components/Snowflakes";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   // Проверяем доступ на сервере
@@ -11,8 +10,6 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   return (
     <ClientLayoutWrapper>
     <div className="min-h-screen relative">
-      {/* Новогодние снежинки */}
-      <Snowflakes />
       {/* Мобильное меню */}
       <MobileMenu />
       

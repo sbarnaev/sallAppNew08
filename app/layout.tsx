@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { NewYearDecor } from "@/components/NewYearDecor";
 
 export const metadata: Metadata = {
   title: process.env.NEXT_PUBLIC_APP_NAME || "SAL App",
@@ -23,7 +24,10 @@ const inter = Inter({
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru">
-      <body className={`${inter.variable} min-h-screen font-sans antialiased`}>{children}</body>
+      <body className={`${inter.variable} min-h-screen font-sans antialiased relative overflow-x-hidden`}>
+        <NewYearDecor />
+        <div className="relative z-10 min-h-screen">{children}</div>
+      </body>
     </html>
   );
 }

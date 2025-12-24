@@ -235,7 +235,7 @@ h4, h5, h6 {
 /* Новогодние снежинки анимация */
 @keyframes snowfall {
   0% {
-    transform: translateY(-100vh) rotate(0deg);
+    transform: translate3d(var(--snow-drift, 0px), -100vh, 0) rotate(0deg);
     opacity: 0;
   }
   10% {
@@ -245,7 +245,7 @@ h4, h5, h6 {
     opacity: 1;
   }
   100% {
-    transform: translateY(100vh) rotate(360deg);
+    transform: translate3d(var(--snow-drift, 0px), 100vh, 0) rotate(360deg);
     opacity: 0;
   }
 }
@@ -253,13 +253,143 @@ h4, h5, h6 {
 .snowflake {
   position: fixed;
   top: -10px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.75);
   font-size: 1em;
   font-family: Arial, sans-serif;
-  text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+  text-shadow: 0 1px 10px rgba(255, 255, 255, 0.55);
   animation: snowfall linear infinite;
   pointer-events: none;
+  z-index: 0;
+  filter: blur(0.1px);
+}
+
+/* Новый год — декоративный слой (гирлянда / шарики / снеговики) */
+.newyear-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.newyear-garland {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 140px;
   z-index: 1;
+  pointer-events: none;
+}
+
+.newyear-garland__svg {
+  width: 100%;
+  height: 140px;
+  opacity: 0.95;
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.08));
+}
+
+@keyframes newyear-twinkle {
+  0%, 100% {
+    opacity: 0.65;
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.25));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.45));
+  }
+}
+
+.newyear-light {
+  animation: newyear-twinkle 2.8s ease-in-out infinite;
+  animation-delay: var(--twinkle-delay, 0s);
+}
+
+.newyear-ornaments {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.newyear-ornament {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  opacity: 0.9;
+  filter: blur(0px);
+}
+
+.newyear-ornament::before {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 80px;
+  opacity: 0.85;
+  filter: drop-shadow(0 16px 40px rgba(0,0,0,0.10));
+}
+
+.newyear-ornament--tl {
+  top: -140px;
+  left: -140px;
+  background:
+    radial-gradient(closest-side, rgba(34,197,94,0.18), transparent 70%),
+    radial-gradient(closest-side, rgba(220,38,38,0.14), transparent 70%),
+    radial-gradient(closest-side, rgba(255,255,255,0.35), transparent 60%);
+}
+.newyear-ornament--tl::before { content: "🎄"; }
+
+.newyear-ornament--tr {
+  top: -150px;
+  right: -150px;
+  background:
+    radial-gradient(closest-side, rgba(220,38,38,0.16), transparent 70%),
+    radial-gradient(closest-side, rgba(234,179,8,0.14), transparent 70%),
+    radial-gradient(closest-side, rgba(255,255,255,0.32), transparent 60%);
+}
+.newyear-ornament--tr::before { content: "🎄"; }
+
+.newyear-ornament--bl {
+  bottom: -170px;
+  left: -170px;
+  background:
+    radial-gradient(closest-side, rgba(255,255,255,0.35), transparent 60%),
+    radial-gradient(closest-side, rgba(37,99,235,0.10), transparent 70%),
+    radial-gradient(closest-side, rgba(34,197,94,0.10), transparent 70%);
+}
+.newyear-ornament--bl::before { content: "⛄"; }
+
+.newyear-ornament--br {
+  bottom: -180px;
+  right: -180px;
+  background:
+    radial-gradient(closest-side, rgba(234,179,8,0.16), transparent 70%),
+    radial-gradient(closest-side, rgba(220,38,38,0.12), transparent 70%),
+    radial-gradient(closest-side, rgba(255,255,255,0.32), transparent 60%);
+}
+.newyear-ornament--br::before { content: "🎁"; }
+
+@media (max-width: 640px) {
+  .newyear-ornament {
+    width: 220px;
+    height: 220px;
+  }
+  .newyear-ornament::before {
+    font-size: 56px;
+    opacity: 0.8;
+  }
+  .newyear-garland {
+    height: 120px;
+  }
+  .newyear-garland__svg {
+    height: 120px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snowflake { animation: none !important; }
+  .newyear-light { animation: none !important; }
 }
 
 @layer components {
