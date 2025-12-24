@@ -286,14 +286,14 @@ function LoadingMessage() {
     // Показываем основное сообщение, затем через 2 секунды начинаем показывать факты
     const factTimer = setTimeout(() => setShowFact(true), 2000);
     
-    // Меняем факты каждые 15 секунд на случайный
+    // Меняем факты каждые 4 секунды на случайный
     const interval = setInterval(() => {
       setFactIndex(() => {
         const randomIndex = Math.floor(Math.random() * INTERESTING_FACTS.length);
         setKey(prev => prev + 1); // Меняем key для анимации
         return randomIndex;
       });
-    }, 15000);
+    }, 4000);
 
     return () => {
       clearTimeout(factTimer);
@@ -331,6 +331,7 @@ type Profile = {
   id: number;
   html?: string | null;
   raw_json?: any;
+  target_json?: any; // Данные запроса для целевых, партнерских и детских расчетов
   created_at?: string;
   client_id?: number | null;
   ui_state?: any;
@@ -1411,8 +1412,10 @@ export default function ProfileDetail() {
     const CheckList = ({ list, section }: { list: string[]; section: string }) => (
       <ul className="space-y-2">
         {list.map((text, i) => {
-          const legacyKey = makeLegacyKey(section, text, i);
-          const hashKey = makeHashKey(section, text);
+          // Убираем символ • и другие маркеры списка из начала текста
+          const cleanText = (text || "").toString().replace(/^[\s•\-\*\+]\s*/, '').trim();
+          const legacyKey = makeLegacyKey(section, cleanText, i);
+          const hashKey = makeHashKey(section, cleanText);
           const checked = Boolean(checkedMap[hashKey] ?? checkedMap[legacyKey]);
           const inputId = `${hashKey}-${i}`;
           return (
@@ -1430,7 +1433,7 @@ export default function ProfileDetail() {
                 className="mt-0.5 h-[18px] w-[18px] shrink-0 rounded border-2 border-indigo-300 bg-indigo-100 text-indigo-600 focus:ring-0"
               />
               <label htmlFor={inputId} className="leading-relaxed text-gray-800 cursor-pointer flex-1 pl-1">
-                {text}
+                {cleanText}
               </label>
             </li>
           );
@@ -2078,14 +2081,27 @@ export default function ProfileDetail() {
                 } catch {
                   return null;
                 }
-                if (parsed?.type === "child" && parsed.request) {
+                if (parsed?.type === "child") {
                   return (
                     <section id="child-request" className="rounded-2xl border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-pink-50 p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
                       <h2 className="m-0 flex items-center gap-3 text-lg md:text-xl font-bold text-gray-900 mb-5">
                         <span className="text-2xl">📝</span>
-                        Запрос родителей
+                        Информация о ребёнке
                       </h2>
-                      <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{parsed.request}</p>
+                      <div className="space-y-4">
+                        {parsed.childName && (
+                          <div>
+                            <div className="text-sm font-semibold text-rose-700 mb-2">Имя ребёнка:</div>
+                            <p className="text-base md:text-lg text-gray-800 leading-relaxed">{parsed.childName}</p>
+                          </div>
+                        )}
+                        {parsed.request && (
+                          <div>
+                            <div className="text-sm font-semibold text-rose-700 mb-2">Запрос родителей:</div>
+                            <p className="text-base md:text-lg text-gray-800 whitespace-pre-wrap leading-relaxed">{parsed.request}</p>
+                          </div>
+                        )}
+                      </div>
                     </section>
                   );
                 }
@@ -3459,67 +3475,60 @@ export default function ProfileDetail() {
         const getImageUrl = (img: any): string | null => {
           if (!img) return null;
           
-          // Приоритет 1: Если есть прямой URL из S3 (новый формат)
+          // Приоритет 1: Если есть прямой URL из API (новый формат с обработанными изображениями)
           if (typeof img === 'object' && img.url) {
+            // Если есть ID, всегда используем API прокси для надежности (избегаем 403)
+            if (img.id) {
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`[getImageUrl] Using API proxy for image with ID ${img.id}, original URL: ${img.url}`);
+              }
+              return `/api/files/${img.id}`;
+            }
+            // Если ID нет, используем прямой URL
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`[getImageUrl] Using direct URL (no ID): ${img.url}`);
+            }
             return img.url;
           }
           
-          // Приоритет 2: Если это обработанное изображение из коллекции images (с полями id и code)
+          // Приоритет 2: Если это объект файла Directus с id
           if (typeof img === 'object' && img.id) {
-            // Если id - это число, используем его для формирования S3 URL
-            const imageId = img.id;
-            if (/^\d+$/.test(String(imageId))) {
-              // Пробуем сформировать S3 URL напрямую
-              const s3Endpoint = process.env.NEXT_PUBLIC_S3_ENDPOINT || "https://s3.ru1.storage.beget.cloud";
-              const s3Bucket = process.env.NEXT_PUBLIC_S3_BUCKET || "da0eaeb06b35-sal-app";
-              const s3Path = process.env.NEXT_PUBLIC_S3_IMAGES_PATH || "sall_app/photo";
-              const cleanPath = s3Path.replace(/^\/+|\/+$/g, '');
-              // Используем path-style формат по умолчанию
-              const s3Url = `${s3Endpoint}/${s3Bucket}/${cleanPath}/${imageId}.jpeg`;
-              return s3Url;
-            }
+            // Используем API прокси для изображений (избегаем 403)
+            return `/api/files/${img.id}`;
           }
           
           // Приоритет 3: Если это обработанное изображение из коллекции images (с полями id и code)
           if (typeof img === 'object' && img.code) {
-            // Используем code для получения изображения
-            // Если code - это ID файла, используем S3 URL напрямую
+            // Если code - это ID файла, используем API прокси
             if (/^\d+$/.test(String(img.code))) {
-              const s3Endpoint = process.env.NEXT_PUBLIC_S3_ENDPOINT || "https://s3.ru1.storage.beget.cloud";
-              const s3Bucket = process.env.NEXT_PUBLIC_S3_BUCKET || "da0eaeb06b35-sal-app";
-              const s3Path = process.env.NEXT_PUBLIC_S3_IMAGES_PATH || "sall_app/photo";
-              const cleanPath = s3Path.replace(/^\/+|\/+$/g, '');
-              const s3Url = `${s3Endpoint}/${s3Bucket}/${cleanPath}/${img.code}.jpeg`;
-              return s3Url;
+              return `/api/files/${img.code}`;
             }
             // Иначе code может быть URL или другим идентификатором
             return img.code;
           }
           
-          // Приоритет 4: Если это объект файла Directus с полным URL
-          if (typeof img === 'object') {
-            if (img.id) {
-              // Используем API прокси для изображений
-              return `/api/files/${img.id}`;
-            }
-            if (img.filename_download) {
-              return img.id ? `/api/files/${img.id}` : null;
-            }
+          // Приоритет 4: Если это объект файла Directus с filename_download
+          if (typeof img === 'object' && img.filename_download) {
+            return img.id ? `/api/files/${img.id}` : null;
           }
           
           // Приоритет 5: Если это строка
           if (typeof img === 'string') {
             // Если уже полный URL
-            if (img.startsWith('http')) return img;
-            // Если это ID файла
+            if (img.startsWith('http')) {
+              // Если это S3 URL, пытаемся использовать API прокси (извлекаем ID из URL)
+              if (img.includes('s3.') || img.includes('storage.beget')) {
+                const idMatch = img.match(/\/(\d+)\.jpeg/);
+                if (idMatch && idMatch[1]) {
+                  return `/api/files/${idMatch[1]}`;
+                }
+              }
+              return img;
+            }
+            // Если это ID файла (число)
             if (/^\d+$/.test(img)) {
-              // Формируем S3 URL напрямую
-              const s3Endpoint = process.env.NEXT_PUBLIC_S3_ENDPOINT || "https://s3.ru1.storage.beget.cloud";
-              const s3Bucket = process.env.NEXT_PUBLIC_S3_BUCKET || "da0eaeb06b35-sal-app";
-              const s3Path = process.env.NEXT_PUBLIC_S3_IMAGES_PATH || "sall_app/photo";
-              const cleanPath = s3Path.replace(/^\/+|\/+$/g, '');
-              const s3Url = `${s3Endpoint}/${s3Bucket}/${cleanPath}/${img}.jpeg`;
-              return s3Url;
+              // Используем API прокси вместо прямого S3 URL
+              return `/api/files/${img}`;
             }
             // Иначе считаем это URL
             return img;
@@ -3544,22 +3553,28 @@ export default function ProfileDetail() {
                         className="w-full h-full object-contain"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          if (process.env.NODE_ENV === 'development') {
-                            console.error(`[ERROR] Failed to load image ${i + 1}:`, {
-                              url: imageUrl,
-                              imageData: img,
-                              error: '403 Forbidden - возможно файл не загружен в S3 или bucket не публичный',
-                              suggestion: 'Проверьте: 1) Файл загружен в S3 по пути sall_app/photo/{ID}.jpeg, 2) Bucket настроен как публичный'
-                            });
-                          }
+                          console.error(`[ERROR] Failed to load image ${i + 1}:`, {
+                            url: imageUrl,
+                            imageData: img,
+                            imageId: img?.id,
+                            error: 'Failed to load image - возможно файл не загружен или нет доступа',
+                            suggestion: 'Проверьте: 1) Файл существует в Directus/S3, 2) API прокси работает, 3) Bucket настроен правильно'
+                          });
                           target.style.display = 'none';
                           const placeholder = target.nextElementSibling as HTMLElement;
                           if (placeholder) {
                             placeholder.classList.remove('hidden');
-                            placeholder.innerHTML = `<div class="text-red-400 text-xs text-center p-2">Ошибка загрузки<br/>Проверьте доступ к файлу</div>`;
+                            placeholder.innerHTML = `<div class="text-red-400 text-xs text-center p-2">Ошибка загрузки<br/>ID: ${img?.id || 'N/A'}</div>`;
                           }
                         }}
-                        onLoad={() => {}}
+                        onLoad={() => {
+                          if (process.env.NODE_ENV === 'development') {
+                            console.log(`[SUCCESS] Image ${i + 1} loaded successfully:`, {
+                              url: imageUrl,
+                              imageId: img?.id
+                            });
+                          }
+                        }}
                       />
                       <div className="hidden absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-50">
             Изображение {i + 1}

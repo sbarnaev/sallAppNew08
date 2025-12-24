@@ -158,7 +158,7 @@ export async function GET(req: NextRequest) {
     }
   });
   
-  if (!sp.has("fields")) sp.set("fields", "id,client_id,created_at,html,raw_json,digits");
+  if (!sp.has("fields")) sp.set("fields", "id,client_id,created_at,html,raw_json,target_json,digits");
   if (!sp.has("limit")) sp.set("limit", "50");
   if (!sp.has("offset")) sp.set("offset", "0");
   if (!sp.has("meta")) sp.set("meta", "filter_count");

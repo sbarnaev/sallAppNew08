@@ -157,38 +157,77 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Rec
           </div>
         )}
         {profiles.map((p:any) => {
-          // Определяем тип расчета из raw_json и извлекаем запрос
+          // Определяем тип расчета из target_json или raw_json и извлекаем запрос
           let consultationType = "Базовый";
           let requestText = "";
+          
+          // Сначала проверяем target_json (новый формат)
           try {
-            let payload: any = p.raw_json;
-            if (typeof payload === "string") payload = JSON.parse(payload);
-            const item = Array.isArray(payload) ? payload[0] : payload;
-            if (item) {
-              if (item.compatibility || item.firstParticipantCodes || item.secondParticipantCodes || 
-                  item.partnerCodes || 
-                  (item.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant))) {
-                consultationType = "Партнерский";
-                // Для партнерского - берем goal
-                if (item.goal && typeof item.goal === "string") {
-                  requestText = item.goal;
-                }
-              } else if ((item.goalDecomposition || item.warnings || item.plan123 || item.request) && 
-                         !item.opener && !item.personalitySummary) {
-                consultationType = "Целевой";
-                // Для целевого - берем request
-                if (item.request && typeof item.request === "string") {
-                  requestText = item.request;
-                }
-              } else if (item.childPotential || item.upbringingRecommendations || item.developmentFeatures) {
-                consultationType = "Детский";
-                // Для детского - берем request (если есть)
-                if (item.request && typeof item.request === "string") {
-                  requestText = item.request;
+            const targetJson = p.target_json;
+            if (targetJson) {
+              let parsed: any;
+              try {
+                parsed = typeof targetJson === 'string' ? JSON.parse(targetJson) : targetJson;
+              } catch {
+                parsed = null;
+              }
+              
+              if (parsed) {
+                if (parsed.type === "target") {
+                  consultationType = "Целевой";
+                  // Формируем текст запроса из всех полей
+                  const parts: string[] = [];
+                  if (parsed.current) parts.push(`Что есть сейчас: ${parsed.current}`);
+                  if (parsed.want) parts.push(`Что клиент хочет: ${parsed.want}`);
+                  if (parsed.additional) parts.push(`Дополнительно: ${parsed.additional}`);
+                  requestText = parts.join(" ");
+                } else if (parsed.type === "partner") {
+                  consultationType = "Партнерский";
+                  if (parsed.goal) {
+                    requestText = parsed.goal;
+                  }
+                } else if (parsed.type === "child") {
+                  consultationType = "Детский";
+                  if (parsed.request) {
+                    requestText = parsed.request;
+                  }
                 }
               }
             }
           } catch {}
+          
+          // Если не нашли в target_json, проверяем raw_json (старый формат)
+          if (!requestText) {
+            try {
+              let payload: any = p.raw_json;
+              if (typeof payload === "string") payload = JSON.parse(payload);
+              const item = Array.isArray(payload) ? payload[0] : payload;
+              if (item) {
+                if (item.compatibility || item.firstParticipantCodes || item.secondParticipantCodes || 
+                    item.partnerCodes || 
+                    (item.currentDiagnostics && (item.currentDiagnostics.firstParticipant || item.currentDiagnostics.secondParticipant))) {
+                  consultationType = "Партнерский";
+                  // Для партнерского - берем goal
+                  if (item.goal && typeof item.goal === "string") {
+                    requestText = item.goal;
+                  }
+                } else if ((item.goalDecomposition || item.warnings || item.plan123 || item.request) && 
+                           !item.opener && !item.personalitySummary) {
+                  consultationType = "Целевой";
+                  // Для целевого - берем request
+                  if (item.request && typeof item.request === "string") {
+                    requestText = item.request;
+                  }
+                } else if (item.childPotential || item.upbringingRecommendations || item.developmentFeatures) {
+                  consultationType = "Детский";
+                  // Для детского - берем request (если есть)
+                  if (item.request && typeof item.request === "string") {
+                    requestText = item.request;
+                  }
+                }
+              }
+            } catch {}
+          }
           
           const client = p.client_id ? clientsMap[p.client_id] : null;
           const clientName = client?.name || (p.client_id ? `Клиент #${p.client_id}` : "Без клиента");

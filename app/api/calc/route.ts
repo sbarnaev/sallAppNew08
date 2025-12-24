@@ -171,12 +171,12 @@ export async function POST(req: Request) {
         };
       } else if (type === "child") {
         const childReq = cleanText(request ?? clientRequest ?? query ?? prompt ?? null);
-        if (childReq) {
-          profileData.target_json = {
-            type: "child",
-            request: childReq,
-          };
-        }
+        const childName = payload.childName || null;
+        profileData.target_json = {
+          type: "child",
+          ...(childName ? { childName: childName } : {}),
+          ...(childReq ? { request: childReq } : {}),
+        };
       }
       
       const createRes = await fetch(`${directusUrl}/items/profiles`, {
@@ -215,6 +215,133 @@ export async function POST(req: Request) {
   // Если включена серверная генерация, используем её
   if (useServerGeneration) {
     logger.debug("[CALC] Using server-side generation");
+    
+    // Если профиль уже создан, возвращаем profileId сразу и запускаем генерацию асинхронно
+    if (profileId) {
+      // Запускаем генерацию асинхронно
+      (async () => {
+        try {
+          // Рассчитываем коды
+          const codes = calculateSALCodes(birthday);
+          if (!codes) {
+            logger.error("[CALC] Failed to calculate SAL codes");
+            return;
+          }
+
+          const codesArray = [
+            codes.personality,
+            codes.connector,
+            codes.realization,
+            codes.generator,
+            codes.mission,
+          ];
+
+          // Генерируем консультацию в зависимости от типа
+          let consultationResult: any;
+
+          if (calculationType === "base") {
+            const input: BaseCalculationInput = {
+              name,
+              birthday,
+              clientId: clientId ? Number(clientId) : undefined,
+              gender: clientGender || null,
+            };
+            consultationResult = await generateBaseConsultation(input);
+          } else if (calculationType === "target") {
+            const requestText = cleanText(request ?? clientRequest ?? query ?? prompt ?? null) || "";
+            const input: TargetCalculationInput = {
+              name,
+              birthday,
+              request: requestText,
+              clientId: clientId ? Number(clientId) : undefined,
+              gender: clientGender || null,
+            };
+            consultationResult = await generateTargetConsultation(input);
+          } else if (calculationType === "partner") {
+            if (!partnerName || !partnerBirthday || !goal) {
+              logger.error("[CALC] For partner calculation, partnerName, partnerBirthday and goal are required");
+              return;
+            }
+            const goalText = cleanText(goal) || "";
+            const input: PartnerCalculationInput = {
+              name,
+              birthday,
+              partnerName,
+              partnerBirthday,
+              goal: goalText,
+              clientId: clientId ? Number(clientId) : undefined,
+              gender: clientGender || null,
+            };
+            consultationResult = await generatePartnerConsultation(input);
+            // Коды обоих участников уже добавлены в generatePartnerConsultation
+          } else if (calculationType === "child") {
+            const requestText = cleanText(request ?? clientRequest ?? query ?? prompt ?? null);
+            const input: ChildCalculationInput = {
+              name,
+              birthday,
+              request: requestText || null, // Опциональный запрос
+              clientId: clientId ? Number(clientId) : undefined,
+              gender: clientGender || null,
+            };
+            consultationResult = await generateChildConsultation(input);
+          } else {
+            logger.error(`[CALC] Unknown calculation type: ${calculationType}`);
+            return;
+          }
+
+          logger.log("[CALC] Consultation generated successfully:", {
+            profileId,
+            type: calculationType,
+            hasResult: !!consultationResult,
+            codes: codesArray,
+          });
+
+          // Сохраняем результат в профиль
+          if (profileId) {
+            if (!token || !directusUrl) {
+              logger.error("[CALC] Token or directusUrl missing before save");
+              return;
+            }
+            
+            logger.log("[CALC] Saving consultation to profile:", { profileId, type: calculationType });
+            await saveConsultationToProfile(
+              profileId,
+              consultationResult,
+              calculationType,
+              codesArray,
+              token,
+              directusUrl
+            );
+            logger.log("[CALC] Consultation saved successfully:", { profileId });
+          }
+
+          logger.log("[CALC] Calculation completed successfully:", {
+            profileId,
+            publicCode,
+            type: calculationType,
+            clientId: clientId || null,
+          });
+        } catch (error: any) {
+          logger.error("[CALC] Async generation error:", {
+            message: error?.message || String(error),
+            stack: error?.stack?.substring(0, 500),
+            type: calculationType,
+            profileId,
+          });
+        }
+      })(); // Запускаем асинхронно, не ждем завершения
+
+      logger.log("[CALC] Profile created, returning profileId immediately:", {
+        profileId,
+        publicCode,
+        type: calculationType,
+        clientId: clientId || null,
+      });
+      
+      return NextResponse.json({ profileId, public_code: publicCode });
+    }
+    
+    // Если профиль не создан, используем старую логику (fallback)
     try {
       // Рассчитываем коды
       const codes = calculateSALCodes(birthday);
