@@ -57,11 +57,53 @@ async function getClientsMap(clientIds: number[]) {
   }
 }
 
+async function getProfilesMap(profileIds: number[]) {
+  try {
+    if (profileIds.length === 0) return {};
+    const ids = profileIds.join(',');
+    const res = await internalApiFetch(`/api/profiles?filter[id][_in]=${ids}&fields=id,target_json&limit=100`, {
+      next: { revalidate: 60 }
+    });
+    const json = await res.json().catch(() => ({ data: [] }));
+    const profilesMap: Record<number, string> = {};
+    (json?.data || []).forEach((p: any) => {
+      if (p.id && p.target_json) {
+        try {
+          const parsed = typeof p.target_json === 'string' ? JSON.parse(p.target_json) : p.target_json;
+          if (parsed) {
+            let requestText = "";
+            if (parsed.type === "target") {
+              const parts: string[] = [];
+              if (parsed.current) parts.push(`Что есть сейчас: ${parsed.current}`);
+              if (parsed.want) parts.push(`Что клиент хочет: ${parsed.want}`);
+              if (parsed.additional) parts.push(`Дополнительно: ${parsed.additional}`);
+              requestText = parts.join(" ");
+            } else if (parsed.type === "partner" && parsed.goal) {
+              requestText = parsed.goal;
+            } else if (parsed.type === "child" && parsed.request) {
+              requestText = parsed.request;
+            }
+            if (requestText) {
+              profilesMap[p.id] = requestText.length > 150 ? requestText.substring(0, 150) + "..." : requestText;
+            }
+          }
+        } catch {
+          // Игнорируем ошибки парсинга
+        }
+      }
+    });
+    return profilesMap;
+  } catch {
+    return {};
+  }
+}
+
 export default async function ConsultationsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined>}) {
   const { data = [], meta = {} } = await getConsultations(searchParams);
   // Получаем только уникальные ID клиентов из консультаций
   const clientIdSet = new Set<number>();
   const partnerClientIdSet = new Set<number>();
+  const profileIdSet = new Set<number>();
   
   data.forEach((c: any) => {
     if (c.client_id && typeof c.client_id === 'number') {
@@ -70,10 +112,14 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
     if (c.partner_client_id && typeof c.partner_client_id === 'number') {
       partnerClientIdSet.add(c.partner_client_id);
     }
+    if (c.profile_id && typeof c.profile_id === 'number') {
+      profileIdSet.add(c.profile_id);
+    }
   });
   
   const allClientIds: number[] = Array.from(new Set([...Array.from(clientIdSet), ...Array.from(partnerClientIdSet)]));
   const clientsMap = await getClientsMap(allClientIds);
+  const profilesMap = await getProfilesMap(Array.from(profileIdSet));
   const page = Number(searchParams.page || 1);
   const limit = Number(searchParams.limit || 20);
   const total = meta?.filter_count ?? 0;
@@ -154,6 +200,7 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
           };
           const clientName = c.client_id ? (clientsMap[c.client_id] || `Клиент #${c.client_id}`) : "Без клиента";
           const partnerName = c.partner_client_id ? (clientsMap[c.partner_client_id] || `Клиент #${c.partner_client_id}`) : null;
+          const requestText = c.profile_id ? (profilesMap[c.profile_id] || "") : "";
           
           return (
             <Link key={c.id} href={`/consultations/${c.id}`} className="card hover:shadow-md transition-all duration-200 p-5">
@@ -182,6 +229,14 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
                         </>
                       )}
                     </div>
+                    {requestText && (
+                      <div className="flex items-start gap-2 pt-1">
+                        <svg className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="text-gray-700 italic text-xs leading-relaxed">{requestText}</span>
+                      </div>
+                    )}
                     <div className="text-sm text-gray-500 flex items-center gap-3 flex-wrap">
                       {c.scheduled_at ? (
                         <span>{new Date(c.scheduled_at).toLocaleString("ru-RU", {
