@@ -16,15 +16,16 @@ export function Snowflakes() {
     mq?.addEventListener?.("change", update);
 
     // Создаем снежинки (детерминированно на mount, без random в render)
-    const count = 36;
+    // Увеличено количество для более насыщенного фона
+    const count = 60;
     const newSnowflakes = Array.from({ length: count }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
-      delay: Math.random() * 6,
-      duration: 12 + Math.random() * 10, // 12–22s
-      size: 10 + Math.random() * 10, // px
-      drift: (Math.random() * 2 - 1) * 35, // -35..35 px
-      opacity: 0.25 + Math.random() * 0.5, // 0.25..0.75
+      delay: Math.random() * 8,
+      duration: 10 + Math.random() * 15, // 10–25s (больше вариативности)
+      size: 8 + Math.random() * 14, // px (8-22px)
+      drift: (Math.random() * 2 - 1) * 40, // -40..40 px (больше горизонтального движения)
+      opacity: 0.2 + Math.random() * 0.6, // 0.2..0.8 (больше вариативности прозрачности)
     }));
     setSnowflakes(newSnowflakes);
 

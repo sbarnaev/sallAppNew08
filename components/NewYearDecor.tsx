@@ -42,12 +42,49 @@ function Garland() {
 }
 
 function Ornaments() {
+  // Елочки разбросанные по фону
+  const trees = [
+    { id: 1, position: "tl", emoji: "🎄" },
+    { id: 2, position: "tr", emoji: "🎄" },
+    { id: 3, position: "bl", emoji: "🎄" },
+    { id: 4, position: "br", emoji: "🎄" },
+    // Дополнительные елочки в разных местах
+    { id: 5, position: "tm", emoji: "🎄" },
+    { id: 6, position: "ml", emoji: "🎄" },
+    { id: 7, position: "mr", emoji: "🎄" },
+    { id: 8, position: "bm", emoji: "🎄" },
+  ];
+
+  // Снеговики
+  const snowmen = [
+    { id: 1, position: "bl2", emoji: "⛄" },
+    { id: 2, position: "br2", emoji: "⛄" },
+    { id: 3, position: "ml2", emoji: "⛄" },
+    { id: 4, position: "mr2", emoji: "⛄" },
+  ];
+
+  // Подарки и звездочки
+  const extras = [
+    { id: 1, position: "tl2", emoji: "🎁" },
+    { id: 2, position: "tr2", emoji: "🎁" },
+    { id: 3, position: "tm2", emoji: "⭐" },
+    { id: 4, position: "bm2", emoji: "⭐" },
+  ];
+
   return (
     <div aria-hidden="true" className="newyear-ornaments">
-      <div className="newyear-ornament newyear-ornament--tl" />
-      <div className="newyear-ornament newyear-ornament--tr" />
-      <div className="newyear-ornament newyear-ornament--br" />
-      <div className="newyear-ornament newyear-ornament--bl" />
+      {/* Елочки */}
+      {trees.map((tree) => (
+        <div key={`tree-${tree.id}`} className={`newyear-ornament newyear-ornament--${tree.position}`} data-emoji={tree.emoji} />
+      ))}
+      {/* Снеговики */}
+      {snowmen.map((snowman) => (
+        <div key={`snowman-${snowman.id}`} className={`newyear-ornament newyear-ornament--${snowman.position}`} data-emoji={snowman.emoji} />
+      ))}
+      {/* Подарки и звездочки */}
+      {extras.map((extra) => (
+        <div key={`extra-${extra.id}`} className={`newyear-ornament newyear-ornament--${extra.position}`} data-emoji={extra.emoji} />
+      ))}
     </div>
   );
 }
