@@ -9,12 +9,12 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
   return (
     <ClientLayoutWrapper>
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
       {/* Мобильное меню */}
       <MobileMenu />
       
       {/* Десктопное меню (скрыто на мобильных) - Glassmorphism - Фиксированное */}
-        <aside className="hidden md:flex fixed left-0 top-0 bottom-0 bg-white/50 backdrop-blur-[25px] border-r border-white/60 transition-all duration-300 w-[64px] hover:w-[240px] group flex-col h-screen shadow-[0_2px_8px_0_rgba(0,0,0,0.04)] z-40">
+        <aside className="hidden md:flex fixed left-0 top-0 bottom-0 bg-white/50 backdrop-blur-[25px] border-r border-white/60 transition-all duration-300 w-[64px] hover:w-[240px] group flex-col h-screen shadow-[0_2px_8px_0_rgba(0,0,0,0.04)] z-50">
         <div className="px-4 pt-5 pb-4">
           <div className="font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm text-gray-900">САЛ ПРОФИ</div>
         </div>
@@ -63,7 +63,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       </aside>
       
       {/* Основной контент с отступом для фиксированного меню */}
-      <main className="w-full md:ml-[64px] md:w-[calc(100%-64px)] flex justify-center pt-20 md:pt-8 pb-8 md:pb-12">
+      <main className="w-full md:ml-[64px] md:w-[calc(100%-64px)] flex justify-center pt-20 md:pt-8 pb-8 md:pb-12 relative z-10">
         <div className="w-full max-w-7xl px-4 sm:px-6 md:px-8">
           {children}
         </div>
