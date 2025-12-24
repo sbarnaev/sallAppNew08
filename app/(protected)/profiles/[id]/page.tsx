@@ -331,6 +331,7 @@ type Profile = {
   id: number;
   html?: string | null;
   raw_json?: any;
+  target_json?: any; // Данные запроса для целевых, партнерских и детских расчетов
   created_at?: string;
   client_id?: number | null;
   ui_state?: any;

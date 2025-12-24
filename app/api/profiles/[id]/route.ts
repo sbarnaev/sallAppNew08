@@ -49,6 +49,7 @@ export async function GET(req: Request, ctx: { params: { id: string }}) {
     "html",
     "raw_json",
     "base_profile_json", // Новое поле для нового формата базового расчета
+    "target_json", // Данные запроса для целевых, партнерских и детских расчетов
     "ui_state",
     "notes",
     "chat_history",
