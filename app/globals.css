@@ -271,13 +271,16 @@ h4, h5, h6 {
 .snowflake {
   position: fixed;
   top: -10px;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 1);
   font-size: 1em;
   font-family: Arial, sans-serif;
-  text-shadow: 0 2px 12px rgba(255, 255, 255, 0.7), 0 0 20px rgba(255, 255, 255, 0.4);
+  text-shadow: 
+    0 2px 16px rgba(255, 255, 255, 0.9),
+    0 0 24px rgba(255, 255, 255, 0.6),
+    0 4px 8px rgba(255, 255, 255, 0.5);
   pointer-events: none;
   z-index: 0;
-  filter: blur(0.2px);
+  filter: blur(0.15px);
   will-change: transform;
   /* Анимация задается inline для разных типов снежинок */
 }

@@ -42,44 +42,70 @@ function Garland() {
 }
 
 function Ornaments() {
-  // Генерируем случайные позиции для эмодзи по всей странице
-  const generateRandomPositions = (count: number, emoji: string) => {
-    return Array.from({ length: count }, (_, i) => ({
-      id: i,
-      emoji,
-      top: Math.random() * 100, // 0-100% от верха
-      left: Math.random() * 100, // 0-100% слева
-      size: 40 + Math.random() * 30, // 40-70px (меньше чем было)
-      opacity: 0.6 + Math.random() * 0.3, // 0.6-0.9
-    }));
+  // Создаем равномерно распределенные позиции по сетке с случайными смещениями
+  const generateUniformPositions = (totalCount: number) => {
+    const positions: Array<{ top: number; left: number }> = [];
+    const gridCols = Math.ceil(Math.sqrt(totalCount * 1.5)); // Немного больше колонок для лучшего распределения
+    const gridRows = Math.ceil(totalCount / gridCols);
+    
+    const cellWidth = 100 / gridCols;
+    const cellHeight = 100 / gridRows;
+    
+    // Создаем сетку позиций
+    for (let i = 0; i < totalCount; i++) {
+      const col = i % gridCols;
+      const row = Math.floor(i / gridCols);
+      
+      // Центр ячейки + случайное смещение (до 30% от размера ячейки)
+      const left = col * cellWidth + cellWidth / 2 + (Math.random() - 0.5) * cellWidth * 0.6;
+      const top = row * cellHeight + cellHeight / 2 + (Math.random() - 0.5) * cellHeight * 0.6;
+      
+      positions.push({
+        top: Math.max(5, Math.min(95, top)), // Ограничиваем краями (5-95%)
+        left: Math.max(5, Math.min(95, left)),
+      });
+    }
+    
+    // Перемешиваем позиции для максимальной случайности
+    for (let i = positions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [positions[i], positions[j]] = [positions[j], positions[i]];
+    }
+    
+    return positions;
   };
 
-  // Елочки разбросанные по всей странице
-  const trees = generateRandomPositions(12, "🎄");
-  
-  // Снеговики
-  const snowmen = generateRandomPositions(8, "⛄");
-  
-  // Подарки
-  const gifts = generateRandomPositions(6, "🎁");
-  
-  // Звездочки
-  const stars = generateRandomPositions(6, "⭐");
-  
-  // Дополнительные элементы
-  const extras = [
-    ...generateRandomPositions(4, "🎅"),
-    ...generateRandomPositions(3, "🦌"),
-    ...generateRandomPositions(4, "🔔"),
+  // Все эмодзи в одном массиве для равномерного распределения
+  const emojiList = [
+    ...Array(12).fill("🎄"), // Елочки
+    ...Array(8).fill("⛄"),  // Снеговики
+    ...Array(6).fill("🎁"),  // Подарки
+    ...Array(6).fill("⭐"),  // Звездочки
+    ...Array(4).fill("🎅"),  // Санты
+    ...Array(3).fill("🦌"),  // Олени
+    ...Array(4).fill("🔔"),  // Колокольчики
   ];
-
-  const allOrnaments = [...trees, ...snowmen, ...gifts, ...stars, ...extras];
+  
+  // Перемешиваем эмодзи для случайного порядка
+  const shuffledEmojis = [...emojiList].sort(() => Math.random() - 0.5);
+  
+  // Генерируем равномерно распределенные позиции
+  const positions = generateUniformPositions(shuffledEmojis.length);
+  
+  // Объединяем эмодзи с позициями
+  const allOrnaments = shuffledEmojis.map((emoji, i) => ({
+    id: i,
+    emoji,
+    ...positions[i],
+    size: 40 + Math.random() * 30, // 40-70px
+    opacity: 0.6 + Math.random() * 0.3, // 0.6-0.9
+  }));
 
   return (
     <div aria-hidden="true" className="newyear-ornaments">
       {allOrnaments.map((ornament) => (
         <div
-          key={`ornament-${ornament.emoji}-${ornament.id}`}
+          key={`ornament-${ornament.id}`}
           className="newyear-ornament-scattered"
           style={{
             top: `${ornament.top}%`,

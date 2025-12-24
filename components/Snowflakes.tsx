@@ -23,9 +23,9 @@ export function Snowflakes() {
       left: Math.random() * 100,
       delay: Math.random() * 10,
       duration: 8 + Math.random() * 20, // 8–28s (больше вариативности скорости)
-      size: 10 + Math.random() * 18, // px (10-28px) - более заметные
+      size: 12 + Math.random() * 20, // px (12-32px) - более заметные
       drift: (Math.random() * 2 - 1) * 50, // -50..50 px (больше горизонтального движения)
-      opacity: 0.4 + Math.random() * 0.5, // 0.4..0.9 (более заметные снежинки)
+      opacity: 0.6 + Math.random() * 0.35, // 0.6..0.95 (более заметные снежинки)
     }));
     setSnowflakes(newSnowflakes);
 
