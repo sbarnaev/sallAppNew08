@@ -196,7 +196,8 @@
                       "required": [
                         "resource",
                         "state",
-                        "evidence"
+                        "evidence",
+                        "correction"
                       ]
                     }
                   }
@@ -244,7 +245,8 @@
                       "required": [
                         "resource",
                         "state",
-                        "evidence"
+                        "evidence",
+                        "correction"
                       ]
                     }
                   }
