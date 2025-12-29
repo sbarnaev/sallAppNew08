@@ -155,188 +155,73 @@
           "currentDiagnostics": {
             "type": "object",
             "additionalProperties": false,
-            "description": "Диагностика пары сейчас — задача блока помочь консультанту увидеть реальную картину (ресурсы участников, зоны конфликтов, готовность).",
+            "description": "Диагностика пары сейчас — задача блока помочь консультанту увидеть реальную картину. Включи: что сейчас в плюсе у первого участника, что сейчас в минусе у первого участника, то же для второго участника, общие зоны напряжения пары. Добавь 4–5 диагностических вопросов: простых, бытовых, направленных на взаимодействие, а не эмоции.",
             "properties": {
               "firstParticipant": {
                 "type": "object",
                 "additionalProperties": false,
-                "description": "Диагностика первого участника.",
                 "properties": {
-                  "resourceStates": {
+                  "inPlus": {
                     "type": "array",
-                    "description": "Состояние ресурсов первого участника (в плюсе/минусе).",
                     "items": {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "resource": {
-                          "type": "string"
-                        },
-                        "state": {
-                          "type": "string",
-                          "enum": [
-                            "plus",
-                            "minus",
-                            "neutral"
-                          ]
-                        },
-                        "evidence": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "correction": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      },
-                      "required": [
-                        "resource",
-                        "state",
-                        "evidence",
-                        "correction"
-                      ]
+                      "type": "string"
+                    }
+                  },
+                  "inMinus": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
                     }
                   }
                 },
                 "required": [
-                  "resourceStates"
+                  "inPlus",
+                  "inMinus"
                 ]
               },
               "secondParticipant": {
                 "type": "object",
                 "additionalProperties": false,
-                "description": "Диагностика второго участника.",
                 "properties": {
-                  "resourceStates": {
-                    "type": "array",
-                    "description": "Состояние ресурсов второго участника (в плюсе/минусе).",
-                    "items": {
-                      "type": "object",
-                      "additionalProperties": false,
-                      "properties": {
-                        "resource": {
-                          "type": "string"
-                        },
-                        "state": {
-                          "type": "string",
-                          "enum": [
-                            "plus",
-                            "minus",
-                            "neutral"
-                          ]
-                        },
-                        "evidence": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "correction": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      },
-                      "required": [
-                        "resource",
-                        "state",
-                        "evidence",
-                        "correction"
-                      ]
-                    }
-                  }
-                },
-                "required": [
-                  "resourceStates"
-                ]
-              },
-              "conflictZones": {
-                "type": "array",
-                "description": "Зоны конфликтов — конкретные ситуации, где пара сталкивается лбами.",
-                "items": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "zone": {
-                      "type": "string",
-                      "description": "Название зоны конфликта."
-                    },
-                    "description": {
-                      "type": "string",
-                      "description": "Суть конфликта."
-                    },
-                    "firstParticipantRole": {
-                      "type": "string",
-                      "description": "Роль/позиция первого участника в конфликте."
-                    },
-                    "secondParticipantRole": {
-                      "type": "string",
-                      "description": "Роль/позиция второго участника в конфликте."
-                    },
-                    "solution": {
-                      "type": "string",
-                      "description": "Решение конфликта."
-                    }
-                  },
-                  "required": [
-                    "zone",
-                    "description",
-                    "firstParticipantRole",
-                    "secondParticipantRole",
-                    "solution"
-                  ]
-                }
-              },
-              "readiness": {
-                "type": "object",
-                "additionalProperties": false,
-                "description": "Готовность пары к переменам.",
-                "properties": {
-                  "willingness": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 10,
-                    "description": "Оценка готовности от 1 до 10."
-                  },
-                  "blockers": {
+                  "inPlus": {
                     "type": "array",
                     "items": {
                       "type": "string"
-                    },
-                    "description": "Что мешает изменениям."
+                    }
                   },
-                  "comment": {
-                    "type": "string",
-                    "description": "Комментарий к оценке."
+                  "inMinus": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 },
                 "required": [
-                  "willingness",
-                  "blockers",
-                  "comment"
+                  "inPlus",
+                  "inMinus"
                 ]
               },
-              "questions": {
+              "commonTensionZones": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "diagnosticQuestions": {
                 "type": "array",
                 "minItems": 4,
                 "maxItems": 5,
                 "items": {
                   "type": "string"
                 },
-                "description": "4–5 диагностических вопросов клиентам (простые, бытовые)."
+                "description": "4–5 диагностических вопросов"
               }
             },
             "required": [
               "firstParticipant",
               "secondParticipant",
-              "conflictZones",
-              "readiness",
-              "questions"
+              "commonTensionZones",
+              "diagnosticQuestions"
             ]
           },
           "plan123": {
