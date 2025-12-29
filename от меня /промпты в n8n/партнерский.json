@@ -155,7 +155,7 @@
           "currentDiagnostics": {
             "type": "object",
             "additionalProperties": false,
-            "description": "Диагностика пары сейчас — задача блока помочь консультанту увидеть реальную картину. Включи: что сейчас в плюсе у первого участника, что сейчас в минусе у первого участника, то же для второго участника, общие зоны напряжения пары. Добавь 4–5 диагностических вопросов: простых, бытовых, направленных на взаимодействие, а не эмоции.",
+            "description": "Диагностика пары сейчас — задача блока помочь консультанту увидеть реальную картину. Включи: что сейчас в плюсе у первого участника, что сейчас в минусе у первого участника, то же для второго участника, зоны конфликтов, готовность пары. Добавь 4–5 диагностических вопросов: простых, бытовых, направленных на взаимодействие, а не эмоции.",
             "properties": {
               "firstParticipant": {
                 "type": "object",
@@ -201,13 +201,65 @@
                   "inMinus"
                 ]
               },
-              "commonTensionZones": {
+              "conflictZones": {
                 "type": "array",
+                "description": "Зоны конфликтов пары — конкретные ситуации столкновения",
                 "items": {
-                  "type": "string"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "zone": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "firstParticipantRole": {
+                      "type": "string"
+                    },
+                    "secondParticipantRole": {
+                      "type": "string"
+                    },
+                    "solution": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "zone",
+                    "description",
+                    "firstParticipantRole",
+                    "secondParticipantRole",
+                    "solution"
+                  ]
                 }
               },
-              "diagnosticQuestions": {
+              "readiness": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Готовность пары к переменам",
+                "properties": {
+                  "willingness": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10
+                  },
+                  "blockers": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "comment": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "willingness",
+                  "blockers",
+                  "comment"
+                ]
+              },
+              "questions": {
                 "type": "array",
                 "minItems": 4,
                 "maxItems": 5,
@@ -220,8 +272,9 @@
             "required": [
               "firstParticipant",
               "secondParticipant",
-              "commonTensionZones",
-              "diagnosticQuestions"
+              "conflictZones",
+              "readiness",
+              "questions"
             ]
           },
           "plan123": {
