@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useRouter } from "next/navigation";
 import { logger } from "@/lib/logger";
 import { calculateSALCodes, getCodeShortLabel, SALCodes } from "@/lib/sal-codes";
@@ -60,12 +60,12 @@ export default function ExpressConsultationFlow({
         if (data?.data) {
           const client = data.data;
           setClientData(client);
-          
+
           // Рассчитываем САЛ коды из даты рождения
           if (client.birth_date) {
             const codes = calculateSALCodes(client.birth_date);
             setSalCodes(codes);
-            
+
             // Генерируем базовый персонализированный контент (без трактовок, они загрузятся позже)
             if (codes) {
               const personalized = getPersonalizedContent(codes, {});
@@ -77,7 +77,7 @@ export default function ExpressConsultationFlow({
         logger.error("Error loading client data:", error);
       }
     }
-    
+
     loadClientData();
   }, [clientId]);
 
@@ -91,23 +91,23 @@ export default function ExpressConsultationFlow({
     try {
       const res = await fetch(`/api/consultations/express/${consultationId}`);
       const data = await res.json().catch(() => ({}));
-      
+
       // Загружаем трактовки из book_information и opener
       if (data?.bookInformation) {
         setBookInformation(data.bookInformation);
       }
-      
+
       // Сохраняем opener для использования в персонализации
       if (data?.profileOpener) {
         setProfileOpener(data.profileOpener);
       }
-      
+
       if (data?.steps && Array.isArray(data.steps) && data.steps.length > 0) {
         setSteps(data.steps);
         // Определяем текущий шаг на основе сохраненных данных
         const stepTypes: StepType[] = ["point_a", "point_b", "resources", "closing"];
         const completedSteps = new Set(data.steps.map((s: ConsultationStep) => s.step_type));
-        
+
         // Находим первый незавершенный шаг
         let nextStep: StepType = "point_a";
         for (const stepType of stepTypes) {
@@ -116,12 +116,12 @@ export default function ExpressConsultationFlow({
             break;
           }
         }
-        
+
         // Если все шаги кроме closing завершены, переходим к closing
         if (completedSteps.has("point_a") && completedSteps.has("point_b") && completedSteps.has("resources")) {
           nextStep = "closing";
         }
-        
+
         setCurrentStep(nextStep);
       }
     } catch (error: any) {
@@ -129,17 +129,17 @@ export default function ExpressConsultationFlow({
       // Не показываем ошибку пользователю, просто не загружаем шаги
     }
   }
-  
+
   // Обновляем персонализированный контент при изменении кодов, трактовок или шагов
   useEffect(() => {
     if (salCodes && bookInformation) {
       // Извлекаем проблемы из Точки А и цели из Точки Б
       const pointAStep = steps.find(s => s.step_type === "point_a");
       const pointBStep = steps.find(s => s.step_type === "point_b");
-      
+
       const pointAProblems = pointAStep?.selected_options || [];
       const pointBGoals = pointBStep?.selected_options || [];
-      
+
       const personalized = getPersonalizedContent(
         salCodes,
         bookInformation,
@@ -155,18 +155,16 @@ export default function ExpressConsultationFlow({
     }
   }, [salCodes, bookInformation, steps, profileOpener]);
 
-  async function saveStep(
+  // Memoize saveStep to prevent child component re-renders
+  const saveStep = useCallback(async (
     stepType: StepType,
     question: string,
     response: string,
     selectedOptions?: string[]
-  ) {
+  ) => {
     setSaving(true);
     try {
       const stepOrder = STEP_CONFIG[stepType].order;
-      const existingStep = steps.find(
-        (s) => s.step_type === stepType && s.step_order === stepOrder
-      );
 
       const stepData = {
         step_type: stepType,
@@ -189,10 +187,9 @@ export default function ExpressConsultationFlow({
       }
 
       const data = await res.json().catch(() => ({}));
-      
+
       // Обновляем локальное состояние
-      // API возвращает { data: { id, ... } } или { id, ... } напрямую
-      const stepId = data?.data?.id || data?.id || existingStep?.id;
+      const stepId = data?.data?.id || data?.id;
       const newStep: ConsultationStep = {
         id: stepId,
         ...stepData,
@@ -206,25 +203,25 @@ export default function ExpressConsultationFlow({
       });
     } catch (error: any) {
       logger.error("Error saving step:", error);
-      const errorMessage = error?.message || "Ошибка сохранения шага";
-      alert(errorMessage);
+      alert(error?.message || "Ошибка сохранения шага");
     } finally {
       setSaving(false);
     }
-  }
+  }, [consultationId]);
 
-  function handleStepComplete(stepType: StepType) {
+  // Memoize step navigation handler
+  const handleStepComplete = useCallback((stepType: StepType) => {
     const stepTypes: StepType[] = ["point_a", "point_b", "resources", "closing"];
     const currentIndex = stepTypes.indexOf(stepType);
     if (currentIndex < stepTypes.length - 1) {
       setCurrentStep(stepTypes[currentIndex + 1]);
     }
-  }
+  }, []);
 
-  async function handleConsultationComplete(soldProduct: "full" | "partner" | null, importanceRating?: number) {
+  // Memoize consultation complete handler
+  const handleConsultationComplete = useCallback(async (soldProduct: "full" | "partner" | null, importanceRating?: number) => {
     setLoading(true);
     try {
-      // 1. Завершаем консультацию
       const res = await fetch(`/api/consultations/express/${consultationId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -240,18 +237,16 @@ export default function ExpressConsultationFlow({
         throw new Error(errorData?.message || "Ошибка завершения консультации");
       }
 
-      // 2. Если продали продукт, генерируем AI-инсайты (в фоне, не блокируем)
+      // Генерируем AI-инсайты в фоне
       if (soldProduct) {
         fetch(`/api/consultations/express/${consultationId}/generate-insights`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
         }).catch((error) => {
           logger.warn("Failed to generate insights:", error);
-          // Не блокируем завершение, если генерация не удалась
         });
       }
 
-      // 3. Перенаправляем на страницу консультации
       router.push(`/consultations/${consultationId}`);
     } catch (error: any) {
       logger.error("Error completing consultation:", error);
@@ -259,7 +254,23 @@ export default function ExpressConsultationFlow({
     } finally {
       setLoading(false);
     }
-  }
+  }, [consultationId, router]);
+
+  // Memoized step handlers to prevent re-creating inline functions
+  const handlePointASave = useCallback((question: string, response: string, options?: string[]) => {
+    saveStep("point_a", question, response, options);
+    handleStepComplete("point_a");
+  }, [saveStep, handleStepComplete]);
+
+  const handlePointBSave = useCallback((question: string, response: string, options?: string[]) => {
+    saveStep("point_b", question, response, options);
+    handleStepComplete("point_b");
+  }, [saveStep, handleStepComplete]);
+
+  const handleResourcesSave = useCallback((question: string, response: string, options?: string[]) => {
+    saveStep("resources", question, response, options);
+    handleStepComplete("resources");
+  }, [saveStep, handleStepComplete]);
 
   const stepTypes: StepType[] = ["point_a", "point_b", "resources", "closing"];
 
@@ -272,7 +283,7 @@ export default function ExpressConsultationFlow({
           <p className="text-gray-700 whitespace-pre-wrap">{personalizedContent.opener}</p>
         </div>
       )}
-      
+
       {/* Фразы для установления контакта */}
       {personalizedContent?.contactPhrases && personalizedContent.contactPhrases.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
@@ -286,7 +297,7 @@ export default function ExpressConsultationFlow({
           </div>
         </div>
       )}
-      
+
       {/* Информация о клиенте и САЛ коды */}
       {clientData && (
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-6">
@@ -302,7 +313,7 @@ export default function ExpressConsultationFlow({
               )}
             </div>
           </div>
-          
+
           {salCodes && (
             <div>
               <div className="text-sm font-medium text-gray-700 mb-3">Коды САЛ клиента:</div>
@@ -344,13 +355,12 @@ export default function ExpressConsultationFlow({
             >
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium ${
-                    isCompleted
-                      ? "bg-green-500 text-white"
-                      : isOpen
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium ${isCompleted
+                    ? "bg-green-500 text-white"
+                    : isOpen
                       ? "bg-blue-500 text-white"
                       : "bg-gray-300 text-gray-600"
-                  }`}
+                    }`}
                 >
                   {isCompleted ? "✓" : config.order}
                 </div>
@@ -369,10 +379,7 @@ export default function ExpressConsultationFlow({
                     stepData={stepData}
                     personalizedContent={personalizedContent}
                     salCodes={salCodes}
-                    onSave={(question, response, options) => {
-                      saveStep("point_a", question, response, options);
-                      handleStepComplete("point_a");
-                    }}
+                    onSave={handlePointASave}
                     saving={saving}
                   />
                 )}
@@ -381,10 +388,7 @@ export default function ExpressConsultationFlow({
                     stepData={stepData}
                     personalizedContent={personalizedContent}
                     salCodes={salCodes}
-                    onSave={(question, response, options) => {
-                      saveStep("point_b", question, response, options);
-                      handleStepComplete("point_b");
-                    }}
+                    onSave={handlePointBSave}
                     saving={saving}
                   />
                 )}
@@ -393,10 +397,7 @@ export default function ExpressConsultationFlow({
                     stepData={stepData}
                     personalizedContent={personalizedContent}
                     salCodes={salCodes}
-                    onSave={(question, response, options) => {
-                      saveStep("resources", question, response, options);
-                      handleStepComplete("resources");
-                    }}
+                    onSave={handleResourcesSave}
                     saving={saving}
                   />
                 )}
@@ -418,8 +419,8 @@ export default function ExpressConsultationFlow({
   );
 }
 
-// Компоненты для каждого шага будут добавлены ниже
-function PointAStep({
+// Memoized step components to prevent re-renders when other steps' state changes
+const PointAStep = memo(function PointAStep({
   stepData,
   personalizedContent,
   salCodes,
@@ -467,13 +468,13 @@ function PointAStep({
     "Постоянные сомнения",
     "Упадок сил",
   ];
-  
+
   // Персонализированные вопросы
   const questions = personalizedContent?.pointAQuestions || [
     "Что не получается? Что вас не устраивает в текущей ситуации?",
   ];
   const mainQuestion = questions[0];
-  
+
   // Готовые фразы для консультанта
   const phrases = personalizedContent?.pointAPhrases || [];
 
@@ -481,11 +482,11 @@ function PointAStep({
     if (selectedOptions.length === 0 && !customText.trim()) {
       return; // Валидация уже есть в disabled кнопки
     }
-    
-    const response = selectedOptions.length > 0 
+
+    const response = selectedOptions.length > 0
       ? selectedOptions.join(", ") + (customText.trim() ? `\n\nДополнительно: ${customText.trim()}` : "")
       : customText.trim();
-    
+
     onSave(
       mainQuestion,
       response,
@@ -524,7 +525,7 @@ function PointAStep({
           </div>
         )}
       </div>
-      
+
       <div>
         <label className="block text-sm font-medium mb-2">
           {mainQuestion}
@@ -541,11 +542,10 @@ function PointAStep({
                     : [...prev, option]
                 );
               }}
-              className={`p-3 rounded-lg border text-left transition text-sm sm:text-base ${
-                selectedOptions.includes(option)
-                  ? "bg-blue-50 border-blue-500 text-blue-700"
-                  : "bg-white border-gray-300 hover:border-gray-400"
-              }`}
+              className={`p-3 rounded-lg border text-left transition text-sm sm:text-base ${selectedOptions.includes(option)
+                ? "bg-blue-50 border-blue-500 text-blue-700"
+                : "bg-white border-gray-300 hover:border-gray-400"
+                }`}
             >
               {option}
             </button>
@@ -573,9 +573,9 @@ function PointAStep({
       </button>
     </div>
   );
-}
+});
 
-function PointBStep({
+const PointBStep = memo(function PointBStep({
   stepData,
   personalizedContent,
   salCodes,
@@ -623,13 +623,13 @@ function PointBStep({
     "Реализовать творческий потенциал",
     "Помогать другим",
   ];
-  
+
   // Персонализированные вопросы
   const questions = personalizedContent?.pointBQuestions || [
     "К чему вы хотите прийти? Какой результат хотите получить?",
   ];
   const mainQuestion = questions[0];
-  
+
   // Готовые фразы для консультанта
   const phrases = personalizedContent?.pointBPhrases || [];
 
@@ -637,11 +637,11 @@ function PointBStep({
     if (selectedOptions.length === 0 && !customText.trim()) {
       return;
     }
-    
-    const response = selectedOptions.length > 0 
+
+    const response = selectedOptions.length > 0
       ? selectedOptions.join(", ") + (customText.trim() ? `\n\nДополнительно: ${customText.trim()}` : "")
       : customText.trim();
-    
+
     onSave(
       mainQuestion,
       response,
@@ -680,7 +680,7 @@ function PointBStep({
           </div>
         )}
       </div>
-      
+
       <div>
         <label className="block text-sm font-medium mb-2">
           {mainQuestion}
@@ -697,11 +697,10 @@ function PointBStep({
                     : [...prev, option]
                 );
               }}
-              className={`p-3 rounded-lg border text-left transition ${
-                selectedOptions.includes(option)
-                  ? "bg-green-50 border-green-500 text-green-700"
-                  : "bg-white border-gray-300 hover:border-gray-400"
-              }`}
+              className={`p-3 rounded-lg border text-left transition ${selectedOptions.includes(option)
+                ? "bg-green-50 border-green-500 text-green-700"
+                : "bg-white border-gray-300 hover:border-gray-400"
+                }`}
             >
               {option}
             </button>
@@ -729,9 +728,10 @@ function PointBStep({
       </button>
     </div>
   );
-}
+});
 
-function ResourcesStep({
+
+const ResourcesStep = memo(function ResourcesStep({
   stepData,
   personalizedContent,
   salCodes,
@@ -786,11 +786,11 @@ function ResourcesStep({
   ];
 
   function handleSave() {
-    const resourcesText = selectedOptions.length > 0 
-      ? `Доступные ресурсы: ${selectedOptions.join(", ")}` 
+    const resourcesText = selectedOptions.length > 0
+      ? `Доступные ресурсы: ${selectedOptions.join(", ")}`
       : "Доступные ресурсы не указаны";
     const response = `${resourcesText}\n\nЧто можем дать мы: ${offeredResources.join(", ")}${customText.trim() ? `\n\nДополнительно: ${customText.trim()}` : ""}`;
-    
+
     onSave(
       "Какие есть ресурсы для перехода из точки А в точку Б?",
       response,
@@ -799,7 +799,7 @@ function ResourcesStep({
   }
 
   // Анализ ресурсов с точки зрения САЛ
-  const resourcesAnalysis = personalizedContent?.resourcesAnalysis || 
+  const resourcesAnalysis = personalizedContent?.resourcesAnalysis ||
     "С точки зрения САЛ, у вас есть все необходимые ресурсы для достижения цели. Важно правильно их активировать.";
 
   return (
@@ -817,7 +817,7 @@ function ResourcesStep({
           </div>
         )}
       </div>
-      
+
       <div>
         <label className="block text-sm font-medium mb-2">Какие ресурсы есть у клиента:</label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -831,11 +831,10 @@ function ResourcesStep({
                     : [...prev, resource]
                 );
               }}
-              className={`p-3 rounded-lg border text-left transition ${
-                selectedOptions.includes(resource)
-                  ? "bg-purple-50 border-purple-500 text-purple-700"
-                  : "bg-white border-gray-300 hover:border-gray-400"
-              }`}
+              className={`p-3 rounded-lg border text-left transition ${selectedOptions.includes(resource)
+                ? "bg-purple-50 border-purple-500 text-purple-700"
+                : "bg-white border-gray-300 hover:border-gray-400"
+                }`}
             >
               {resource}
             </button>
@@ -872,9 +871,10 @@ function ResourcesStep({
       </button>
     </div>
   );
-}
+});
 
-function ClosingStep({
+
+const ClosingStep = memo(function ClosingStep({
   steps,
   personalizedContent,
   salCodes,
@@ -893,11 +893,11 @@ function ClosingStep({
   const pointA = steps.find((s) => s.step_type === "point_a");
   const pointB = steps.find((s) => s.step_type === "point_b");
   const [showPhrases, setShowPhrases] = useState(false);
-  
+
   // Используем персонализированный оффер или базовый
-  const offerText = personalizedContent?.offerTemplate || 
+  const offerText = personalizedContent?.offerTemplate ||
     "Мы сегодня вскрыли только верхушку айсберга, но уже видно, насколько сильно это влияет на разные сферы.\n\nДальше есть два пути, которые реально помогут поменять ситуацию:\n– Личный разбор — на нём мы детально посмотрим на все твои природные ресурсы и скрытые конфликты. Ты получишь конкретную стратегию, как реализовать сильные стороны и обойти внутренние ограничения.\n– Парная консультация — если важна тема отношений, разберём совместимость с партнёром, выясним, как строить гармоничные отношения или найти подходящего человека.\n\nКакой формат тебе сейчас ближе?";
-  
+
   const closingPhrases = personalizedContent?.closingPhrases || [];
 
   function handleComplete() {
@@ -912,21 +912,21 @@ function ClosingStep({
     <div className="space-y-6">
       <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl border border-yellow-200 p-6 mb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Резюме консультации</h3>
-        
+
         {pointA && (
           <div className="mb-4">
             <div className="text-sm font-medium text-gray-700 mb-2">Точка А (текущая ситуация):</div>
             <div className="text-sm text-gray-600 whitespace-pre-wrap">{pointA.response}</div>
           </div>
         )}
-        
+
         {pointB && (
           <div className="mb-4">
             <div className="text-sm font-medium text-gray-700 mb-2">Точка Б (желания):</div>
             <div className="text-sm text-gray-600 whitespace-pre-wrap">{pointB.response}</div>
           </div>
         )}
-        
+
         {salCodes && (
           <div className="mt-4 pt-4 border-t border-yellow-300">
             <div className="text-sm font-medium text-gray-700 mb-2">САЛ-коды клиента:</div>
@@ -936,7 +936,7 @@ function ClosingStep({
           </div>
         )}
       </div>
-      
+
       {/* Персонализированный оффер */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-3">Персонализированное предложение:</h3>
@@ -971,11 +971,10 @@ function ClosingStep({
             <button
               key={rating}
               onClick={() => setImportanceRating(rating)}
-              className={`w-10 h-10 rounded-lg border transition text-sm ${
-                importanceRating === rating
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white border-gray-300 hover:border-gray-400"
-              }`}
+              className={`w-10 h-10 rounded-lg border transition text-sm ${importanceRating === rating
+                ? "bg-blue-600 text-white border-blue-600"
+                : "bg-white border-gray-300 hover:border-gray-400"
+                }`}
             >
               {rating}
             </button>
@@ -993,11 +992,10 @@ function ClosingStep({
         <div className="space-y-2">
           <button
             onClick={() => setSoldProduct("full")}
-            className={`w-full p-4 rounded-lg border text-left transition ${
-              soldProduct === "full"
-                ? "bg-green-50 border-green-500 text-green-700"
-                : "bg-white border-gray-300 hover:border-gray-400"
-            }`}
+            className={`w-full p-4 rounded-lg border text-left transition ${soldProduct === "full"
+              ? "bg-green-50 border-green-500 text-green-700"
+              : "bg-white border-gray-300 hover:border-gray-400"
+              }`}
           >
             <div className="font-medium">Полная консультация</div>
             <div className="text-sm text-gray-600">
@@ -1006,11 +1004,10 @@ function ClosingStep({
           </button>
           <button
             onClick={() => setSoldProduct("partner")}
-            className={`w-full p-4 rounded-lg border text-left transition ${
-              soldProduct === "partner"
-                ? "bg-green-50 border-green-500 text-green-700"
-                : "bg-white border-gray-300 hover:border-gray-400"
-            }`}
+            className={`w-full p-4 rounded-lg border text-left transition ${soldProduct === "partner"
+              ? "bg-green-50 border-green-500 text-green-700"
+              : "bg-white border-gray-300 hover:border-gray-400"
+              }`}
           >
             <div className="font-medium">Парная консультация</div>
             <div className="text-sm text-gray-600">
@@ -1019,11 +1016,10 @@ function ClosingStep({
           </button>
           <button
             onClick={() => setSoldProduct(null)}
-            className={`w-full p-4 rounded-lg border text-left transition ${
-              soldProduct === null
-                ? "bg-gray-50 border-gray-400 text-gray-700"
-                : "bg-white border-gray-300 hover:border-gray-400"
-            }`}
+            className={`w-full p-4 rounded-lg border text-left transition ${soldProduct === null
+              ? "bg-gray-50 border-gray-400 text-gray-700"
+              : "bg-white border-gray-300 hover:border-gray-400"
+              }`}
           >
             <div className="font-medium">Ничего не продано</div>
           </button>
@@ -1039,6 +1035,4 @@ function ClosingStep({
       </button>
     </div>
   );
-}
-
-
+});
