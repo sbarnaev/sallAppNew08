@@ -47,7 +47,6 @@ export default function ExpressConsultationFlow({
   const [saving, setSaving] = useState(false);
   const [clientData, setClientData] = useState<ClientData | null>(null);
   const [salCodes, setSalCodes] = useState<ReturnType<typeof calculateSALCodes> | null>(null);
-  const [personalizedContent, setPersonalizedContent] = useState<PersonalizedContent | null>(null);
   const [bookInformation, setBookInformation] = useState<CodeInterpretations | null>(null);
   const [profileOpener, setProfileOpener] = useState<string | null>(null);
 
@@ -65,12 +64,7 @@ export default function ExpressConsultationFlow({
           if (client.birth_date) {
             const codes = calculateSALCodes(client.birth_date);
             setSalCodes(codes);
-
-            // Генерируем базовый персонализированный контент (без трактовок, они загрузятся позже)
-            if (codes) {
-              const personalized = getPersonalizedContent(codes, {});
-              setPersonalizedContent(personalized);
-            }
+            // Personalized content now computed via useMemo when salCodes changes
           }
         }
       } catch (error: any) {
@@ -130,30 +124,33 @@ export default function ExpressConsultationFlow({
     }
   }
 
-  // Обновляем персонализированный контент при изменении кодов, трактовок или шагов
-  useEffect(() => {
-    if (salCodes && bookInformation) {
-      // Извлекаем проблемы из Точки А и цели из Точки Б
-      const pointAStep = steps.find(s => s.step_type === "point_a");
-      const pointBStep = steps.find(s => s.step_type === "point_b");
+  // Extract stable dependencies from steps (only selected_options matter for personalization)
+  const pointAOptions = useMemo(() => {
+    const step = steps.find(s => s.step_type === "point_a");
+    return step?.selected_options || [];
+  }, [steps]);
 
-      const pointAProblems = pointAStep?.selected_options || [];
-      const pointBGoals = pointBStep?.selected_options || [];
+  const pointBOptions = useMemo(() => {
+    const step = steps.find(s => s.step_type === "point_b");
+    return step?.selected_options || [];
+  }, [steps]);
 
-      const personalized = getPersonalizedContent(
+  // Memoize personalized content - only recalculates when actual dependencies change
+  const personalizedContent = useMemo(() => {
+    if (!salCodes) return null;
+
+    if (bookInformation) {
+      return getPersonalizedContent(
         salCodes,
         bookInformation,
-        pointAProblems,
-        pointBGoals,
+        pointAOptions,
+        pointBOptions,
         profileOpener || undefined
       );
-      setPersonalizedContent(personalized);
-    } else if (salCodes) {
-      // Если трактовок еще нет, используем только коды
-      const personalized = getPersonalizedContent(salCodes, {}, undefined, undefined, profileOpener || undefined);
-      setPersonalizedContent(personalized);
     }
-  }, [salCodes, bookInformation, steps, profileOpener]);
+    // If no interpretations yet, use only codes
+    return getPersonalizedContent(salCodes, {}, undefined, undefined, profileOpener || undefined);
+  }, [salCodes, bookInformation, pointAOptions, pointBOptions, profileOpener]);
 
   // Memoize saveStep to prevent child component re-renders
   const saveStep = useCallback(async (
