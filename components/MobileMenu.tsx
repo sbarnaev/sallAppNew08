@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { ClientSearchModal } from "@/app/(protected)/profiles/ClientSearchModal";
 
@@ -8,21 +8,29 @@ export function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [isClientSearchOpen, setIsClientSearchOpen] = useState(false);
 
+  const handleOpenMenu = useCallback(() => setIsOpen(true), []);
+  const handleCloseMenu = useCallback(() => setIsOpen(false), []);
+  const handleOpenClientSearch = useCallback(() => {
+    setIsClientSearchOpen(true);
+    setIsOpen(false);
+  }, []);
+  const handleCloseClientSearch = useCallback(() => setIsClientSearchOpen(false), []);
+
   return (
     <>
       {/* Мобильный top-bar (всегда виден на мобиле) - Glassmorphism */}
       <header className="md:hidden fixed top-0 inset-x-0 z-[60]">
         <div className="pt-[env(safe-area-inset-top)] bg-white/50 backdrop-blur-[25px] border-b border-white/60">
           <div className="h-14 px-3 flex items-center gap-2.5">
-      <button
-        onClick={() => setIsOpen(true)}
+            <button
+              onClick={() => setIsOpen(true)}
               className="w-9 h-9 rounded-xl bg-white/50 backdrop-blur-[15px] border border-white/60 shadow-[0_1px_4px_0_rgba(0,0,0,0.03)] hover:bg-white/65 transition-all flex items-center justify-center"
-        aria-label="Открыть меню"
-      >
+              aria-label="Открыть меню"
+            >
               <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
 
             <Link href="/dashboard" className="min-w-0 flex-1" onClick={() => setIsOpen(false)}>
               <div className="truncate text-sm font-semibold text-gray-900">
@@ -68,9 +76,8 @@ export function MobileMenu() {
 
       {/* Мобильное меню - Glassmorphism */}
       <aside
-        className={`md:hidden fixed top-0 left-0 h-full w-[75vw] max-w-[300px] bg-white/60 backdrop-blur-[30px] border-r border-white/60 shadow-[0_4px_16px_0_rgba(0,0,0,0.08)] z-50 transform transition-transform duration-300 ease-out ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`md:hidden fixed top-0 left-0 h-full w-[75vw] max-w-[300px] bg-white/60 backdrop-blur-[30px] border-r border-white/60 shadow-[0_4px_16px_0_rgba(0,0,0,0.08)] z-50 transform transition-transform duration-300 ease-out ${isOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div className="flex flex-col h-full p-4 pt-[calc(16px+env(safe-area-inset-top))]">
           {/* Заголовок с кнопкой закрытия */}

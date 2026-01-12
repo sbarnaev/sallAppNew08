@@ -15,21 +15,6 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
   const baseUrl = getDirectusUrl();
   if (!token || !baseUrl) return NextResponse.json({ data: null }, { status: 401 });
 
-  // Получаем текущего пользователя для дополнительной проверки
-  let currentUserId: string | null = null;
-  try {
-    const meRes = await fetch(`${baseUrl}/users/me`, {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-      cache: "no-store",
-    });
-    if (meRes.ok) {
-      const meData = await meRes.json().catch(() => ({}));
-      currentUserId = meData?.data?.id || null;
-    }
-  } catch {
-    // Игнорируем ошибку
-  }
-
   // Запрашиваем только те поля, которые точно существуют и доступны
   // Не включаем profile_id, partner_client_id, partner_profile_id - они могут отсутствовать или быть недоступны
   const fields = [
@@ -45,37 +30,54 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
     "owner_user",
     "consultation_number",
   ].join(",");
-  
-  // Получаем консультацию - Directus сам отфильтрует по owner_user через permissions
-  const url = `${baseUrl}/items/consultations/${ctx.params.id}?fields=${encodeURIComponent(fields)}`;
-  
-  logger.log("Fetching consultation:", { 
-    id: ctx.params.id, 
-    url,
-    currentUserId 
+
+  // Получаем консультацию и текущего пользователя параллельно
+  const consultationUrl = `${baseUrl}/items/consultations/${ctx.params.id}?fields=${encodeURIComponent(fields)}`;
+  const meUrl = `${baseUrl}/users/me`;
+
+  logger.log("Fetching consultation:", {
+    id: ctx.params.id,
+    url: consultationUrl,
   });
-  
-  const r = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-  
+
+  const [r, meRes] = await Promise.all([
+    fetch(consultationUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+      next: { revalidate: 30 },
+    }),
+    fetch(meUrl, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      cache: "no-store",
+    }),
+  ]);
+
+  // Получаем ID текущего пользователя
+  let currentUserId: string | null = null;
+  try {
+    if (meRes.ok) {
+      const meData = await meRes.json().catch(() => ({}));
+      currentUserId = meData?.data?.id || null;
+    }
+  } catch {
+    // Игнорируем ошибку
+  }
+
   const responseText = await r.text();
   let data: any = { data: null, errors: [] };
-  
+
   try {
     if (responseText) {
       data = JSON.parse(responseText);
     }
   } catch (e) {
-    logger.error("Failed to parse Directus response:", { 
-      status: r.status, 
+    logger.error("Failed to parse Directus response:", {
+      status: r.status,
       text: responseText.substring(0, 500),
-      error: e 
+      error: e
     });
   }
-  
-  logger.log("Directus response:", { 
+
+  logger.log("Directus response:", {
     status: r.status,
     statusText: r.statusText,
     hasData: !!data?.data,
@@ -85,40 +87,40 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
     errors: data?.errors,
     fullResponse: data
   });
-  
+
   // Если получили ошибку доступа или консультация не найдена
   if (r.status === 403 || r.status === 404 || !data?.data) {
     // Если есть ошибки от Directus
     if (data?.errors && Array.isArray(data.errors) && data.errors.length > 0) {
       const errorMessage = data.errors[0].message || "Консультация не найдена";
-      return NextResponse.json({ 
-        data: null, 
+      return NextResponse.json({
+        data: null,
         message: errorMessage,
         errors: data.errors
       }, { status: r.status === 403 ? 403 : 404 });
     }
-    
+
     // Если есть owner_user в ответе и он не совпадает с текущим пользователем
     if (data?.data?.owner_user && currentUserId && String(data.data.owner_user) !== String(currentUserId)) {
-      return NextResponse.json({ 
-        data: null, 
-        message: "Консультация не найдена или у вас нет прав доступа" 
+      return NextResponse.json({
+        data: null,
+        message: "Консультация не найдена или у вас нет прав доступа"
       }, { status: 404 });
     }
-    
+
     // Стандартное сообщение для несуществующей консультации
-    return NextResponse.json({ 
-      data: null, 
+    return NextResponse.json({
+      data: null,
       message: `Консультация с ID ${ctx.params.id} не найдена. Возможно, она была удалена или у вас нет прав доступа.`
     }, { status: 404 });
   }
-  
+
   // Автоматически обновляем статус если дата прошла
   if (data?.data && data.data.scheduled_at && data.data.status === "scheduled") {
     const scheduledDate = new Date(data.data.scheduled_at);
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-    
+
     if (scheduledDate < oneHourAgo) {
       // Обновляем статус в фоне (не ждем результата)
       fetch(`${baseUrl}/items/consultations/${ctx.params.id}`, {
@@ -128,12 +130,12 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ status: "completed" }),
-      }).catch(() => {});
-      
+      }).catch(() => { });
+
       data.data.status = "completed";
     }
   }
-  
+
   return NextResponse.json(data, { status: r.status });
 }
 
@@ -229,32 +231,32 @@ export async function DELETE(req: Request, ctx: { params: { id: string } }) {
   }
 
   const { id } = ctx.params;
-  
+
   // Валидация ID
   if (!id || isNaN(Number(id)) || Number(id) <= 0) {
     return NextResponse.json({ message: "Invalid consultation ID" }, { status: 400 });
   }
 
-  const { confirm } = await req.json().catch(()=>({ confirm: false }));
+  const { confirm } = await req.json().catch(() => ({ confirm: false }));
   if (!confirm) return NextResponse.json({ message: "Deletion not confirmed" }, { status: 400 });
 
   async function safeJson(r: Response) {
-    return r.json().catch(()=>({}));
+    return r.json().catch(() => ({}));
   }
 
   async function authorizedFetch(url: string, init: RequestInit = {}) {
-    const doFetch = async (tkn: string) => fetch(url, { ...init, headers: { ...(init.headers||{}), Authorization: `Bearer ${tkn}`, Accept: "application/json" }, cache: "no-store" });
+    const doFetch = async (tkn: string) => fetch(url, { ...init, headers: { ...(init.headers || {}), Authorization: `Bearer ${tkn}`, Accept: "application/json" }, cache: "no-store" });
     const initialToken = cookies().get("directus_access_token")?.value || token || "";
     let r = await doFetch(initialToken);
     if (r.status === 401) {
       try {
         const origin = new URL(req.url).origin;
-        const refresh = await fetch(`${origin}/api/refresh`, { method: 'POST', headers: { 'Content-Type': 'application/json' }});
+        const refresh = await fetch(`${origin}/api/refresh`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         if (refresh.ok) {
           const newToken = cookies().get("directus_access_token")?.value || token || "";
           r = await doFetch(newToken);
         }
-      } catch {}
+      } catch { }
     }
     return r;
   }
@@ -266,7 +268,7 @@ export async function DELETE(req: Request, ctx: { params: { id: string } }) {
     for (const batch of batches) {
       const r = await authorizedFetch(`${baseUrl}/items/${collection}?ids=${batch.join(',')}`, { method: 'DELETE' });
       if (!r.ok && r.status !== 404) {
-        const err = await r.json().catch(()=>({}));
+        const err = await r.json().catch(() => ({}));
         return { ok: false as const, status: r.status, err };
       }
     }
@@ -277,7 +279,7 @@ export async function DELETE(req: Request, ctx: { params: { id: string } }) {
     // Удаляем детали консультации, если есть
     const detListRes = await authorizedFetch(`${baseUrl}/items/consultation_details?filter[consultation_id][_eq]=${id}&fields=id&limit=5000`);
     const detList = await safeJson(detListRes);
-    const detailIds: number[] = Array.isArray(detList?.data) ? detList.data.map((x: any)=>x.id) : [];
+    const detailIds: number[] = Array.isArray(detList?.data) ? detList.data.map((x: any) => x.id) : [];
     if (detailIds.length > 0) {
       const delDet = await deleteByIds('consultation_details', detailIds);
       if (!delDet.ok) return NextResponse.json(delDet.err || { message: 'Failed to delete consultation_details' }, { status: delDet.status || 500 });

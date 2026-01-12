@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 
 interface Reminder {
   id: string;
@@ -13,6 +13,42 @@ interface Reminder {
   clientName?: string;
   link?: string;
 }
+
+// Static helper functions moved outside component
+const getReminderIcon = (type: string) => {
+  switch (type) {
+    case "birthday": return "🎂";
+    case "consultation": return "📅";
+    case "no-contact": return "⏰";
+    default: return "📌";
+  }
+};
+
+const getReminderColor = (type: string) => {
+  switch (type) {
+    case "birthday": return "bg-blue-100 border-blue-300 text-blue-700";
+    case "consultation": return "bg-green-100 border-green-300 text-green-700";
+    case "no-contact": return "bg-amber-100 border-amber-300 text-amber-700";
+    default: return "bg-gray-100 border-gray-300 text-gray-700";
+  }
+};
+
+const formatDaysUntil = (daysUntil: number, type: string, date?: string) => {
+  if (type === "no-contact") {
+    if (daysUntil < 0) return "Нет контакта";
+    if (daysUntil === 0) return "Сегодня";
+    if (daysUntil === 1) return "1 день назад";
+    if (daysUntil < 30) return `${daysUntil} дней назад`;
+    const months = Math.floor(daysUntil / 30);
+    return `${months} мес. назад`;
+  }
+
+  if (daysUntil === 0) return "Сегодня";
+  if (daysUntil === 1) return "Завтра";
+  if (daysUntil <= 7) return `Через ${daysUntil} ${daysUntil === 1 ? "день" : daysUntil < 5 ? "дня" : "дней"}`;
+  if (date) return new Date(date).toLocaleDateString("ru-RU");
+  return "";
+};
 
 export function RemindersWidget() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -287,41 +323,6 @@ export function RemindersWidget() {
       </div>
     );
   }
-
-  const getReminderIcon = (type: string) => {
-    switch (type) {
-      case "birthday": return "🎂";
-      case "consultation": return "📅";
-      case "no-contact": return "⏰";
-      default: return "📌";
-    }
-  };
-
-  const getReminderColor = (type: string) => {
-    switch (type) {
-      case "birthday": return "bg-blue-100 border-blue-300 text-blue-700";
-      case "consultation": return "bg-green-100 border-green-300 text-green-700";
-      case "no-contact": return "bg-amber-100 border-amber-300 text-amber-700";
-      default: return "bg-gray-100 border-gray-300 text-gray-700";
-    }
-  };
-
-  const formatDaysUntil = (daysUntil: number, type: string, date?: string) => {
-    if (type === "no-contact") {
-      if (daysUntil < 0) return "Нет контакта";
-      if (daysUntil === 0) return "Сегодня";
-      if (daysUntil === 1) return "1 день назад";
-      if (daysUntil < 30) return `${daysUntil} дней назад`;
-      const months = Math.floor(daysUntil / 30);
-      return `${months} мес. назад`;
-    }
-
-    if (daysUntil === 0) return "Сегодня";
-    if (daysUntil === 1) return "Завтра";
-    if (daysUntil <= 7) return `Через ${daysUntil} ${daysUntil === 1 ? "день" : daysUntil < 5 ? "дня" : "дней"}`;
-    if (date) return new Date(date).toLocaleDateString("ru-RU");
-    return "";
-  };
 
   return (
     <div className="card p-5">

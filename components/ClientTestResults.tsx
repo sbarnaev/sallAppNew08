@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { TESTS, TestId, ClientTestData, TestResult } from "@/lib/test-types";
 import { TestLinkGenerator } from "./TestLinkGenerator";
 
@@ -9,11 +9,18 @@ interface Props {
   clientId: number;
 }
 
+const levelColors: Record<string, string> = {
+  low: "bg-green-100 border-green-300 text-green-800",
+  medium: "bg-yellow-100 border-yellow-300 text-yellow-800",
+  high: "bg-orange-100 border-orange-300 text-orange-800",
+  critical: "bg-red-100 border-red-300 text-red-800"
+};
+
 export function ClientTestResults({ clientId }: Props) {
   const [testData, setTestData] = useState<ClientTestData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  function formatAnswer(test: (typeof TESTS)[TestId], result: TestResult, questionId: number) {
+  const formatAnswer = useCallback((test: (typeof TESTS)[TestId], result: TestResult, questionId: number) => {
     const q = test.questions.find((qq) => qq.id === questionId);
     const a = result.answers?.[questionId];
     if (!q) return String(a ?? "—");
@@ -35,7 +42,7 @@ export function ClientTestResults({ clientId }: Props) {
       return String(a);
     }
     return String(a);
-  }
+  }, []);
 
   useEffect(() => {
     async function loadTestData() {
@@ -44,7 +51,7 @@ export function ClientTestResults({ clientId }: Props) {
         const res = await fetch(`/api/clients/${clientId}`, { cache: "no-store" });
         const data = await res.json().catch(() => ({ data: {} }));
         const testirovanieRaw = data?.data?.testirovanie;
-        
+
         let parsedData: ClientTestData = {};
         if (testirovanieRaw) {
           if (typeof testirovanieRaw === "string") {
@@ -116,13 +123,6 @@ export function ClientTestResults({ clientId }: Props) {
     );
   }
 
-  const levelColors: Record<string, string> = {
-    low: "bg-green-100 border-green-300 text-green-800",
-    medium: "bg-yellow-100 border-yellow-300 text-yellow-800",
-    high: "bg-orange-100 border-orange-300 text-orange-800",
-    critical: "bg-red-100 border-red-300 text-red-800"
-  };
-
   return (
     <div className="card p-6">
       <div className="flex items-center justify-between mb-6">
@@ -150,13 +150,12 @@ export function ClientTestResults({ clientId }: Props) {
             <div key={testId} className="border-2 border-gray-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${
-                    test.color === "orange" ? "bg-gradient-to-br from-orange-500 to-orange-600" :
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${test.color === "orange" ? "bg-gradient-to-br from-orange-500 to-orange-600" :
                     test.color === "blue" ? "bg-gradient-to-br from-blue-500 to-blue-600" :
-                    test.color === "red" ? "bg-gradient-to-br from-red-500 to-red-600" :
-                    test.color === "yellow" ? "bg-gradient-to-br from-yellow-500 to-yellow-600" :
-                    "bg-gradient-to-br from-green-500 to-green-600"
-                  }`}>
+                      test.color === "red" ? "bg-gradient-to-br from-red-500 to-red-600" :
+                        test.color === "yellow" ? "bg-gradient-to-br from-yellow-500 to-yellow-600" :
+                          "bg-gradient-to-br from-green-500 to-green-600"
+                    }`}>
                     {test.icon}
                   </div>
                   <div>
@@ -183,21 +182,20 @@ export function ClientTestResults({ clientId }: Props) {
                   <span className="text-sm text-gray-600">
                     Последний результат: {new Date(latestResult.date).toLocaleDateString("ru-RU")}
                   </span>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                        levelColors[latestResult.level] || levelColors.medium
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-bold border ${levelColors[latestResult.level] || levelColors.medium
                       }`}
-                    >
-                      {latestResult.level === "low"
-                        ? "Низкий"
-                        : latestResult.level === "medium"
+                  >
+                    {latestResult.level === "low"
+                      ? "Низкий"
+                      : latestResult.level === "medium"
                         ? "Средний"
                         : latestResult.level === "high"
-                        ? "Высокий"
-                        : "Критический"}
-                    </span>
+                          ? "Высокий"
+                          : "Критический"}
+                  </span>
                 </div>
-                
+
                 {/* Имя и дата рождения, если есть */}
                 {(latestResult.clientName || latestResult.birthDate) && (
                   <div className="mb-3 pb-3 border-b border-gray-200">
@@ -225,7 +223,7 @@ export function ClientTestResults({ clientId }: Props) {
                     )}
                   </div>
                 )}
-                
+
                 <div className="text-2xl font-bold text-gray-900">{latestResult.score} баллов</div>
                 {latestResult.subScores && (
                   <div className="mt-2 text-sm text-gray-700">
@@ -253,9 +251,8 @@ export function ClientTestResults({ clientId }: Props) {
                           return (
                             <div
                               key={`${r.level}-${idx}`}
-                              className={`rounded-xl border p-3 text-sm ${
-                                isCurrent ? "border-brand-400 bg-brand-50" : "border-gray-200 bg-white"
-                              }`}
+                              className={`rounded-xl border p-3 text-sm ${isCurrent ? "border-brand-400 bg-brand-50" : "border-gray-200 bg-white"
+                                }`}
                             >
                               <div className="flex items-center justify-between gap-3">
                                 <span className="font-semibold text-gray-900">{r.label}</span>
@@ -323,20 +320,19 @@ export function ClientTestResults({ clientId }: Props) {
                       const height = (normalizedScore / scoreRange) * 100;
                       const minHeight = 10; // Минимальная высота для видимости
                       const finalHeight = Math.max(height, minHeight);
-                      
+
                       return (
                         <div key={idx} className="flex-1 flex flex-col items-center gap-1">
                           <div className="relative w-full h-20 flex items-end">
                             <div
-                              className={`w-full rounded-t-lg transition-all ${
-                                r.level === "low"
-                                  ? "bg-green-500"
-                                  : r.level === "medium"
+                              className={`w-full rounded-t-lg transition-all ${r.level === "low"
+                                ? "bg-green-500"
+                                : r.level === "medium"
                                   ? "bg-yellow-500"
                                   : r.level === "high"
-                                  ? "bg-orange-500"
-                                  : "bg-red-500"
-                              }`}
+                                    ? "bg-orange-500"
+                                    : "bg-red-500"
+                                }`}
                               style={{ height: `${finalHeight}%`, minHeight: '8px' }}
                               title={`${r.score} баллов - ${new Date(r.date).toLocaleDateString("ru-RU")}`}
                             />

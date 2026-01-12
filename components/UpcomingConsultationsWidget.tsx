@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+
+// Static data moved outside component
+const typeLabels: Record<string, string> = {
+  base: "Базовая",
+  extended: "Расширенная",
+  target: "Целевая",
+  partner: "Парная"
+};
 
 export function UpcomingConsultationsWidget() {
   const [consultations, setConsultations] = useState<any[]>([]);
@@ -63,6 +71,17 @@ export function UpcomingConsultationsWidget() {
     loadConsultations();
   }, []);
 
+  // Memoize consultation items to prevent recalculation
+  const consultationItems = useMemo(() =>
+    consultations.map((c: any) => {
+      const clientName = c.client_id ? (clientsMap[c.client_id] || `Клиент #${c.client_id}`) : "Без клиента";
+      const consultationDate = c.scheduled_at ? new Date(c.scheduled_at) : null;
+      const daysUntil = consultationDate ? Math.ceil((consultationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+      return { ...c, clientName, consultationDate, daysUntil };
+    }),
+    [consultations, clientsMap]
+  );
+
   if (loading) {
     return (
       <div className="card p-5">
@@ -76,20 +95,13 @@ export function UpcomingConsultationsWidget() {
     );
   }
 
-  const typeLabels: Record<string, string> = {
-    base: "Базовая",
-    extended: "Расширенная",
-    target: "Целевая",
-    partner: "Парная"
-  };
-
   return (
     <div className="card p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base font-bold text-gray-900">Предстоящие консультации</h2>
         <Link href="/consultations" className="text-sm font-medium text-accent-700 hover:text-accent-800 transition-colors">Все →</Link>
       </div>
-      {consultations.length === 0 ? (
+      {consultationItems.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           <p>Нет предстоящих консультаций</p>
           <Link href="/consultations/new" className="text-accent-700 hover:text-accent-800 text-sm mt-2 inline-block">
@@ -98,47 +110,41 @@ export function UpcomingConsultationsWidget() {
         </div>
       ) : (
         <div className="space-y-3">
-          {consultations.map((c: any) => {
-            const clientName = c.client_id ? (clientsMap[c.client_id] || `Клиент #${c.client_id}`) : "Без клиента";
-            const consultationDate = c.scheduled_at ? new Date(c.scheduled_at) : null;
-            const daysUntil = consultationDate ? Math.ceil((consultationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
-
-            return (
-              <Link key={c.id} href={`/consultations/${c.id}`} className="block p-3.5 rounded-xl bg-white/40 backdrop-blur-[15px] border border-white/60 hover:bg-white/55 hover:border-white/70 transition-all duration-300 group">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 group-hover:text-accent-700 transition-colors mb-1">
-                      {clientName}
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap text-xs text-gray-600">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-100 text-blue-700 border border-blue-200">
-                        {typeLabels[c.type] || c.type}
-                      </span>
-                      {consultationDate && (
-                        <span>
-                          {consultationDate.toLocaleDateString("ru-RU", {
-                            day: '2-digit',
-                            month: 'long',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                      )}
-                      {daysUntil !== null && daysUntil >= 0 && (
-                        <span className="text-gray-500">
-                          {daysUntil === 0 ? "Сегодня" : daysUntil === 1 ? "Завтра" : `Через ${daysUntil} дн.`}
-                        </span>
-                      )}
-                    </div>
+          {consultationItems.map((item) => (
+            <Link key={item.id} href={`/consultations/${item.id}`} className="block p-3.5 rounded-xl bg-white/40 backdrop-blur-[15px] border border-white/60 hover:bg-white/55 hover:border-white/70 transition-all duration-300 group">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-gray-900 group-hover:text-accent-700 transition-colors mb-1">
+                    {item.clientName}
                   </div>
-                  <svg className="w-4 h-4 text-gray-400 shrink-0 group-hover:text-accent-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  <div className="flex items-center gap-2 flex-wrap text-xs text-gray-600">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-100 text-blue-700 border border-blue-200">
+                      {typeLabels[item.type] || item.type}
+                    </span>
+                    {item.consultationDate && (
+                      <span>
+                        {item.consultationDate.toLocaleDateString("ru-RU", {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    )}
+                    {item.daysUntil !== null && item.daysUntil >= 0 && (
+                      <span className="text-gray-500">
+                        {item.daysUntil === 0 ? "Сегодня" : item.daysUntil === 1 ? "Завтра" : `Через ${item.daysUntil} дн.`}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </Link>
-            );
-          })}
+                <svg className="w-4 h-4 text-gray-400 shrink-0 group-hover:text-accent-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </Link>
+          ))}
         </div>
       )}
     </div>

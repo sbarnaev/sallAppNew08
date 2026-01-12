@@ -14,7 +14,7 @@ export async function GET(
 ) {
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
-  
+
   if (!token || !baseUrl) {
     return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
   }
@@ -27,12 +27,20 @@ export async function GET(
   }
 
   try {
-    // Получаем консультацию
+    // Параллельно получаем консультацию и шаги
     const consultationUrl = `${baseUrl}/items/consultations/${id}?fields=*`;
-    const consultationRes = await fetch(consultationUrl, {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-      cache: "no-store",
-    });
+    const stepsUrl = `${baseUrl}/items/consultation_details?filter[consultation_id][_eq]=${id}&sort=section`;
+
+    const [consultationRes, stepsRes] = await Promise.all([
+      fetch(consultationUrl, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        next: { revalidate: 30 },
+      }),
+      fetch(stepsUrl, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        next: { revalidate: 30 },
+      }),
+    ]);
 
     if (!consultationRes.ok) {
       return NextResponse.json(
@@ -41,16 +49,10 @@ export async function GET(
       );
     }
 
-    const consultationData = await consultationRes.json().catch(() => ({}));
-
-    // Получаем все шаги консультации
-    const stepsUrl = `${baseUrl}/items/consultation_details?filter[consultation_id][_eq]=${id}&sort=section`;
-    const stepsRes = await fetch(stepsUrl, {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-      cache: "no-store",
-    });
-
-    const stepsData = await stepsRes.json().catch(() => ({ data: [] }));
+    const [consultationData, stepsData] = await Promise.all([
+      consultationRes.json().catch(() => ({})),
+      stepsRes.json().catch(() => ({ data: [] })),
+    ]);
 
     // Парсим шаги из content
     const steps = (stepsData?.data || []).map((step: any) => {
@@ -78,13 +80,13 @@ export async function GET(
         const profileUrl = `${baseUrl}/items/profiles/${consultation.profile_id}?fields=book_information,raw_json`;
         const profileRes = await fetch(profileUrl, {
           headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-          cache: "no-store",
+          next: { revalidate: 120 },
         });
 
         if (profileRes.ok) {
           const profileData = await profileRes.json().catch(() => ({}));
           bookInformation = profileData?.data?.book_information || null;
-          
+
           // Извлекаем opener из raw_json
           try {
             const rawJson = profileData?.data?.raw_json;
@@ -125,7 +127,7 @@ export async function PATCH(
 ) {
   const token = cookies().get("directus_access_token")?.value;
   const baseUrl = getDirectusUrl();
-  
+
   if (!token || !baseUrl) {
     return NextResponse.json({ message: "Unauthorized or no DIRECTUS_URL" }, { status: 401 });
   }

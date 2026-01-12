@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 interface Template {
   id: string;
@@ -97,7 +97,7 @@ const DEFAULT_TEMPLATES: Template[] = [
 ];
 
 export function NotesTemplates({ onSelect }: { onSelect: (content: string) => void }) {
-  const [templates, setTemplates] = useState<Template[]>(DEFAULT_TEMPLATES);
+  const [templates] = useState<Template[]>(DEFAULT_TEMPLATES);
   const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("Все");
   const [isOpen, setIsOpen] = useState(false);
@@ -117,16 +117,19 @@ export function NotesTemplates({ onSelect }: { onSelect: (content: string) => vo
     }
   }, []);
 
-  const allTemplates = [...templates, ...customTemplates];
-  const categories = Array.from(new Set(allTemplates.map(t => t.category)));
-  const filteredTemplates = selectedCategory === "Все" 
-    ? allTemplates 
-    : allTemplates.filter(t => t.category === selectedCategory);
+  const allTemplates = useMemo(() => [...templates, ...customTemplates], [templates, customTemplates]);
+  const categories = useMemo(() => Array.from(new Set(allTemplates.map(t => t.category))), [allTemplates]);
+  const filteredTemplates = useMemo(() =>
+    selectedCategory === "Все"
+      ? allTemplates
+      : allTemplates.filter(t => t.category === selectedCategory),
+    [selectedCategory, allTemplates]
+  );
 
-  function handleSelect(template: Template) {
+  const handleSelect = useCallback((template: Template) => {
     onSelect(template.content);
     setIsOpen(false);
-  }
+  }, [onSelect]);
 
   function handleSaveCustom() {
     if (!newTemplate.name.trim() || !newTemplate.content.trim()) {
@@ -180,11 +183,10 @@ export function NotesTemplates({ onSelect }: { onSelect: (content: string) => vo
           <div className="flex flex-wrap gap-2 mb-6">
             <button
               onClick={() => setSelectedCategory("Все")}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                selectedCategory === "Все"
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${selectedCategory === "Все"
                   ? "bg-brand-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+                }`}
             >
               Все
             </button>
@@ -192,11 +194,10 @@ export function NotesTemplates({ onSelect }: { onSelect: (content: string) => vo
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                  selectedCategory === cat
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${selectedCategory === cat
                     ? "bg-brand-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                  }`}
               >
                 {cat}
               </button>
