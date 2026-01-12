@@ -26,42 +26,43 @@ export function ClientTimeline({ clientId }: Props) {
     async function loadTimeline() {
       setLoading(true);
       try {
-        // Загружаем расчёты
-        const profilesRes = await fetch(`/api/profiles?filter[client_id][_eq]=${clientId}&limit=100&sort=-created_at`, {
-          cache: "no-store"
-        });
-        // Проверяем статус перед парсингом JSON, чтобы избежать ошибок в консоли
+        // Parallel fetch of all independent resources
+        const [profilesRes, consultationsRes, clientRes] = await Promise.all([
+          // Загружаем расчёты
+          fetch(`/api/profiles?filter[client_id][_eq]=${clientId}&limit=100&sort=-created_at`, {
+            cache: "no-store"
+          }),
+          // Загружаем консультации
+          fetch(`/api/consultations?filter[client_id][_eq]=${clientId}&limit=100&sort=-created_at`, {
+            cache: "no-store"
+          }),
+          // Загружаем данные клиента для получения тестов
+          fetch(`/api/clients/${clientId}`, {
+            cache: "no-store"
+          })
+        ]);
+
+        // Process profiles response
         let profilesData: any = { data: [] };
         if (profilesRes.ok) {
           profilesData = await profilesRes.json().catch(() => ({ data: [] }));
         } else if (profilesRes.status === 403) {
-          // Подписка истекла - api-interceptor обработает редирект
-          return;
+          return; // Подписка истекла
         }
 
-        // Загружаем консультации
-        const consultationsRes = await fetch(`/api/consultations?filter[client_id][_eq]=${clientId}&limit=100&sort=-created_at`, {
-          cache: "no-store"
-        });
-        // Проверяем статус перед парсингом JSON, чтобы избежать ошибок в консоли
+        // Process consultations response
         let consultationsData: any = { data: [] };
         if (consultationsRes.ok) {
           consultationsData = await consultationsRes.json().catch(() => ({ data: [] }));
         } else if (consultationsRes.status === 403) {
-          // Подписка истекла - api-interceptor обработает редирект
           return;
         }
 
-        // Загружаем данные клиента для получения тестов
-        const clientRes = await fetch(`/api/clients/${clientId}`, {
-          cache: "no-store"
-        });
-        // Проверяем статус перед парсингом JSON, чтобы избежать ошибок в консоли
+        // Process client response
         let clientData: any = { data: {} };
         if (clientRes.ok) {
           clientData = await clientRes.json().catch(() => ({ data: {} }));
         } else if (clientRes.status === 403) {
-          // Подписка истекла - api-interceptor обработает редирект
           return;
         }
 
@@ -93,16 +94,16 @@ export function ClientTimeline({ clientId }: Props) {
             target: "Целевая",
             partner: "Партнёрская"
           };
-          
+
           const statusLabels: Record<string, string> = {
             scheduled: "Запланирована",
             completed: "Завершена",
             cancelled: "Отменена"
           };
-          
+
           const consultationDate = consultation.scheduled_at || consultation.created_at;
           const dateObj = consultationDate ? new Date(consultationDate) : null;
-          
+
           timelineEvents.push({
             id: `consultation-${consultation.id}`,
             type: "consultation",
@@ -239,7 +240,7 @@ export function ClientTimeline({ clientId }: Props) {
   return (
     <div className="card p-6">
       <h3 className="text-lg font-bold text-gray-900 mb-6">История взаимодействий</h3>
-      
+
       <div className="relative">
         {/* Вертикальная линия */}
         <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>

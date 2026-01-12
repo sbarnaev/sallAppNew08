@@ -31,18 +31,79 @@ export function RemindersWidget() {
 
         const remindersList: Reminder[] = [];
 
-        // 1. Загружаем консультации на ближайшие 7 дней (только запланированные) - это быстрый запрос
-        const consultationsRes = await fetch(
-          `/api/consultations?filter[scheduled_at][_gte]=${today.toISOString()}&filter[scheduled_at][_lte]=${in7Days.toISOString()}&filter[status][_eq]=scheduled&limit=100&fields=id,client_id,partner_client_id,type,scheduled_at`,
-          { next: { revalidate: 30 } }
-        );
-        // Проверяем статус перед парсингом JSON, чтобы избежать ошибок в консоли
+        // Parallel fetch of independent resources (significant performance improvement)
+        const [
+          consultationsRes,
+          clientsForBirthdaysRes,
+          recentClientsRes,
+          recentProfilesRes,
+          recentConsultationsRes
+        ] = await Promise.all([
+          // 1. Консультации на ближайшие 7 дней (только запланированные)
+          fetch(
+            `/api/consultations?filter[scheduled_at][_gte]=${today.toISOString()}&filter[scheduled_at][_lte]=${in7Days.toISOString()}&filter[status][_eq]=scheduled&limit=100&fields=id,client_id,partner_client_id,type,scheduled_at`,
+            { next: { revalidate: 30 } }
+          ),
+          // 2. Клиенты с днями рождения (последние 100)
+          fetch("/api/clients?limit=100&sort=-created_at&fields=id,name,birth_date,created_at", {
+            next: { revalidate: 60 }
+          }),
+          // 3. Клиенты для проверки "без контакта" (последние 100)
+          fetch("/api/clients?limit=100&sort=-created_at&fields=id,name,created_at", {
+            next: { revalidate: 60 }
+          }),
+          // 4. Последние расчёты (200)
+          fetch("/api/profiles?limit=200&sort=-created_at&fields=id,client_id,created_at", {
+            next: { revalidate: 60 }
+          }),
+          // 5. Последние консультации (200)
+          fetch("/api/consultations?limit=200&sort=-scheduled_at,-created_at&fields=id,client_id,scheduled_at,created_at", {
+            next: { revalidate: 60 }
+          })
+        ]);
+
+        // Process consultation response
         let consultations: any[] = [];
         if (consultationsRes.ok) {
           const consultationsData = await consultationsRes.json().catch(() => ({ data: [] }));
           consultations = consultationsData?.data || [];
         } else if (consultationsRes.status === 403) {
-          // Подписка истекла - api-interceptor обработает редирект
+          return; // Подписка истекла
+        }
+
+        // Process birthday clients response
+        let clientsForBirthdays: any[] = [];
+        if (clientsForBirthdaysRes.ok) {
+          const clientsForBirthdaysData = await clientsForBirthdaysRes.json().catch(() => ({ data: [] }));
+          clientsForBirthdays = clientsForBirthdaysData?.data || [];
+        } else if (clientsForBirthdaysRes.status === 403) {
+          return;
+        }
+
+        // Process recent clients response
+        let recentClients: any[] = [];
+        if (recentClientsRes.ok) {
+          const recentClientsData = await recentClientsRes.json().catch(() => ({ data: [] }));
+          recentClients = recentClientsData?.data || [];
+        } else if (recentClientsRes.status === 403) {
+          return;
+        }
+
+        // Process recent profiles response
+        let recentProfiles: any[] = [];
+        if (recentProfilesRes.ok) {
+          const recentProfilesData = await recentProfilesRes.json().catch(() => ({ data: [] }));
+          recentProfiles = recentProfilesData?.data || [];
+        } else if (recentProfilesRes.status === 403) {
+          return;
+        }
+
+        // Process recent consultations response
+        let recentConsultations: any[] = [];
+        if (recentConsultationsRes.ok) {
+          const recentConsultationsData = await recentConsultationsRes.json().catch(() => ({ data: [] }));
+          recentConsultations = recentConsultationsData?.data || [];
+        } else if (recentConsultationsRes.status === 403) {
           return;
         }
 
@@ -53,35 +114,20 @@ export function RemindersWidget() {
           if (c.partner_client_id) consultationClientIds.add(c.partner_client_id);
         });
 
-        // 2. Загружаем только клиентов с днями рождения в ближайшие 7 дней
-        // Используем фильтр по дате рождения через API (если поддерживается) или загружаем последние 100
-        const clientsForBirthdaysRes = await fetch("/api/clients?limit=100&sort=-created_at&fields=id,name,birth_date,created_at", { 
-          next: { revalidate: 60 } 
-        });
-        // Проверяем статус перед парсингом JSON, чтобы избежать ошибок в консоли
-        let clientsForBirthdays: any[] = [];
-        if (clientsForBirthdaysRes.ok) {
-          const clientsForBirthdaysData = await clientsForBirthdaysRes.json().catch(() => ({ data: [] }));
-          clientsForBirthdays = clientsForBirthdaysData?.data || [];
-        } else if (clientsForBirthdaysRes.status === 403) {
-          // Подписка истекла - api-interceptor обработает редирект
-          return;
-        }
-
-        // Проверяем дни рождения только у загруженных клиентов
+        // Проверяем дни рождения у загруженных клиентов
         clientsForBirthdays.forEach((client: any) => {
           if (client.birth_date) {
             const birthDate = new Date(client.birth_date);
             const thisYearBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
             const nextYearBirthday = new Date(today.getFullYear() + 1, birthDate.getMonth(), birthDate.getDate());
-            
+
             let birthdayDate = thisYearBirthday;
             if (thisYearBirthday < today) {
               birthdayDate = nextYearBirthday;
             }
 
             const daysUntil = Math.ceil((birthdayDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            
+
             if (daysUntil <= 7) {
               remindersList.push({
                 id: `birthday-${client.id}`,
@@ -97,23 +143,21 @@ export function RemindersWidget() {
           }
         });
 
-        // 3. Обрабатываем консультации - загружаем только нужных клиентов
+        // Обрабатываем консультации - загружаем только нужных клиентов (зависимый запрос)
         const clientIdsForConsultations = Array.from(consultationClientIds);
         let clientsMap: Record<number, any> = {};
-        
+
         if (clientIdsForConsultations.length > 0) {
           const ids = clientIdsForConsultations.join(',');
-          const clientsRes = await fetch(`/api/clients?filter[id][_in]=${ids}&fields=id,name&limit=100`, { 
-            next: { revalidate: 60 } 
+          const clientsRes = await fetch(`/api/clients?filter[id][_in]=${ids}&fields=id,name&limit=100`, {
+            next: { revalidate: 60 }
           });
-          // Проверяем статус перед парсингом JSON, чтобы избежать ошибок в консоли
           if (clientsRes.ok) {
             const clientsData = await clientsRes.json().catch(() => ({ data: [] }));
             clientsData?.data?.forEach((c: any) => {
               if (c.id) clientsMap[c.id] = c;
             });
           } else if (clientsRes.status === 403) {
-            // Подписка истекла - api-interceptor обработает редирект
             return;
           }
         }
@@ -122,7 +166,7 @@ export function RemindersWidget() {
           if (consultation.scheduled_at && consultation.status === "scheduled") {
             const consultationDate = new Date(consultation.scheduled_at);
             const daysUntil = Math.ceil((consultationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            
+
             if (daysUntil >= 0 && daysUntil <= 7) {
               const client = clientsMap[consultation.client_id];
               const typeLabels: Record<string, string> = {
@@ -132,7 +176,7 @@ export function RemindersWidget() {
                 partner: "Парная"
               };
               const typeLabel = typeLabels[consultation.type] || consultation.type || "Консультация";
-              
+
               remindersList.push({
                 id: `consultation-${consultation.id}`,
                 type: "consultation",
@@ -146,49 +190,6 @@ export function RemindersWidget() {
             }
           }
         });
-
-        // 4. Проверяем клиентов без контакта >1 месяца - загружаем только последние 100 клиентов
-        // и их последние расчёты/консультации
-        const recentClientsRes = await fetch("/api/clients?limit=100&sort=-created_at&fields=id,name,created_at", { 
-          next: { revalidate: 60 } 
-        });
-        // Проверяем статус перед парсингом JSON, чтобы избежать ошибок в консоли
-        let recentClients: any[] = [];
-        if (recentClientsRes.ok) {
-          const recentClientsData = await recentClientsRes.json().catch(() => ({ data: [] }));
-          recentClients = recentClientsData?.data || [];
-        } else if (recentClientsRes.status === 403) {
-          // Подписка истекла - api-interceptor обработает редирект
-          return;
-        }
-
-        // Загружаем последние расчёты (только последние 200)
-        const recentProfilesRes = await fetch("/api/profiles?limit=200&sort=-created_at&fields=id,client_id,created_at", { 
-          next: { revalidate: 60 } 
-        });
-        // Проверяем статус перед парсингом JSON, чтобы избежать ошибок в консоли
-        let recentProfiles: any[] = [];
-        if (recentProfilesRes.ok) {
-          const recentProfilesData = await recentProfilesRes.json().catch(() => ({ data: [] }));
-          recentProfiles = recentProfilesData?.data || [];
-        } else if (recentProfilesRes.status === 403) {
-          // Подписка истекла - api-interceptor обработает редирект
-          return;
-        }
-
-        // Загружаем последние консультации (только последние 200)
-        const recentConsultationsRes = await fetch("/api/consultations?limit=200&sort=-scheduled_at,-created_at&fields=id,client_id,scheduled_at,created_at", { 
-          next: { revalidate: 60 } 
-        });
-        // Проверяем статус перед парсингом JSON, чтобы избежать ошибок в консоли
-        let recentConsultations: any[] = [];
-        if (recentConsultationsRes.ok) {
-          const recentConsultationsData = await recentConsultationsRes.json().catch(() => ({ data: [] }));
-          recentConsultations = recentConsultationsData?.data || [];
-        } else if (recentConsultationsRes.status === 403) {
-          // Подписка истекла - api-interceptor обработает редирект
-          return;
-        }
 
         // Группируем по client_id для быстрого поиска
         const profilesByClient: Record<number, any> = {};
@@ -229,7 +230,7 @@ export function RemindersWidget() {
 
           if (lastContactDate < oneMonthAgo) {
             const daysSince = Math.floor((today.getTime() - lastContactDate.getTime()) / (1000 * 60 * 60 * 24));
-            
+
             remindersList.push({
               id: `no-contact-${client.id}`,
               type: "no-contact",
@@ -314,7 +315,7 @@ export function RemindersWidget() {
       const months = Math.floor(daysUntil / 30);
       return `${months} мес. назад`;
     }
-    
+
     if (daysUntil === 0) return "Сегодня";
     if (daysUntil === 1) return "Завтра";
     if (daysUntil <= 7) return `Через ${daysUntil} ${daysUntil === 1 ? "день" : daysUntil < 5 ? "дня" : "дней"}`;
@@ -325,7 +326,7 @@ export function RemindersWidget() {
   return (
     <div className="card p-5">
       <h3 className="text-base font-bold text-gray-900 mb-4">Напоминания</h3>
-      
+
       <div className="space-y-2">
         {reminders.map((reminder) => (
           <Link
