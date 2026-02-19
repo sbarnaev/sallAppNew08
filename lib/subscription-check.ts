@@ -55,10 +55,16 @@ export async function checkSubscriptionInAPI(): Promise<NextResponse | null> {
     }
 
     const expiresAt = data.data.subscription_expires_at;
-    
-    // Если поле не установлено - доступ есть (для существующих пользователей)
+
+    // Если поле не установлено - доступа нет
     if (!expiresAt) {
-      return null;
+      return NextResponse.json(
+        {
+          message: "Доступ к системе истёк. Пожалуйста, продлите подписку.",
+          code: "SUBSCRIPTION_EXPIRED",
+        },
+        { status: 403 }
+      );
     }
 
     // Проверяем срок

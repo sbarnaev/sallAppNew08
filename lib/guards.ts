@@ -155,8 +155,8 @@ export async function checkSubscriptionAccess(): Promise<{ hasAccess: boolean; e
     
     const expiresAt = data.data.subscription_expires_at;
     if (!expiresAt) {
-      // Если поле не установлено, считаем что доступ есть (для существующих пользователей)
-      return { hasAccess: true, expiresAt: null, daysRemaining: null, expiresAtDate: null };
+      // Если поле не установлено - доступа нет
+      return { hasAccess: false, expiresAt: null, daysRemaining: null, expiresAtDate: null };
     }
     
     const expiresDate = new Date(expiresAt);
