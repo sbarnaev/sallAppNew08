@@ -7,7 +7,7 @@ import { logger } from "@/lib/logger";
 export async function GET() {
   try {
     // Получаем базовую информацию о пользователе вместе с subscription_expires_at одним запросом
-    const response = await fetchDirectusWithAuth("users/me?fields=id,first_name,last_name,email,contact,subscription_expires_at");
+    const response = await fetchDirectusWithAuth("users/me?fields=id,first_name,last_name,email,subscription_expires_at");
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {
